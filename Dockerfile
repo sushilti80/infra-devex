@@ -1,7 +1,7 @@
 # Stage 1: Build Vue.js frontend
 # Use latest Alpine (automatically gets most recent with security patches)
 # If Alpine 3.22+ not available, falls back to 3.21 with explicit busybox upgrade
-FROM node:24-alpine AS frontend-builder
+FROM node:25-alpine AS frontend-builder
 
 # Update Alpine packages and explicitly upgrade busybox packages to fix CVE-2025-60876
 # Forces upgrade to busybox 1.37.0-r21+ which patches the vulnerability
@@ -29,7 +29,7 @@ RUN npm run build:client
 # Stage 2: Production Node.js server
 # Use latest Alpine (automatically gets most recent with security patches)
 # If Alpine 3.22+ not available, falls back to 3.21 with explicit busybox upgrade
-FROM node:24-alpine AS release
+FROM node:25-alpine AS release
 
 # Update Alpine packages and explicitly upgrade busybox packages to fix CVE-2025-60876
 # Forces upgrade to busybox 1.37.0-r21+ which patches the vulnerability
