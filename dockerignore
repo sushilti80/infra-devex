@@ -1,0 +1,24 @@
+# Version control
+.git
+.gitignore
+
+# Node.js dependencies
+node_modules
+npm-debug.log
+
+# Environment files (we'll handle these differently)
+.env
+.env.*
+
+# Development and local files
+*.md
+.DS_Store
+*.pem
+
+# Docker related
+Dockerfile
+.dockerignore
+
+# Logs
+logs
+*.log

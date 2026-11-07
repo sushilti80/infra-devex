@@ -1,0 +1,181 @@
+# Example: create-app.yml workflow for AyaHealthcare/self-service-catalog
+# This file shows how to use the CODE_DEPLOYMENT_TOKEN secret for cloning private repos
+#
+# IMPORTANT: This token is automatically created/updated by the self-service-infra backend
+# when triggering the workflow via the UI.
+
+name: Create App from Template
+
+on:
+  workflow_dispatch:
+    inputs:
+      appname:
+        description: 'Name of the application folder to create'
+        required: true
+        type: string
+      template_repo:
+        description: 'Template repository (format: owner/repo)'
+        required: false
+        type: string
+        default: 'AyaHealthcare/ApiTemplate'
+      jira_number:
+        description: 'JIRA ticket number (e.g., PROJ-123)'
+        required: false
+        type: string
+      correlation_id:
+        description: 'Correlation ID for tracking'
+        required: false
+        type: string
+
+jobs:
+  create-app-folder:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.CODE_DEPLOYMENT_TOKEN }}
+
+      - name: Validate app name
+        run: |
+          # Validate that appname is not empty and contains only valid characters
+          if [[ ! "${{ github.event.inputs.appname }}" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+            echo "Error: App name must contain only alphanumeric characters, hyphens, and underscores"
+            exit 1
+          fi
+
+          # Check if folder already exists
+          if [ -d "${{ github.event.inputs.appname }}" ]; then
+            echo "Error: Folder '${{ github.event.inputs.appname }}' already exists"
+            exit 1
+          fi
+
+      - name: Clone template repository
+        run: |
+          echo "Cloning ${{ github.event.inputs.template_repo }} repository..."
+          # Use CODE_DEPLOYMENT_TOKEN for authentication when cloning private repos
+          git clone https://x-access-token:${{ secrets.CODE_DEPLOYMENT_TOKEN }}@github.com/${{ github.event.inputs.template_repo }}.git /tmp/TemplateRepo
+        env:
+          # The token is securely passed as an environment variable
+          GIT_TERMINAL_PROMPT: 0  # Disable git credential prompts
+
+      - name: Clone leadscoring repository for Azure Pipelines
+        run: |
+          echo "Cloning leadscoring repository to get Azure Pipelines configuration..."
+          git clone https://x-access-token:${{ secrets.CODE_DEPLOYMENT_TOKEN }}@github.com/AyaHealthcare/leadscoring.git /tmp/LeadScoringRepo
+        env:
+          GIT_TERMINAL_PROMPT: 0
+
+      - name: Create app folder and copy template
+        run: |
+          echo "Creating folder: ${{ github.event.inputs.appname }}"
+          mkdir -p "${{ github.event.inputs.appname }}"
+
+          echo "Copying template contents from ${{ github.event.inputs.template_repo }} to ${{ github.event.inputs.appname }}..."
+          # Copy all files except .git directory
+          rsync -av --exclude='.git' /tmp/TemplateRepo/ "${{ github.event.inputs.appname }}/"
+
+          echo "Copying .azure/pipelines from leadscoring repository..."
+          # Copy .azure/pipelines directory if it exists
+          if [ -d "/tmp/LeadScoringRepo/.azure/pipelines" ]; then
+            mkdir -p "${{ github.event.inputs.appname }}/.azure"
+            cp -r /tmp/LeadScoringRepo/.azure/pipelines "${{ github.event.inputs.appname }}/.azure/"
+            echo "✅ Azure Pipelines configuration copied successfully"
+          else
+            echo "⚠️  Warning: .azure/pipelines directory not found in leadscoring repository"
+          fi
+
+          echo "Template copied successfully!"
+          ls -la "${{ github.event.inputs.appname }}"
+          ls -la "${{ github.event.inputs.appname }}/.azure/" || echo "No .azure directory"
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create branch and commit changes
+        run: |
+          BRANCH_NAME="app/${{ github.event.inputs.appname }}-$(date +%s)"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+          git checkout -b "$BRANCH_NAME"
+          git add "${{ github.event.inputs.appname }}"
+
+          # Build commit message with optional metadata
+          COMMIT_MSG="Create app folder: ${{ github.event.inputs.appname }}"
+          if [ -n "${{ github.event.inputs.jira_number }}" ]; then
+            COMMIT_MSG="$COMMIT_MSG [${{ github.event.inputs.jira_number }}]"
+          fi
+          if [ -n "${{ github.event.inputs.correlation_id }}" ]; then
+            COMMIT_MSG="$COMMIT_MSG (correlation_id: ${{ github.event.inputs.correlation_id }})"
+          fi
+
+          git commit -m "$COMMIT_MSG"
+          git push origin "$BRANCH_NAME"
+        env:
+          # Use CODE_DEPLOYMENT_TOKEN for pushing
+          GITHUB_TOKEN: ${{ secrets.CODE_DEPLOYMENT_TOKEN }}
+
+      - name: Create Pull Request
+        run: |
+          # Build PR title and body with metadata
+          PR_TITLE="Create app folder: ${{ github.event.inputs.appname }}"
+
+          PR_BODY="## App Folder Creation
+
+          This PR creates a new application folder from the template repository.
+
+          ### Details
+          - **App Name**: \`${{ github.event.inputs.appname }}\`
+          - **Template**: \`${{ github.event.inputs.template_repo }}\`"
+
+          if [ -n "${{ github.event.inputs.jira_number }}" ]; then
+            PR_BODY="$PR_BODY
+          - **JIRA**: \`${{ github.event.inputs.jira_number }}\`"
+          fi
+
+          if [ -n "${{ github.event.inputs.correlation_id }}" ]; then
+            PR_BODY="$PR_BODY
+          - **Correlation ID**: \`${{ github.event.inputs.correlation_id }}\`"
+          fi
+
+          PR_BODY="$PR_BODY
+
+          ### Files Added
+          - 📁 \`${{ github.event.inputs.appname }}/\` - Application folder created from template
+          - ⚙️ \`${{ github.event.inputs.appname }}/.azure/pipelines/\` - Azure Pipelines configuration from leadscoring
+
+          ---
+          *This PR was automatically created by the Create App from Template workflow.*"
+
+          # Create PR using GitHub CLI (gh uses GITHUB_TOKEN env var automatically)
+          gh pr create \
+            --title "$PR_TITLE" \
+            --body "$PR_BODY" \
+            --base main \
+            --head "$BRANCH_NAME"
+
+          echo "PR_URL=$(gh pr view --json url -q .url)" >> $GITHUB_ENV
+        env:
+          # Use CODE_DEPLOYMENT_TOKEN for PR creation
+          GITHUB_TOKEN: ${{ secrets.CODE_DEPLOYMENT_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "✅ Successfully created app folder: ${{ github.event.inputs.appname }}"
+          echo "📁 Location: ${{ github.event.inputs.appname }}/"
+          echo "📦 Template: ${{ github.event.inputs.template_repo }}"
+          echo "⚙️  Azure Pipelines: Copied from leadscoring repository"
+          if [ -n "${{ github.event.inputs.jira_number }}" ]; then
+            echo "🎫 JIRA: ${{ github.event.inputs.jira_number }}"
+          fi
+          if [ -n "${{ github.event.inputs.correlation_id }}" ]; then
+            echo "🔗 Correlation ID: ${{ github.event.inputs.correlation_id }}"
+          fi
+          echo "🔀 Pull Request created: $PR_URL"
+          echo "🚀 Review and merge the PR to complete the app folder creation"

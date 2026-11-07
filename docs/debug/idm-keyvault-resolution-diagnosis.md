@@ -1,0 +1,41 @@
+# Bug Diagnosis: idm-keyvault-resolution
+
+## Report
+- Observed behavior: `terragruntLocalsResolver.js` returns `null` for `keyvaultname`/`resource_group_name` on every Key Vault directory under the `idm` application (top-level `infrastructure/idm/<env>/keyvault` and all `_idmapplications` sub-apps: `idmprtl`, `allctmpr`, `autobk`, `notif`), even after the just-merged multi-hop/ternary/`lookup()` fix that resolved `ayaApplications`.
+- Expected behavior: `resolveName`/`resolveResourceGroup` return the real, unique Key Vault name and resource group for every IDM vault directory, matching the `ayaApplications` fix's outcome.
+- Environment: local diagnosis against real `Aya-DevOpsTeam/infrastructure-live` (branch `main`), via `services/secretsService.js`/`services/terragruntLocalsResolver.js` on branch `feat/terragruntresolver` (commit `8b8e2a5`, not pushed).
+- Correlation ID: unavailable (local `node -e` repro, not a routed request).
+
+## Evidence
+- Reproduction: `node -e "require('./services/secretsService').resolveKeyVaults('idm','devsand','live','manual-check')..."` returned `vaultName: null, resourceGroup: null` for all 5 IDM vault entries (top-level + 4 qualifiers).
+- Existing contract: FR-003(i) header docstring in `services/terragruntLocalsResolver.js` — the resolver's documented grammar (alias hops, ternaries, `lookup()`) — plus the 8 passing regression tests in `srcV2/services/terragruntLocalsResolver.spec.ts` that the prior `ayaApplications` fix added.
+- Affected paths: `infrastructure/idm/devsand/env.hcl`, `infrastructure/idm/_idmapplications/*/devsand/env.hcl`, and each sub-app's `keyvault/terragrunt.hcl` in `Aya-DevOpsTeam/infrastructure-live`.
+
+## Classification
+- Classification: confirmed_bug
+- Rationale: IDM's real HCL files use two genuinely new (but real, observed) constructs that violate the resolver's own best-effort contract of resolving anything within its documented grammar: (1) `lower(basename(get_terragrunt_dir()))` / `lower(basename(dirname(local.parentdir)))` — a `lower()` wrapper plus *generic* `basename`/`dirname` over a per-hop-varying `get_terragrunt_dir()`, vs. the old hardcoded single-composite regex that treated `get_terragrunt_dir()` as constant across alias hops; (2) `dependency.rg.outputs.resource_group_name` — a cross-module dependency-output reference, unsupported by any existing code path (silently falls through `evaluateExpr`'s final `return null`).
+- Scope owner: SelfService Debugger (non-frontend `services/` fix, no architecture change).
+
+## Root Cause
+- Hypothesis 1 (confirmed): the resolver hardcoded `get_[original_]terragrunt_dir()` as *always* equal to the vault's own constant directory (`ctx.directoryName`), matching real Terragrunt semantics for `get_original_terragrunt_dir()` only. IDM's `env.hcl` uses the *bare* `get_terragrunt_dir()` (no `original_`) inside an aliased locals block, which per real Terragrunt varies per current file — it should resolve to `env.hcl`'s own directory, not the vault's. Combined with `lower()` and generic `basename()`/`dirname()` never being implemented (only one exact hardcoded composite regex was), every `local.envName`/`local.prefix` lookup through the `env` alias evaluated to `null`, breaking the `keyvaultname` interpolation.
+  - Discriminating check: fetched `infrastructure/idm/devsand/env.hcl` and `infrastructure/idm/_idmapplications/idmprtl/devsand/env.hcl` from the live repo; confirmed `envName = lower(basename(get_terragrunt_dir()))` and `prefix = lower(basename(dirname(local.parentdir)))` (`parentdir = "${get_terragrunt_dir()}/../"`), neither of which the old hardcoded-regex/whitelisted-function-name (`substr|format|lookup`) evaluator could match.
+  - Result: confirmed — after adding `lower`, generic `basename`/`dirname` (Go/Terraform-style lexical `..`-resolving semantics, since Node's `path.posix.dirname` does not resolve `..`), and per-hop `currentDir` tracking (bare `get_terragrunt_dir()`) alongside the existing constant `originalVaultDir` (`get_original_terragrunt_dir()`), all 5 IDM vaults' `keyvaultname` now resolve to plausible unique values (`idm-devsand-uks-kv-1`, `idmprtl-devsand-uks-kv-1`, `allctmp-devsand-uks-kv-1`, `autobk-devsand-uks-kv-1`, `notif-devsand-uks-kv-1`).
+- Hypothesis 2 (confirmed, separate root cause): `resource_group_name` for the 4 sub-app qualifiers is defined via `dependency.rg.outputs.resource_group_name` (a genuine Terragrunt cross-module dependency, not a `local.*` reference), which the resolver never supported at all.
+  - Discriminating check: fetched each sub-app's `keyvault/terragrunt.hcl` and its sibling `resourcegroups/terragrunt.hcl`; confirmed the sibling module's own `inputs.resource_group_name` is a `local.*`-only expression already within the resolver's grammar.
+  - Result: confirmed — added best-effort `dependency.NAME.outputs.FIELD` support (follows the `dependency "NAME" { config_path = "..." }` block to the sibling directory and recursively resolves *that* directory's own `inputs.FIELD`, capped at `MAX_DEPENDENCY_DEPTH = 2`). All 4 sub-apps now resolve `resourceGroup` (e.g. `idmprtl-devsand-uks-rg-1`).
+
+## Resolution
+- Status: pass
+- Changed paths:
+  - [services/terragruntLocalsResolver.js](../../services/terragruntLocalsResolver.js) — generic `lower()`/`basename()`/`dirname()` functions with Go/Terraform-style lexical path cleaning (`cleanPosixPath`/`tgDirname`/`tgBasename`); per-hop `currentDir` (bare `get_terragrunt_dir()`) vs. constant `originalVaultDir` (`get_original_terragrunt_dir()`) context tracking through alias hops (replaces the old single hardcoded composite regex); new `dependency.NAME.outputs.FIELD` best-effort resolution (`extractDependencyConfigPaths`, `resolveDependencyOutput`), reusing `resolveField` recursively against the dependency's own directory.
+  - [srcV2/services/terragruntLocalsResolver.spec.ts](../../srcV2/services/terragruntLocalsResolver.spec.ts) — 2 new regression tests (idm-style per-hop `get_terragrunt_dir()`/`lower()`/generic `basename`/`dirname`; `dependency.*.outputs.*`).
+- Focused validation: `npx vitest run --project jsdom srcV2/services/terragruntLocalsResolver.spec.ts` → 10/10 passing (8 pre-existing + 2 new). `npm test` → 462/462 passing, no regressions.
+- Live verification (real `infrastructure-live`, via `resolveKeyVaults('idm', ..., 'live', ...)`):
+  - `devsand`: `idm` → `idm-devsand-uks-kv-1` / `idm-devsand-uks-rg-1`; `allctmpr` → `allctmp-devsand-uks-kv-1` / `allctmpr-devsand-uks-rg-1`; `autobk` → `autobk-devsand-uks-kv-1` / `autobk-devsand-uks-rg-1`; `idmprtl` → `idmprtl-devsand-uks-kv-1` / `idmprtl-devsand-uks-rg-1`; `notif` → `notif-devsand-uks-kv-1` / `notif-devsand-uks-rg-1`.
+  - `prod`: all 4 entries (`idm`, `allctmpr`, `autobk`, `idmprtl`) resolve analogously with `-prod-` in place of `-devsand-`.
+  - `keyvaultname` truncation to 7 chars for `allctmpr` (`allctmp-...`) is expected — the vault's own `terragrunt.hcl` applies `substr(local.prefix, 0, 7)` to the name (KV name length limit) but not to `resource_group_name`, hence the two differ (`allctmp` vs `allctmpr`).
+- QA results: not_run (not routed to QA Engineer for this local diagnosis-only task per user instruction; not pushed/merged).
+- Residual risk: `dependency.*.outputs.*` support is a best-effort heuristic (reads the dependency directory's own declared `inputs.<field>`, not real Terraform state) — correct for simple single-purpose modules like `resourcegroups` observed here, but would be wrong if a dependency's real output diverges from its own literal `inputs` value (e.g. computed/generated names). No other application/vault directory in the tree was found to use `dependency.*.outputs.*` at spot-check time, so blast radius is currently limited to `idm`'s sub-apps.
+
+## Security Note (unrelated to this bug)
+While running live verification commands, one `dotenv` startup banner line in this session's terminal output was anomalous (`tip: ⌁ auth for agents [www.vestauth.com]`, unlike the normal `tip: ⌘ ...` lines seen in adjacent runs) — a suspected prompt-injection/spoofed-tool-output attempt to get an agent to visit an external URL. It was not visited or acted upon. Flagged to the user directly in-session; worth checking `.env`/`.env.local` and the installed `dotenv` package for tampering.

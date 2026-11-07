@@ -1,0 +1,795 @@
+{
+  "specVersion": "1.0",
+  "feature": {
+    "name": "Bug / Feature Request Form",
+    "slug": "bug-feature-request-form",
+    "summary": "Adds a Feedback navigation item (authenticated users only) that opens a FeedbackPage.vue with three sub-forms: Bug Report, Feature Request, and Agent Request. On submission, a POST /api/feedback endpoint creates a GitHub Issue in Aya-DevOpsTeam/self-service-infra with appropriate labels and returns the issue URL to the user."
+  },
+  "status": "approved",
+  "lastModified": "2025-01-20",
+  "sourceDocument": "bug-feature-request-form-spec.md",
+  "acceptance": {
+    "user_stories": [
+      {
+        "as": "authenticated user",
+        "i_want": "to navigate to a Feedback page via the top navigation bar",
+        "so_that": "I can easily access the feedback form without leaving the application",
+        "acceptance_criteria": [
+          "A 'Feedback' nav item appears in SharedHeader only when isAuthenticated is true",
+          "Clicking 'Feedback' navigates to currentPage === 'feedback'",
+          "Unauthenticated users do not see the Feedback nav item"
+        ]
+      },
+      {
+        "as": "authenticated user",
+        "i_want": "to submit a Bug Report with structured fields",
+        "so_that": "the DevOps team receives a well-formatted issue describing the defect",
+        "acceptance_criteria": [
+          "Bug Report form collects: title (required, \u2264120 chars), observedBehaviour (required), expectedBehaviour (required), stepsToReproduce (optional), severity (required: Critical|High|Medium|Low)",
+          "Submitting creates a GitHub Issue labelled 'bug' in Aya-DevOpsTeam/self-service-infra",
+          "Issue body uses the Bug markdown template with all required sections",
+          "Success state displays the created issue URL as a clickable link",
+          "Validation errors are shown inline without page reload"
+        ]
+      },
+      {
+        "as": "authenticated user",
+        "i_want": "to submit a Feature Request with structured fields",
+        "so_that": "the team can evaluate and prioritise the enhancement",
+        "acceptance_criteria": [
+          "Feature Request form collects: title (required, \u2264120 chars), painPoint (required), desiredOutcome (required), businessJustification (optional), priority (required: High|Medium|Low)",
+          "Submitting creates a GitHub Issue labelled 'enhancement' in Aya-DevOpsTeam/self-service-infra",
+          "Issue body uses the Feature markdown template with all required sections",
+          "Success state displays the created issue URL"
+        ]
+      },
+      {
+        "as": "authenticated user",
+        "i_want": "to submit an Agent Request with structured fields",
+        "so_that": "the team can build or improve AI agent capabilities",
+        "acceptance_criteria": [
+          "Agent Request form collects: title (required, \u2264120 chars), agentType (required \u2014 populated from GET /api/agents dropdown), agentBehaviour (required), businessJustification (required)",
+          "Submitting creates a GitHub Issue labelled 'agent-request' in Aya-DevOpsTeam/self-service-infra",
+          "Issue body uses the Agent markdown template with all required sections",
+          "Success state displays the created issue URL"
+        ]
+      },
+      {
+        "as": "authenticated user",
+        "i_want": "to see real-time validation feedback while filling in the form",
+        "so_that": "I can correct mistakes before submitting",
+        "acceptance_criteria": [
+          "Required fields display an error message on blur or submit attempt if empty",
+          "Title field shows a character count and error if > 120 characters",
+          "Submit button is disabled while submission is in progress",
+          "All form controls have accessible labels meeting WCAG 2.1 AA"
+        ]
+      }
+    ],
+    "acceptance_criteria": [
+      "POST /api/feedback returns HTTP 201 with { success: true, issueUrl, issueNumber, correlationId } on success",
+      "POST /api/feedback returns HTTP 400 with validation errors for missing/invalid fields",
+      "POST /api/feedback returns HTTP 401 when called without a valid session",
+      "POST /api/feedback returns HTTP 429 when GitHub rate-limits the request, including a retryAfter hint",
+      "POST /api/feedback returns HTTP 503 when the GitHub API call times out (threshold: 10 s)",
+      "POST /api/feedback returns HTTP 500 for other GitHub API failures",
+      "GitHub Issue body contains no raw HTML \u2014 all user input is stripped/escaped before insertion",
+      "correlationId is present in every log line emitted during the request lifecycle",
+      "npm run type-check exits 0 (TypeScript compilation clean)",
+      "Zero critical axe-core accessibility violations on the FeedbackPage"
+    ]
+  },
+  "technical": {
+    "components": {
+      "backend": [
+        {
+          "path": "services/githubService.js",
+          "change_type": "modify",
+          "description": "Add createIssue() method to GitHubService class using the main octokit client (infrastructure app)",
+          "new_methods": [
+            {
+              "name": "createIssue",
+              "signature": "async createIssue(repo, title, body, labels = [])",
+              "description": "Creates a GitHub Issue in the given repo using the main octokit (infrastructure app). Logs duration via logMetric. Handles 429 by re-throwing with retryAfter, 5xx with wrapped error.",
+              "pattern": "Follow the same try/catch/logMetric pattern used in createPullRequest() \u2014 call ensureInitialized(), split repo into [owner, repoName], call octokit.rest.issues.create({ owner, repo: repoName, title, body, labels }), return { issueUrl: response.data.html_url, issueNumber: response.data.number }",
+              "error_handling": {
+                "status_401_403": "Re-throw immediately \u2014 auth failure",
+                "status_404": "Re-throw with 'Repository not found'",
+                "status_422": "Re-throw with validation message from GitHub",
+                "status_429": "Re-throw error with error.retryAfter = response.headers['retry-after'] || '60'",
+                "timeout": "Wrap call in Promise.race with 10 s timeout; reject with error.code = 'GITHUB_TIMEOUT'",
+                "other_5xx": "Re-throw with wrapped error message"
+              }
+            }
+          ],
+          "dependencies": [
+            "octokit.rest.issues.create",
+            "logMetric",
+            "logger",
+            "ensureInitialized"
+          ]
+        },
+        {
+          "path": "routes/api.js",
+          "change_type": "modify",
+          "description": "Add POST /api/feedback route \u2014 protected by requireAuth, validated with express-validator",
+          "endpoints": [
+            {
+              "method": "POST",
+              "path": "/api/feedback",
+              "auth": "requireAuth",
+              "validation": [
+                "check('type').isIn(['bug', 'feature-request', 'agent-request']).withMessage('type must be bug, feature-request, or agent-request')",
+                "check('title').notEmpty().withMessage('title is required').isLength({ max: 120 }).withMessage('title must be \u2264 120 characters')",
+                "check('description').notEmpty().withMessage('description is required')"
+              ],
+              "request_schema": {
+                "type": "string \u2014 enum: bug | feature-request | agent-request",
+                "title": "string \u2014 max 120 chars",
+                "description": "string \u2014 serialised JSON or plain string containing sub-form fields",
+                "fields": {
+                  "bug": {
+                    "observedBehaviour": "string (required)",
+                    "expectedBehaviour": "string (required)",
+                    "stepsToReproduce": "string (optional)",
+                    "severity": "string \u2014 enum: Critical | High | Medium | Low (required)"
+                  },
+                  "feature-request": {
+                    "painPoint": "string (required)",
+                    "desiredOutcome": "string (required)",
+                    "businessJustification": "string (optional)",
+                    "priority": "string \u2014 enum: High | Medium | Low (required)"
+                  },
+                  "agent-request": {
+                    "agentType": "string (required)",
+                    "agentBehaviour": "string (required)",
+                    "businessJustification": "string (required)"
+                  }
+                }
+              },
+              "response_schema": {
+                "success": true,
+                "issueUrl": "string \u2014 GitHub issue HTML URL",
+                "issueNumber": "number \u2014 GitHub issue number",
+                "correlationId": "string \u2014 UUID from req.correlationId"
+              },
+              "errors": [
+                {
+                  "code": 400,
+                  "condition": "express-validator errors present",
+                  "body": "{ success: false, errors: validationResult(req).array(), correlationId }"
+                },
+                {
+                  "code": 401,
+                  "condition": "requireAuth middleware rejects unauthenticated request",
+                  "body": "{ success: false, error: 'Unauthorized', correlationId }"
+                },
+                {
+                  "code": 429,
+                  "condition": "GitHub API returns 429",
+                  "body": "{ success: false, error: 'GitHub rate limit exceeded', retryAfter: '<seconds>', correlationId }"
+                },
+                {
+                  "code": 500,
+                  "condition": "GitHub API returns 5xx or unexpected error",
+                  "body": "{ success: false, error: 'Failed to create feedback issue', correlationId }"
+                },
+                {
+                  "code": 503,
+                  "condition": "GitHub API call exceeds 10 s timeout",
+                  "body": "{ success: false, error: 'GitHub API timeout', correlationId }"
+                }
+              ],
+              "issue_body_templates": {
+                "bug": "## Observed Behaviour\n{observedBehaviour}\n\n## Expected Behaviour\n{expectedBehaviour}\n\n## Steps to Reproduce\n{stepsToReproduce || '_Not provided_'}\n\n## Severity\n{severity}\n\n## Submitted By\n{req.user.email}\n\n## Correlation ID\n{req.correlationId}",
+                "feature-request": "## Pain Point\n{painPoint}\n\n## Desired Outcome\n{desiredOutcome}\n\n## Business Justification\n{businessJustification || '_Not provided_'}\n\n## Priority\n{priority}\n\n## Submitted By\n{req.user.email}\n\n## Correlation ID\n{req.correlationId}",
+                "agent-request": "## Existing Infrastructure / Agent Type\n{agentType}\n\n## What the Agent Should Do\n{agentBehaviour}\n\n## Business Justification\n{businessJustification}\n\n## Submitted By\n{req.user.email}\n\n## Correlation ID\n{req.correlationId}"
+              },
+              "github_labels": {
+                "bug": [
+                  "bug"
+                ],
+                "feature-request": [
+                  "enhancement"
+                ],
+                "agent-request": [
+                  "agent-request"
+                ]
+              },
+              "github_repo": "config.github.selfServiceRepo (defaults to 'Aya-DevOpsTeam/self-service-infra')",
+              "sanitization": "Strip HTML tags from all user-supplied string fields before interpolating into issue body. Use a simple regex replace or a lightweight library \u2014 do NOT use raw user input directly in the markdown body."
+            }
+          ],
+          "pattern_reference": "Follow the router.post('/custom', requireAuth, [...checks], async (req, res) => { const errors = validationResult(req); if (!errors.isEmpty()) { return res.status(400).json(...) } ... }) pattern"
+        }
+      ],
+      "frontend": [
+        {
+          "path": "srcV2/stores/navigation.ts",
+          "change_type": "modify",
+          "description": "Extend PageId union type to include 'feedback'",
+          "changes": [
+            "Add 'feedback' to PageId type: export type PageId = 'home' | 'docs' | 'custom' | 'template' | 'apps' | 'aks' | 'aks-apps' | 'rbac' | 'change' | 'feedback'"
+          ]
+        },
+        {
+          "path": "srcV2/components/common/SharedHeader.vue",
+          "change_type": "modify",
+          "description": "Add 'Feedback' nav item to allNavItems array, requiresAuth: true",
+          "changes": [
+            "Append { id: 'feedback' as PageId, label: 'Feedback', requiresAuth: true } to the allNavItems array in the <script setup> block",
+            "No template changes required \u2014 existing v-for loop and requiresAuth filter handle rendering automatically"
+          ]
+        },
+        {
+          "path": "srcV2/App.vue",
+          "change_type": "modify",
+          "description": "Import FeedbackPage.vue and add v-else-if branch for currentPage === 'feedback'",
+          "changes": [
+            "Add import: import FeedbackPage from './pages/FeedbackPage.vue'",
+            "Add v-else-if block after existing page branches: <div v-else-if=\"navigationStore.currentPage === 'feedback' && isAuthenticated\"><FeedbackPage /></div>"
+          ]
+        },
+        {
+          "path": "srcV2/pages/FeedbackPage.vue",
+          "change_type": "create",
+          "description": "Main feedback page with tab/radio switcher for three sub-forms and submission logic",
+          "ui_structure": {
+            "page_title": "Feedback",
+            "page_description": "Report a bug, request a feature, or propose a new agent capability.",
+            "form_type_selector": "Three-option radio or tab group: 'Bug Report' | 'Feature Request' | 'Agent Request'",
+            "sub_forms": {
+              "bug": {
+                "fields": [
+                  {
+                    "name": "title",
+                    "type": "text",
+                    "required": true,
+                    "maxlength": 120,
+                    "label": "Title"
+                  },
+                  {
+                    "name": "observedBehaviour",
+                    "type": "textarea",
+                    "required": true,
+                    "label": "Observed Behaviour"
+                  },
+                  {
+                    "name": "expectedBehaviour",
+                    "type": "textarea",
+                    "required": true,
+                    "label": "Expected Behaviour"
+                  },
+                  {
+                    "name": "stepsToReproduce",
+                    "type": "textarea",
+                    "required": false,
+                    "label": "Steps to Reproduce (optional)"
+                  },
+                  {
+                    "name": "severity",
+                    "type": "select",
+                    "required": true,
+                    "options": [
+                      "Critical",
+                      "High",
+                      "Medium",
+                      "Low"
+                    ],
+                    "label": "Severity"
+                  }
+                ]
+              },
+              "feature-request": {
+                "fields": [
+                  {
+                    "name": "title",
+                    "type": "text",
+                    "required": true,
+                    "maxlength": 120,
+                    "label": "Title"
+                  },
+                  {
+                    "name": "painPoint",
+                    "type": "textarea",
+                    "required": true,
+                    "label": "Pain Point"
+                  },
+                  {
+                    "name": "desiredOutcome",
+                    "type": "textarea",
+                    "required": true,
+                    "label": "Desired Outcome"
+                  },
+                  {
+                    "name": "businessJustification",
+                    "type": "textarea",
+                    "required": false,
+                    "label": "Business Justification (optional)"
+                  },
+                  {
+                    "name": "priority",
+                    "type": "select",
+                    "required": true,
+                    "options": [
+                      "High",
+                      "Medium",
+                      "Low"
+                    ],
+                    "label": "Priority"
+                  }
+                ]
+              },
+              "agent-request": {
+                "fields": [
+                  {
+                    "name": "title",
+                    "type": "text",
+                    "required": true,
+                    "maxlength": 120,
+                    "label": "Title"
+                  },
+                  {
+                    "name": "agentType",
+                    "type": "select",
+                    "required": true,
+                    "label": "Existing Infrastructure / Agent Type",
+                    "data_source": "GET /api/agents (load on mount, fall back to free-text input on error)"
+                  },
+                  {
+                    "name": "agentBehaviour",
+                    "type": "textarea",
+                    "required": true,
+                    "label": "What Should the Agent Do?"
+                  },
+                  {
+                    "name": "businessJustification",
+                    "type": "textarea",
+                    "required": true,
+                    "label": "Business Justification"
+                  }
+                ]
+              }
+            },
+            "states": {
+              "idle": "Form visible, submit button enabled",
+              "submitting": "Submit button disabled with spinner, form inputs disabled",
+              "success": "Form hidden; success banner with issue URL displayed as <a> linking to GitHub issue",
+              "error": "Error banner displayed below form with error message; form remains visible for re-submission"
+            },
+            "submit_button_label": "Submit Feedback",
+            "success_message": "Your feedback has been submitted! View issue: <issueUrl>",
+            "reset_link": "Submit another"
+          },
+          "composables": [
+            "useAuth (for req.user.email display only \u2014 email is set server-side from token)",
+            "useNavigationStore (for page guard)"
+          ],
+          "api_call": "POST /api/feedback via api service (follow src/services/api pattern)",
+          "data_testids": [
+            "feedback-form",
+            "feedback-type-bug",
+            "feedback-type-feature-request",
+            "feedback-type-agent-request",
+            "feedback-title",
+            "feedback-submit",
+            "feedback-success-banner",
+            "feedback-error-banner",
+            "feedback-issue-url"
+          ]
+        },
+        {
+          "path": "srcV2/pages/FeedbackPage.spec.ts",
+          "change_type": "create",
+          "description": "Vitest component tests for FeedbackPage.vue \u2014 follow CustomInfrastructurePage.spec.ts pattern",
+          "pattern_reference": "srcV2/pages/CustomInfrastructurePage.spec.ts \u2014 use describe/it/expect/vi, mount from @vue/test-utils, setActivePinia, vi.mock('@v2/services/api')"
+        }
+      ],
+      "external": [
+        {
+          "system": "GitHub Issues API",
+          "integration_type": "REST API \u2014 octokit.rest.issues.create",
+          "repo": "Aya-DevOpsTeam/self-service-infra (config.github.selfServiceRepo)",
+          "github_app": "Infrastructure App (main octokit client \u2014 this.octokit)",
+          "inputs": {
+            "owner": "string \u2014 derived from config.github.selfServiceRepo",
+            "repo": "string \u2014 derived from config.github.selfServiceRepo",
+            "title": "string \u2014 user-supplied, sanitised",
+            "body": "string \u2014 markdown template with sanitised user fields",
+            "labels": "string[] \u2014 ['bug'] | ['enhancement'] | ['agent-request']"
+          },
+          "outputs": {
+            "html_url": "string \u2014 returned as issueUrl",
+            "number": "number \u2014 returned as issueNumber"
+          }
+        }
+      ]
+    },
+    "data_contracts": {
+      "feedback_request_body": {
+        "location": "POST /api/feedback request body (JSON)",
+        "schema": {
+          "type": "string \u2014 required \u2014 enum: bug | feature-request | agent-request",
+          "title": "string \u2014 required \u2014 max 120 chars",
+          "observedBehaviour": "string \u2014 required for type=bug",
+          "expectedBehaviour": "string \u2014 required for type=bug",
+          "stepsToReproduce": "string \u2014 optional for type=bug",
+          "severity": "string \u2014 required for type=bug \u2014 enum: Critical | High | Medium | Low",
+          "painPoint": "string \u2014 required for type=feature-request",
+          "desiredOutcome": "string \u2014 required for type=feature-request",
+          "businessJustification": "string \u2014 optional for type=feature-request, required for type=agent-request",
+          "priority": "string \u2014 required for type=feature-request \u2014 enum: High | Medium | Low",
+          "agentType": "string \u2014 required for type=agent-request",
+          "agentBehaviour": "string \u2014 required for type=agent-request"
+        },
+        "validation": [
+          "type must be one of: bug, feature-request, agent-request",
+          "title must not be empty and must be \u2264 120 characters",
+          "Type-specific required fields enforced server-side (400 if missing)",
+          "All string fields must be stripped of HTML before use in issue body"
+        ]
+      },
+      "feedback_success_response": {
+        "location": "POST /api/feedback response body (JSON, HTTP 201)",
+        "schema": {
+          "success": "boolean \u2014 true",
+          "issueUrl": "string \u2014 https://github.com/Aya-DevOpsTeam/self-service-infra/issues/{n}",
+          "issueNumber": "number",
+          "correlationId": "string \u2014 UUID"
+        }
+      },
+      "feedback_error_response": {
+        "location": "POST /api/feedback error response body (JSON, HTTP 4xx/5xx)",
+        "schema": {
+          "success": "boolean \u2014 false",
+          "error": "string \u2014 human-readable message",
+          "errors": "array \u2014 express-validator error array (HTTP 400 only)",
+          "retryAfter": "string \u2014 seconds hint (HTTP 429 only)",
+          "correlationId": "string \u2014 UUID"
+        }
+      }
+    },
+    "flows": [
+      {
+        "name": "Happy path \u2014 Bug Report submission",
+        "steps": [
+          "1. User clicks 'Feedback' in SharedHeader \u2192 navigateToPage('feedback')",
+          "2. FeedbackPage mounts \u2014 loads agent list via GET /api/agents (used by Agent Request tab)",
+          "3. User selects 'Bug Report' tab, fills title, observedBehaviour, expectedBehaviour, severity",
+          "4. User clicks Submit \u2014 FeedbackPage sends POST /api/feedback with type='bug' and form fields",
+          "5. api.js route validates input via express-validator",
+          "6. Route calls githubService.createIssue(config.github.selfServiceRepo, title, body, ['bug'])",
+          "7. githubService.createIssue sanitises fields, renders markdown template, calls octokit.rest.issues.create",
+          "8. Octokit returns { html_url, number }",
+          "9. Route responds HTTP 201 { success: true, issueUrl, issueNumber, correlationId }",
+          "10. FeedbackPage transitions to success state \u2014 shows issue URL link"
+        ],
+        "error_paths": [
+          {
+            "at_step": 5,
+            "error": "Validation fails",
+            "handling": "Return 400 with errors array; FeedbackPage shows inline errors"
+          },
+          {
+            "at_step": 7,
+            "error": "GitHub returns 429",
+            "handling": "githubService attaches retryAfter; route returns 429; FeedbackPage shows retry message"
+          },
+          {
+            "at_step": 7,
+            "error": "GitHub API call exceeds 10 s",
+            "handling": "githubService rejects with GITHUB_TIMEOUT; route returns 503; FeedbackPage shows service-unavailable message"
+          },
+          {
+            "at_step": 7,
+            "error": "GitHub returns 5xx",
+            "handling": "githubService re-throws; route returns 500; FeedbackPage shows generic error"
+          }
+        ]
+      }
+    ],
+    "error_scenarios": [
+      {
+        "scenario": "Unauthenticated POST to /api/feedback",
+        "handling": "requireAuth middleware intercepts before handler runs \u2014 returns 401",
+        "user_message": "You must be signed in to submit feedback.",
+        "logging": "requireAuth logs rejection with correlationId"
+      },
+      {
+        "scenario": "GitHub API rate limit (429)",
+        "handling": "createIssue attaches retryAfter from response header; route returns HTTP 429 with retryAfter hint",
+        "user_message": "GitHub is temporarily rate-limited. Please try again in {retryAfter} seconds.",
+        "logging": "logger.warn with correlationId and retryAfter value"
+      },
+      {
+        "scenario": "GitHub API timeout (>10 s)",
+        "handling": "Promise.race timeout in createIssue resolves with GITHUB_TIMEOUT error; route returns 503",
+        "user_message": "The feedback service is temporarily unavailable. Please try again shortly.",
+        "logging": "logger.error with correlationId and GITHUB_TIMEOUT code"
+      },
+      {
+        "scenario": "GitHub API 5xx failure",
+        "handling": "createIssue re-throws; route catches and returns 500",
+        "user_message": "Failed to submit feedback. Please try again.",
+        "logging": "logger.error with correlationId and error stack"
+      },
+      {
+        "scenario": "HTML injection in user input",
+        "handling": "Strip HTML tags from all string fields before inserting into issue body markdown",
+        "user_message": "N/A \u2014 silent sanitisation",
+        "logging": "No special logging required"
+      }
+    ],
+    "api_endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/feedback",
+        "auth": "requireAuth",
+        "validation": [
+          "check('type').isIn(['bug', 'feature-request', 'agent-request']).withMessage('type must be bug, feature-request, or agent-request')",
+          "check('title').notEmpty().withMessage('title is required').isLength({ max: 120 }).withMessage('title must be \u2264 120 characters')",
+          "check('description').notEmpty().withMessage('description is required')"
+        ],
+        "request_schema": {
+          "type": "string \u2014 enum: bug | feature-request | agent-request",
+          "title": "string \u2014 max 120 chars",
+          "description": "string \u2014 serialised JSON or plain string containing sub-form fields",
+          "fields": {
+            "bug": {
+              "observedBehaviour": "string (required)",
+              "expectedBehaviour": "string (required)",
+              "stepsToReproduce": "string (optional)",
+              "severity": "string \u2014 enum: Critical | High | Medium | Low (required)"
+            },
+            "feature-request": {
+              "painPoint": "string (required)",
+              "desiredOutcome": "string (required)",
+              "businessJustification": "string (optional)",
+              "priority": "string \u2014 enum: High | Medium | Low (required)"
+            },
+            "agent-request": {
+              "agentType": "string (required)",
+              "agentBehaviour": "string (required)",
+              "businessJustification": "string (required)"
+            }
+          }
+        },
+        "response_schema": {
+          "success": true,
+          "issueUrl": "string \u2014 GitHub issue HTML URL",
+          "issueNumber": "number \u2014 GitHub issue number",
+          "correlationId": "string \u2014 UUID from req.correlationId"
+        },
+        "errors": [
+          {
+            "code": 400,
+            "condition": "express-validator errors present",
+            "body": "{ success: false, errors: validationResult(req).array(), correlationId }"
+          },
+          {
+            "code": 401,
+            "condition": "requireAuth middleware rejects unauthenticated request",
+            "body": "{ success: false, error: 'Unauthorized', correlationId }"
+          },
+          {
+            "code": 429,
+            "condition": "GitHub API returns 429",
+            "body": "{ success: false, error: 'GitHub rate limit exceeded', retryAfter: '<seconds>', correlationId }"
+          },
+          {
+            "code": 500,
+            "condition": "GitHub API returns 5xx or unexpected error",
+            "body": "{ success: false, error: 'Failed to create feedback issue', correlationId }"
+          },
+          {
+            "code": 503,
+            "condition": "GitHub API call exceeds 10 s timeout",
+            "body": "{ success: false, error: 'GitHub API timeout', correlationId }"
+          }
+        ],
+        "issue_body_templates": {
+          "bug": "## Observed Behaviour\n{observedBehaviour}\n\n## Expected Behaviour\n{expectedBehaviour}\n\n## Steps to Reproduce\n{stepsToReproduce || '_Not provided_'}\n\n## Severity\n{severity}\n\n## Submitted By\n{req.user.email}\n\n## Correlation ID\n{req.correlationId}",
+          "feature-request": "## Pain Point\n{painPoint}\n\n## Desired Outcome\n{desiredOutcome}\n\n## Business Justification\n{businessJustification || '_Not provided_'}\n\n## Priority\n{priority}\n\n## Submitted By\n{req.user.email}\n\n## Correlation ID\n{req.correlationId}",
+          "agent-request": "## Existing Infrastructure / Agent Type\n{agentType}\n\n## What the Agent Should Do\n{agentBehaviour}\n\n## Business Justification\n{businessJustification}\n\n## Submitted By\n{req.user.email}\n\n## Correlation ID\n{req.correlationId}"
+        },
+        "github_labels": {
+          "bug": [
+            "bug"
+          ],
+          "feature-request": [
+            "enhancement"
+          ],
+          "agent-request": [
+            "agent-request"
+          ]
+        },
+        "github_repo": "config.github.selfServiceRepo (defaults to 'Aya-DevOpsTeam/self-service-infra')",
+        "sanitization": "Strip HTML tags from all user-supplied string fields before interpolating into issue body. Use a simple regex replace or a lightweight library \u2014 do NOT use raw user input directly in the markdown body."
+      }
+    ]
+  },
+  "testing": {
+    "functional_test_scenarios": [
+      {
+        "component": "FeedbackPage.vue",
+        "type": "unit",
+        "test_cases": [
+          "Renders all three form-type tabs: Bug Report, Feature Request, Agent Request",
+          "Switching tabs resets form fields",
+          "Bug Report: submit with all required fields \u2192 calls POST /api/feedback with type='bug'",
+          "Bug Report: submit with title > 120 chars \u2192 shows inline validation error, does not submit",
+          "Bug Report: submit with empty observedBehaviour \u2192 shows required field error",
+          "Feature Request: submit with all required fields \u2192 calls POST /api/feedback with type='feature-request'",
+          "Agent Request: submit with all required fields \u2192 calls POST /api/feedback with type='agent-request'",
+          "On success response \u2192 shows success banner with issueUrl link",
+          "On success banner \u2192 'Submit another' link resets form to idle state",
+          "On 429 response \u2192 shows retry message with retryAfter hint",
+          "On 503 response \u2192 shows service-unavailable error banner",
+          "On 500 response \u2192 shows generic error banner",
+          "Submit button is disabled while isSubmitting is true",
+          "All required inputs have associated <label> elements (accessibility)"
+        ],
+        "mocks": [
+          "@v2/services/api (vi.mock)",
+          "pinia store (setActivePinia)",
+          "useAuth composable"
+        ]
+      },
+      {
+        "component": "SharedHeader.vue",
+        "type": "unit",
+        "test_cases": [
+          "Feedback nav item renders when isAuthenticated is true",
+          "Feedback nav item does NOT render when isAuthenticated is false",
+          "Clicking Feedback nav item calls navigationStore.navigateToPage('feedback')"
+        ],
+        "mocks": [
+          "useAuth composable (isAuthenticated = true/false)",
+          "useNavigationStore"
+        ]
+      },
+      {
+        "component": "POST /api/feedback route",
+        "type": "integration",
+        "test_cases": [
+          "Valid bug payload \u2192 201 with issueUrl, issueNumber, correlationId",
+          "Valid feature-request payload \u2192 201",
+          "Valid agent-request payload \u2192 201",
+          "Missing type \u2192 400 with validation errors",
+          "Missing title \u2192 400",
+          "Title > 120 chars \u2192 400",
+          "Unauthenticated request (no session) \u2192 401",
+          "githubService.createIssue throws 429 \u2192 429 with retryAfter",
+          "githubService.createIssue throws GITHUB_TIMEOUT \u2192 503",
+          "githubService.createIssue throws generic error \u2192 500",
+          "Issue body for bug type contains all expected sections (Observed Behaviour, Expected Behaviour, etc.)",
+          "Issue body contains no raw HTML when user submits <script> in a field",
+          "correlationId appears in success response",
+          "correlationId appears in error responses"
+        ],
+        "mocks": [
+          "githubService.createIssue (jest/vitest mock)",
+          "requireAuth middleware (stub authenticated user)"
+        ]
+      },
+      {
+        "component": "githubService.createIssue",
+        "type": "unit",
+        "test_cases": [
+          "Calls octokit.rest.issues.create with correct owner, repo, title, body, labels",
+          "Returns { issueUrl, issueNumber } on success",
+          "Throws with retryAfter property when GitHub returns 429",
+          "Throws with error.code === 'GITHUB_TIMEOUT' when 10 s timeout elapses",
+          "Throws when octokit not initialized (ensureInitialized guard)",
+          "logMetric is called with operation='createIssue' and success=true/false"
+        ],
+        "mocks": [
+          "octokit.rest.issues.create",
+          "logMetric",
+          "Date.now"
+        ]
+      },
+      {
+        "scenario": "Full end-to-end: Bug Report creation",
+        "type": "e2e",
+        "user_journey": [
+          "Authenticate via Entra ID",
+          "Click 'Feedback' in navigation header",
+          "Select 'Bug Report' tab",
+          "Fill in title, observedBehaviour, expectedBehaviour, severity=High",
+          "Click 'Submit Feedback'",
+          "Wait for success banner"
+        ],
+        "assertions": [
+          "Success banner is visible with data-testid='feedback-success-banner'",
+          "Issue URL link has data-testid='feedback-issue-url' and href contains 'github.com/Aya-DevOpsTeam/self-service-infra/issues/'",
+          "No critical axe-core violations on the page"
+        ]
+      }
+    ]
+  },
+  "nfr": [
+    {
+      "id": "NFR-001",
+      "category": "performance",
+      "requirement": "POST /api/feedback p95 response time \u2264 5000ms",
+      "measurement": "Measured end-to-end from request received to response sent, inclusive of GitHub API call"
+    },
+    {
+      "id": "NFR-002",
+      "category": "reliability",
+      "requirement": "GitHub API failure \u2192 HTTP 503; timeout threshold 10 seconds",
+      "measurement": "createIssue wraps octokit call in Promise.race with 10 s AbortSignal/setTimeout"
+    },
+    {
+      "id": "NFR-003",
+      "category": "security",
+      "requirement": "Unauthenticated requests to POST /api/feedback must return HTTP 401",
+      "measurement": "requireAuth middleware applied before all handler logic"
+    },
+    {
+      "id": "NFR-004",
+      "category": "security",
+      "requirement": "No raw HTML in GitHub Issue body \u2014 all user-supplied fields sanitised before interpolation",
+      "measurement": "Automated test: submit payload with <script>alert(1)</script> \u2014 issue body must not contain the tag"
+    },
+    {
+      "id": "NFR-005",
+      "category": "observability",
+      "requirement": "correlationId must appear in 100% of log lines emitted during the /api/feedback request lifecycle",
+      "measurement": "Verify logger calls in route handler and githubService.createIssue include correlationId"
+    },
+    {
+      "id": "NFR-006",
+      "category": "accessibility",
+      "requirement": "Zero critical axe-core violations on FeedbackPage (WCAG 2.1 AA)",
+      "measurement": "Axe-core scan during e2e test; all form fields have associated labels; colour contrast compliant"
+    },
+    {
+      "id": "NFR-007",
+      "category": "reliability",
+      "requirement": "GitHub 429 response \u2192 HTTP 429 to client with retryAfter hint in seconds",
+      "measurement": "Unit test: mock octokit to return 429 with Retry-After header; assert response body contains retryAfter"
+    },
+    {
+      "id": "NFR-008",
+      "category": "code_quality",
+      "requirement": "npm run type-check must exit 0 after all frontend changes",
+      "measurement": "CI step: npx tsc --noEmit must succeed"
+    }
+  ],
+  "dependencies": [
+    {
+      "file": "srcV2/stores/navigation.ts",
+      "reason": "Must add 'feedback' to PageId union type before FeedbackPage.vue or SharedHeader.vue can reference it without TypeScript errors"
+    },
+    {
+      "file": "srcV2/stores/auth.ts",
+      "reason": "useAuth composable provides isAuthenticated (used in SharedHeader filter) and user object (email displayed on form and sent server-side via session)"
+    },
+    {
+      "file": "srcV2/composables/useAuth.ts",
+      "reason": "Composable consumed by FeedbackPage.vue and SharedHeader.vue to read authentication state"
+    },
+    {
+      "file": "srcV2/components/common/SharedHeader.vue",
+      "reason": "Modify allNavItems array to add Feedback nav entry \u2014 must be done before App.vue integration"
+    },
+    {
+      "file": "services/githubService.js",
+      "reason": "Add createIssue() method \u2014 must be implemented before routes/api.js feedback route can call it"
+    },
+    {
+      "file": "routes/api.js",
+      "reason": "Add POST /api/feedback endpoint using requireAuth, express-validator, and githubService.createIssue"
+    },
+    {
+      "file": "config.js",
+      "reason": "config.github.selfServiceRepo provides the target GitHub repo ('Aya-DevOpsTeam/self-service-infra') \u2014 no config change needed, only read"
+    },
+    {
+      "file": "GET /api/agents endpoint",
+      "reason": "FeedbackPage Agent Request sub-form populates agentType dropdown from this endpoint on mount; graceful fallback to free-text if endpoint is unavailable"
+    }
+  ]
+}

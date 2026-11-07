@@ -1,0 +1,169 @@
+{
+  "agents": [
+    {
+      "agentName": "topicsubscription",
+      "description": "Specialized agent for adding and managing Azure Event Grid and Service Bus topic subscriptions in Terragrunt infrastructure.",
+      "inputs": [
+        {
+          "name": "jiraTicket",
+          "required": true,
+          "description": "The Jira ticket number (e.g., DSO-1234) for reference in the PR and commits."
+        },
+        {
+          "name": "subscriptionType",
+          "required": true,
+          "description": "The type of subscription: 'eventGrid' or 'serviceBus'."
+        },
+        {
+          "name": "FunctionApplicationName",
+          "required": true,
+          "description": "The target service or Azure Function App hosting the target endpoint. (e.g., commonfxn, compliance). Agent will auto-discover if omitted."
+        },
+        {
+          "name": "environments",
+          "required": false,
+          "description": "List of environments to target. Defaults to all 10 standard environments (poc is always excluded)."
+        },
+        {
+          "name": "topicName",
+          "required": true,
+          "description": "The name of the topic or  servicebus to subscribe to. Will be normalized by the agent."
+        },
+        {
+          "name": "functionEndpointNames",
+          "required": true,
+          "description": "One or more function names to create subscriptions for (each gets a separate entry eg. HandleAutoJobSearchAlerts)."
+        },
+        {
+          "name": "eventTypes",
+          "required": false,
+          "description": "Specific Event Grid event types to filter for (e.g., Aya.Core.Events.Job.Created)."
+        },
+        {
+          "name": "subscriptionName",
+          "required": false,
+          "description": "Descriptive name for the subscription resource."
+        },
+        {
+          "name": "Comment",
+          "required": false,
+          "description": "additional instructions for agents only if needed (e.g., for special handling or edge cases)."
+        }
+      ]
+    },
+    {
+      "agentName": "storage",
+      "description": "Specialized agent for adding and managing Azure Storage Account resources (queues, containers/blobs, and tables) in Terragrunt infrastructure.",
+      "inputs": [
+        {
+          "name": "jiraTicket",
+          "required": true,
+          "description": "The Jira or CR ticket identifier (e.g., BIL-1234) for reference."
+        },
+        {
+          "name": "resourceType",
+          "required": true,
+          "description": "The type of resource to create: 'queue', 'container', or 'table'."
+        },
+        {
+          "name": "storageAccountNames",
+          "required": true,
+          "description": "List of specific storage account names to update (e.g., ayadevwussa01)."
+        },
+        {
+          "name": "resourceNames",
+          "required": true,
+          "description": "The name(s) of the queues, containers, or tables to add."
+        },
+        {
+          "name": "poisonQueue",
+          "required": false,
+          "description": "Boolean or specific name indicating if a '-poison' queue should be created (queues only)."
+        },
+        {
+          "name": "containerAccessType",
+          "required": false,
+          "description": "The access level for containers (defaults to 'private')."
+        },
+        {
+          "name": "Comments",
+          "required": false,
+          "description": "Additional instructions for agents only if needed (e.g., for special handling or edge cases)."
+        }
+      ]
+    },
+    {
+      "agentName": "servicebus",
+      "description": "Create or update Azure Service Bus topic, queue, or subscription in Terragrunt with namespace defaulting and namespace auto-create when missing.",
+      "inputs": [
+        {
+          "name": "service_type",
+          "required": true,
+          "type": "string",
+          "allowedValues": ["topic", "queue", "subscription"],
+          "description": "Type of Service Bus resource to create. topic, queue, subscription"
+        },
+        {
+          "name": "add_subscription",
+          "required": true,
+          "type": "boolean",
+          "default": false,
+          "allowedValues": ["true", "false"],
+          "description": "true/false. If true and service_type is topic or queue, also create a subscription to it after the resource is created.",
+          "showWhen": { "field": "service_type", "notEquals": "subscription" }
+        },
+        {
+          "name": "service_name",
+          "required": true,
+          "type": "string",
+          "description": "Name of the topic, queue, or subscription to create."
+        },
+        {
+          "name": "environments",
+          "required": false,
+          "type": "array",
+          "description": "Optional target environments (example: [\"int\", \"prod\"]). If omitted, apply to all environment folders under infrastructure/ayaApplications/ayaIntegrationServices/servicebus."
+        },
+        {
+          "name": "servicebus_namespace",
+          "required": false,
+          "type": "string",
+          "description": "Optional namespace override. If omitted, default to sbns-${local.alias}-${local.envName}-common-svs-1. If provided but missing, create namespace and matching local namespace id first, then use it."
+        },
+        {
+          "name": "subscription_parent_type",
+          "required": false,
+          "type": "string",
+          "allowedValues": ["topic", "queue"],
+          "description": "Parent resource type the subscription attaches to. Optional when add_subscription is true (defaults to service_type). Required when service_type is subscription.",
+          "showWhen": { "field": "service_type", "oneOf": ["subscription"] }
+        },
+        {
+          "name": "subscription_parent_name",
+          "required": false,
+          "type": "string",
+          "description": "Name of the parent topic or queue. Optional when add_subscription is true (defaults to service_name). Required when service_type is subscription.",
+          "showWhen": { "field": "service_type", "oneOf": ["subscription"] }
+        },
+        {
+          "name": "sql_filter",
+          "required": false,
+          "type": "string",
+          "description": "Optional SQL filter expression for subscription rules."
+        },
+        {
+          "name": "correlation_id",
+          "required": false,
+          "type": "string",
+          "description": "Optional correlation id value for correlation filter rules."
+        },
+        {
+          "name": "jira_ticket",
+          "required": false,
+          "type": "string",
+          "description": "Optional Jira reference (example: DSO-1234 or CR-1234)."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1273 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "2.1.0",
+  "lastUpdated": "2026-01-22",
+  "title": "Self-Service Infrastructure Catalog - Architecture Specification",
+  "description": "Technology-agnostic architecture specification focusing on WHAT the system does, not HOW it's implemented",
+  
+  "businessContext": {
+    "purpose": "Enable teams to provision, manage, and delete infrastructure through a self-service interface",
+    "scope": "Infrastructure lifecycle management from request to decommissioning",
+    "stakeholders": [
+      "Development Teams (infrastructure consumers)",
+      "DevOps Team (platform operators)",
+      "Security Team (compliance oversight)",
+      "Management (cost/governance tracking)"
+    ]
+  },
+
+  "coreDomains": {
+    "infrastructureManagement": {
+      "description": "Manage infrastructure lifecycle from provisioning to deletion",
+      "capabilities": [
+        {
+          "name": "Custom Infrastructure Provisioning",
+          "description": "Build infrastructure by composing reusable modules",
+          "inputs": ["projectName", "environment", "modules[]", "owner", "lifecycle", "approvalNumber"],
+          "outputs": ["provisioningWorkflow", "metadata", "correlationId"],
+          "businessRules": [
+            "Project names must be unique within environment",
+            "All provisioning requires approval number (JIRA/CR)",
+            "Project age must be specified for lifecycle management"
+          ]
+        },
+        {
+          "name": "Template-Based Provisioning",
+          "description": "Deploy pre-configured infrastructure from templates",
+          "inputs": ["templateName", "projectName", "environment", "owner", "approvalNumber"],
+          "outputs": ["provisioningWorkflow", "metadata", "correlationId"],
+          "businessRules": [
+            "Templates must exist in catalog before deployment",
+            "Template parameters are pre-validated"
+          ]
+        },
+        {
+          "name": "Infrastructure Deletion",
+          "description": "Safely remove infrastructure with approval workflow",
+          "inputs": ["projectName", "environment"],
+          "outputs": ["deletionWorkflow", "approvalRequest", "correlationId"],
+          "businessRules": [
+            "Deletion requires approval via pull request",
+            "Metadata is archived before deletion",
+            "All dependent resources must be identified"
+          ]
+        },
+        {
+          "name": "Environment Promotion",
+          "description": "Promote infrastructure configuration to higher environments",
+          "inputs": ["projectName", "sourceEnvironment", "targetEnvironment", "approvalNumber"],
+          "outputs": ["promotionWorkflow", "approvalRequest", "correlationId"],
+          "businessRules": [
+            "Only forward promotion allowed (dev→sand→prod)",
+            "Configuration drift detection before promotion",
+            "Requires explicit approval number"
+          ]
+        },
+        {
+          "name": "Infrastructure Discovery",
+          "description": "View all provisioned infrastructure and their status",
+          "inputs": ["filters?"],
+          "outputs": ["infrastructureList", "metadata[]"],
+          "businessRules": [
+            "Metadata sourced from single source of truth",
+            "Age calculated dynamically from creation date",
+            "Status reflects current state from metadata"
+          ]
+        }
+      ]
+    },
+
+    "containerApplicationDeployment": {
+      "description": "Deploy containerized applications to managed Kubernetes clusters",
+      "capabilities": [
+        {
+          "name": "AKS Application Deployment",
+          "description": "Deploy containerized application to Azure Kubernetes Service",
+          "inputs": ["appName", "namespace", "environment", "imageRepository", "imageTag", "replicas", "ports[]"],
+          "outputs": ["deploymentWorkflow", "kubernetesManifests", "correlationId"],
+          "businessRules": [
+            "Namespace must exist before deployment",
+            "Image must be in approved container registry",
+            "Resource limits are enforced"
+          ]
+        }
+      ]
+    },
+
+    "accessControlManagement": {
+      "description": "Manage access relationships between resources and identities",
+      "capabilities": [
+        {
+          "name": "RBAC Relationship Definition",
+          "description": "Define role-based access control between resources",
+          "inputs": ["sourceResource", "targetResource", "role", "scope"],
+          "outputs": ["rbacConfiguration", "workflowTrigger"],
+          "businessRules": [
+            "Resources must exist before relationship creation",
+            "Role assignments follow principle of least privilege",
+            "Cross-subscription relationships require additional approval",
+            "Roles loaded dynamically from external configuration via API endpoint",
+            "Role catalog served via GET /api/roles following module/template pattern",
+            "31+ roles across 10 scopes including App Configuration roles"
+          ]
+        }
+      ]
+    },
+
+    "workflowOrchestration": {
+      "description": "Coordinate infrastructure operations through automated workflows",
+      "capabilities": [
+        {
+          "name": "Workflow Triggering",
+          "description": "Initiate infrastructure workflow based on user action",
+          "inputs": ["workflowType", "parameters", "correlationId", "triggeredBy"],
+          "outputs": ["workflowId", "initialStatus"],
+          "businessRules": [
+            "Each workflow instance has unique correlation ID",
+            "Workflow parameters validated before triggering",
+            "Authentication verified before workflow start",
+            "Authenticated user email (triggeredBy) captured and passed to all workflow types for audit trail",
+            "triggeredBy included in Pull Request descriptions for compliance tracking",
+            "Safe fallback: triggeredBy = req.user?.email || owner || 'unknown' prevents workflow failures"
+          ]
+        },
+        {
+          "name": "Workflow Status Tracking",
+          "description": "Monitor progress of infrastructure workflows",
+          "inputs": ["correlationId"],
+          "outputs": ["currentStatus", "progressPercentage", "links", "messages"],
+          "businessRules": [
+            "Status queried via correlation ID",
+            "Multiple workflows can run concurrently",
+            "Status persisted for audit trail"
+          ]
+        },
+        {
+          "name": "Approval Management",
+          "description": "Handle human approvals in workflow lifecycle",
+          "inputs": ["workflowId", "approvalRequest"],
+          "outputs": ["approvalPullRequest", "reviewers[]"],
+          "businessRules": [
+            "High-risk operations require peer review",
+            "Approval requests tracked in version control",
+            "Auto-approval for low-risk operations"
+          ]
+        }
+      ]
+    },
+
+    "userInterface": {
+      "description": "Provide web-based interface for infrastructure operations",
+      "capabilities": [
+        {
+          "name": "Infrastructure Catalog Browsing",
+          "description": "Browse available modules and templates",
+          "inputs": ["filter?", "searchTerm?"],
+          "outputs": ["modules[]", "templates[]"],
+          "businessRules": [
+            "Only display modules user has permission to deploy",
+            "Template descriptions loaded from catalog"
+          ]
+        },
+        {
+          "name": "Form-Based Infrastructure Request",
+          "description": "Capture infrastructure requirements via structured forms",
+          "inputs": ["formType"],
+          "outputs": ["validatedRequest", "correlationId"],
+          "businessRules": [
+            "All required fields must be provided",
+            "Validation happens client-side and server-side",
+            "Unique correlation ID generated on submission"
+          ]
+        },
+        {
+          "name": "Real-Time Status Display",
+          "description": "Show workflow progress with polling mechanism",
+          "inputs": ["correlationId"],
+          "outputs": ["statusUI", "progressBar", "actionLinks"],
+          "businessRules": [
+            "Poll at regular intervals until completion",
+            "Display links to related resources (PRs, workflows)",
+            "Show errors with actionable guidance"
+          ]
+        },
+        {
+          "name": "Infrastructure Inventory View",
+          "description": "Display all provisioned infrastructure with management actions",
+          "inputs": ["filters?"],
+          "outputs": ["infrastructureTable", "actions[]"],
+          "businessRules": [
+            "Table sortable and filterable",
+            "Actions contextual based on infrastructure state",
+            "Age displayed in human-readable format"
+          ]
+        }
+      ]
+    }
+  },
+
+  "dataModels": {
+    "infrastructure": {
+      "description": "Core entity representing provisioned infrastructure",
+      "attributes": {
+        "projectName": {
+          "type": "string",
+          "required": true,
+          "constraints": ["maxLength: 8", "alphanumeric", "unique per environment"],
+          "description": "Short identifier for infrastructure"
+        },
+        "descriptiveName": {
+          "type": "string",
+          "required": true,
+          "constraints": ["maxLength: 100"],
+          "description": "Human-readable name for UI display"
+        },
+        "environment": {
+          "type": "enum",
+          "values": ["devsand", "sand", "prod"],
+          "required": true,
+          "description": "Target deployment environment"
+        },
+        "owner": {
+          "type": "string",
+          "required": true,
+          "description": "Email or identifier of infrastructure owner"
+        },
+        "modules": {
+          "type": "array",
+          "items": "string",
+          "required": true,
+          "description": "List of infrastructure modules included"
+        },
+        "lifecycle": {
+          "type": "enum",
+          "values": ["experimental", "development", "production"],
+          "required": true,
+          "description": "Lifecycle stage of infrastructure"
+        },
+        "projectAge": {
+          "type": "integer",
+          "required": true,
+          "constraints": ["min: 1"],
+          "description": "Expected lifetime in days"
+        },
+        "createdAt": {
+          "type": "datetime",
+          "required": true,
+          "description": "Timestamp of infrastructure creation"
+        },
+        "status": {
+          "type": "enum",
+          "values": ["provisioning", "active", "failed", "deleting", "deleted"],
+          "required": true,
+          "description": "Current operational status"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Additional key-value pairs for infrastructure context"
+        }
+      },
+      "relationships": {
+        "provisionedBy": "workflow",
+        "ownedBy": "user",
+        "definedBy": "template or moduleComposition"
+      }
+    },
+
+    "workflow": {
+      "description": "Represents an infrastructure operation execution",
+      "attributes": {
+        "correlationId": {
+          "type": "uuid",
+          "required": true,
+          "constraints": ["unique"],
+          "description": "Unique identifier for tracing workflow across systems"
+        },
+        "workflowType": {
+          "type": "enum",
+          "values": ["provision-custom", "provision-template", "delete", "promote", "deploy-aks", "label-change"],
+          "required": true,
+          "description": "Type of infrastructure operation"
+        },
+        "status": {
+          "type": "enum",
+          "values": ["queued", "in_progress", "waiting_approval", "completed", "failed"],
+          "required": true,
+          "description": "Current execution state"
+        },
+        "initiatedBy": {
+          "type": "string",
+          "required": true,
+          "description": "User or system that triggered workflow (captured from req.user.email for authenticated requests)"
+        },
+        "triggeredBy": {
+          "type": "string",
+          "required": true,
+          "description": "Authenticated user email passed to GitHub Actions for audit trail in PR descriptions"
+        },
+        "startTime": {
+          "type": "datetime",
+          "required": true,
+          "description": "When workflow execution began"
+        },
+        "completionTime": {
+          "type": "datetime",
+          "required": false,
+          "description": "When workflow finished (null if still running)"
+        },
+        "parameters": {
+          "type": "object",
+          "required": true,
+          "description": "Input parameters for workflow execution"
+        },
+        "links": {
+          "type": "object",
+          "properties": {
+            "pullRequest": "url",
+            "workflowRun": "url",
+            "logs": "url"
+          },
+          "description": "Related resources for workflow tracking"
+        }
+      }
+    },
+
+    "module": {
+      "description": "Reusable infrastructure component definition",
+      "attributes": {
+        "name": {
+          "type": "string",
+          "required": true,
+          "constraints": ["unique"],
+          "description": "Module identifier"
+        },
+        "displayName": {
+          "type": "string",
+          "required": true,
+          "description": "Human-readable module name"
+        },
+        "description": {
+          "type": "string",
+          "required": true,
+          "description": "What infrastructure this module provisions"
+        },
+        "category": {
+          "type": "enum",
+          "values": ["compute", "storage", "networking", "database", "security"],
+          "required": true,
+          "description": "Infrastructure category"
+        },
+        "parameters": {
+          "type": "array",
+          "items": "parameter",
+          "description": "Configurable inputs for module"
+        },
+        "outputs": {
+          "type": "array",
+          "items": "string",
+          "description": "Values provided by module after provisioning"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": "string",
+          "description": "Other modules required before this one"
+        }
+      }
+    },
+
+    "rbacRole": {
+      "description": "Role-based access control role definition",
+      "attributes": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "constraints": ["unique", "kebab-case"],
+          "description": "Role identifier"
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "Human-readable role name as displayed in Azure Portal"
+        },
+        "description": {
+          "type": "string",
+          "required": true,
+          "description": "What permissions this role grants"
+        },
+        "scope": {
+          "type": "enum",
+          "values": ["global", "eventgrid", "servicebus", "compute", "storage", "database", "security", "web", "ai", "appconfiguration"],
+          "required": true,
+          "description": "Azure resource scope category"
+        }
+      },
+      "examples": [
+        {
+          "id": "app-config-data-reader",
+          "name": "App Configuration Data Reader",
+          "description": "Read access to App Configuration data",
+          "scope": "appconfiguration"
+        },
+        {
+          "id": "app-config-data-owner",
+          "name": "App Configuration Data Owner",
+          "description": "Full access to App Configuration data",
+          "scope": "appconfiguration"
+        }
+      ],
+      "dataSource": {
+        "location": "data/roles.json",
+        "apiEndpoint": "GET /api/roles",
+        "pattern": "Dynamic loading via API (not static file serving)",
+        "totalRoles": "31+",
+        "totalScopes": 10
+      }
+    },
+
+    "template": {
+      "description": "Pre-configured infrastructure blueprint",
+      "attributes": {
+        "name": {
+          "type": "string",
+          "required": true,
+          "constraints": ["unique"],
+          "description": "Template identifier"
+        },
+        "displayName": {
+          "type": "string",
+          "required": true,
+          "description": "Human-readable template name"
+        },
+        "description": {
+          "type": "string",
+          "required": true,
+          "description": "Use case and infrastructure included"
+        },
+        "modules": {
+          "type": "array",
+          "items": "string",
+          "required": true,
+          "description": "Modules included in template"
+        },
+        "presetParameters": {
+          "type": "object",
+          "description": "Default parameter values for modules"
+        }
+      }
+    }
+  },
+
+  "interfaces": {
+    "description": "Technology-agnostic interface contracts",
+    
+    "apiResponseFormat": {
+      "description": "Standardized API response structure for all endpoints",
+      "contract": {
+        "success": {
+          "type": "boolean",
+          "required": true,
+          "description": "Indicates if request succeeded"
+        },
+        "data": {
+          "type": "any",
+          "required": false,
+          "description": "Response payload when success=true"
+        },
+        "error": {
+          "type": "string",
+          "required": false,
+          "description": "Error message when success=false"
+        },
+        "correlationId": {
+          "type": "uuid",
+          "required": true,
+          "description": "Request correlation ID for tracing"
+        },
+        "prNumber": {
+          "type": "integer",
+          "required": false,
+          "description": "GitHub PR number for workflow tracking (when applicable)"
+        }
+      },
+      "businessRules": [
+        "All API endpoints return this standardized format",
+        "Frontend components use centralized api.ts service with automatic token refresh",
+        "401 responses trigger automatic Entra ID token refresh",
+        "correlationId threaded through all logs, PRs, and status polling"
+      ]
+    },
+    
+    "userToSystem": {
+      "description": "How users interact with the system",
+      "channels": [
+        {
+          "name": "Web Browser Interface",
+          "protocol": "HTTPS",
+          "operations": [
+            "Browse infrastructure catalog",
+            "Submit infrastructure requests",
+            "Monitor workflow status",
+            "View provisioned infrastructure",
+            "Manage infrastructure lifecycle"
+          ]
+        }
+      ]
+    },
+
+    "systemToVersionControl": {
+      "description": "How system interacts with version control for GitOps",
+      "channels": [
+        {
+          "name": "Metadata Storage",
+          "operations": [
+            "Read infrastructure metadata",
+            "Write new metadata on provisioning",
+            "Update metadata on changes",
+            "Archive metadata on deletion"
+          ],
+          "dataFormat": "JSON files in structured directory"
+        },
+        {
+          "name": "Workflow Triggering",
+          "operations": [
+            "Trigger infrastructure workflow",
+            "Query workflow status",
+            "Retrieve workflow artifacts"
+          ],
+          "authentication": "Application-level credentials"
+        }
+      ]
+    },
+
+    "systemToCloudProvider": {
+      "description": "How system provisions infrastructure",
+      "channels": [
+        {
+          "name": "Infrastructure Provisioning",
+          "operations": [
+            "Create cloud resources",
+            "Update resource configuration",
+            "Delete resources",
+            "Query resource state"
+          ],
+          "mechanism": "Declarative infrastructure-as-code via workflow engine"
+        }
+      ]
+    },
+
+    "systemToUserNotification": {
+      "description": "How system communicates workflow progress",
+      "channels": [
+        {
+          "name": "In-Application Status",
+          "mechanism": "Client-side polling of workflow status endpoint",
+          "frequency": "Configurable interval (default: 10 seconds)",
+          "operations": [
+            "Retrieve current workflow status",
+            "Display progress percentage",
+            "Show workflow links",
+            "Display error messages"
+          ]
+        }
+      ]
+    }
+  },
+
+  "architecturalDecisions": {
+    "description": "Key design decisions independent of technology choices",
+    
+    "AD001_GitOpsAsSourceOfTruth": {
+      "decision": "Use version control repository as primary data store for metadata",
+      "rationale": [
+        "Built-in audit trail via git history",
+        "No separate database infrastructure to manage",
+        "Metadata versioned alongside infrastructure code",
+        "Simplified disaster recovery"
+      ],
+      "tradeoffs": {
+        "pros": [
+          "No database operational overhead",
+          "Automatic versioning and audit",
+          "Familiar developer workflow"
+        ],
+        "cons": [
+          "Limited query capabilities vs traditional database",
+          "File-based locking on concurrent writes",
+          "Read performance scales with repository size"
+        ]
+      },
+      "constraints": [
+        "Metadata must be JSON-serializable",
+        "No complex relational queries",
+        "Write operations limited by git commit frequency"
+      ]
+    },
+
+    "AD002_StatelessBackend": {
+      "decision": "Backend API servers maintain no session state",
+      "rationale": [
+        "Enables horizontal scaling without sticky sessions",
+        "Simplifies deployment and rollback",
+        "Fault tolerance via stateless restarts",
+        "Cloud-native architecture pattern"
+      ],
+      "tradeoffs": {
+        "pros": [
+          "Horizontal scalability",
+          "Simplified load balancing",
+          "No session replication complexity"
+        ],
+        "cons": [
+          "Workflow status requires external storage",
+          "Client must include context (correlation ID) in each request",
+          "No server-side caching of user state"
+        ]
+      },
+      "constraints": [
+        "All workflow tracking via correlation IDs",
+        "Client responsible for maintaining UI state",
+        "Authentication via stateless tokens"
+      ]
+    },
+
+    "AD003_ClientSidePolling": {
+      "decision": "Client polls server for workflow status rather than webhooks or server-push",
+      "rationale": [
+        "Simpler implementation without websocket infrastructure",
+        "No persistent connection management",
+        "Works across various network topologies",
+        "No webhook endpoint security concerns"
+      ],
+      "tradeoffs": {
+        "pros": [
+          "Simple request-response model",
+          "No websocket infrastructure",
+          "Client controls polling frequency"
+        ],
+        "cons": [
+          "Increased network traffic from polling",
+          "Status updates delayed by polling interval",
+          "Unnecessary requests when status unchanged"
+        ]
+      },
+      "constraints": [
+        "Polling interval configurable to balance responsiveness vs traffic",
+        "Backend must efficiently serve repeated status queries",
+        "Client must handle network failures gracefully"
+      ]
+    },
+
+    "AD004_CorrelationIDTracking": {
+      "decision": "Unique correlation ID tracks each operation across all system layers",
+      "rationale": [
+        "End-to-end traceability for debugging",
+        "Link user actions to infrastructure changes",
+        "Support concurrent operations by same user",
+        "Audit trail from UI to infrastructure"
+      ],
+      "tradeoffs": {
+        "pros": [
+          "Complete operation traceability",
+          "Simplified debugging and support",
+          "Supports concurrent workflows"
+        ],
+        "cons": [
+          "Must propagate through all system layers",
+          "Requires discipline in implementation",
+          "Additional metadata in logs/storage"
+        ]
+      },
+      "constraints": [
+        "Generated on first user interaction",
+        "Passed in all subsequent API calls",
+        "Stored with workflow metadata",
+        "Included in all log messages"
+      ]
+    },
+
+    "AD005_ApprovalViaVersionControl": {
+      "decision": "High-risk operations require approval via pull request review",
+      "rationale": [
+        "Peer review before destructive operations",
+        "Audit trail of who approved what",
+        "Familiar workflow for technical teams",
+        "Version control of approval decision"
+      ],
+      "tradeoffs": {
+        "pros": [
+          "Built-in review and approval workflow",
+          "Permanent audit record",
+          "No separate approval system"
+        ],
+        "cons": [
+          "Slower approval cycle than dedicated system",
+          "Requires reviewers familiar with version control",
+          "Cannot enforce approval by specific roles"
+        ]
+      },
+      "constraints": [
+        "PR must include operation details in description",
+        "Approver must have repository write access",
+        "PR merge triggers actual operation"
+      ]
+    },
+
+    "AD006_DeclarativeInfrastructure": {
+      "decision": "Infrastructure defined declaratively, not imperatively",
+      "rationale": [
+        "Idempotent operations",
+        "Desired state vs procedures",
+        "Drift detection capability",
+        "Infrastructure as code best practice"
+      ],
+      "tradeoffs": {
+        "pros": [
+          "Clear understanding of what exists",
+          "Safe to re-run operations",
+          "Drift detection built-in"
+        ],
+        "cons": [
+          "Learning curve for declarative thinking",
+          "Some operations awkward in declarative model",
+          "State management complexity"
+        ]
+      },
+      "constraints": [
+        "All infrastructure must be code-defined",
+        "State tracked in version control or state backend",
+        "Manual changes detected as drift"
+      ]
+    },
+
+    "AD007_MultiApplicationAuthentication": {
+      "decision": "Separate authentication contexts for different operation types",
+      "rationale": [
+        "Principle of least privilege",
+        "Isolate failure domains",
+        "Different permission requirements",
+        "Security through separation"
+      ],
+      "tradeoffs": {
+        "pros": [
+          "Granular permission control",
+          "Limited blast radius of credential compromise",
+          "Clear separation of concerns"
+        ],
+        "cons": [
+          "Multiple credential sets to manage",
+          "Increased configuration complexity",
+          "More moving parts to monitor"
+        ]
+      },
+      "constraints": [
+        "Each context requires separate credential configuration",
+        "Must handle failure of individual auth contexts",
+        "Different contexts may have different rate limits"
+      ]
+    }
+  },
+
+  "dataFlows": {
+    "description": "Key data flows through the system (technology-agnostic)",
+    
+    "provisionInfrastructure": {
+      "trigger": "User submits custom infrastructure or template request",
+      "steps": [
+        {
+          "step": 1,
+          "actor": "User",
+          "action": "Submits form with infrastructure requirements",
+          "data": "projectName, environment, modules/template, owner, lifecycle, approvalNumber"
+        },
+        {
+          "step": 2,
+          "actor": "System",
+          "action": "Validates input parameters",
+          "validation": ["Uniqueness", "Format", "Authorization"]
+        },
+        {
+          "step": 3,
+          "actor": "System",
+          "action": "Generates unique correlation ID",
+          "output": "correlationId"
+        },
+        {
+          "step": 4,
+          "actor": "System",
+          "action": "Triggers infrastructure workflow",
+          "data": "All request parameters + correlationId"
+        },
+        {
+          "step": 5,
+          "actor": "System",
+          "action": "Returns workflow reference to user",
+          "output": "correlationId, workflow URL, initial status"
+        },
+        {
+          "step": 6,
+          "actor": "Workflow Engine",
+          "action": "Executes infrastructure provisioning",
+          "substeps": [
+            "Generate infrastructure code from modules/template",
+            "Run validation checks",
+            "Apply infrastructure changes",
+            "Create metadata file",
+            "Create pull request with code and metadata (after workflow execution)"
+          ],
+          "note": "GitHub Actions workflow runs FIRST (60% progress), then creates PR (90% progress)"
+        },
+        {
+          "step": 7,
+          "actor": "User",
+          "action": "Polls for workflow status",
+          "frequency": "Every 10 seconds",
+          "until": "status is 'completed' or 'failed'"
+        },
+        {
+          "step": 8,
+          "actor": "System",
+          "action": "Updates workflow status based on execution state",
+          "output": "status, percentage, links, messages"
+        }
+      ],
+      "successOutcome": "Infrastructure provisioned, metadata stored, user notified",
+      "failureOutcome": "Error message shown to user, rollback initiated if needed"
+    },
+
+    "deleteInfrastructure": {
+      "trigger": "User requests infrastructure deletion",
+      "steps": [
+        {
+          "step": 1,
+          "actor": "User",
+          "action": "Selects infrastructure to delete from inventory",
+          "data": "projectName, environment"
+        },
+        {
+          "step": 2,
+          "actor": "System",
+          "action": "Displays confirmation dialog with impact assessment",
+          "validation": ["User confirms understanding of deletion"]
+        },
+        {
+          "step": 3,
+          "actor": "System",
+          "action": "Creates deletion pull request",
+          "content": "Infrastructure removal code + metadata archive"
+        },
+        {
+          "step": 4,
+          "actor": "Approver",
+          "action": "Reviews pull request and approves/rejects",
+          "requirement": "Human review for destructive operation"
+        },
+        {
+          "step": 5,
+          "actor": "Workflow Engine",
+          "action": "Executes deletion on PR merge",
+          "substeps": [
+            "Archive metadata",
+            "Destroy infrastructure resources",
+            "Update status to deleted"
+          ]
+        }
+      ],
+      "successOutcome": "Infrastructure deleted, metadata archived, audit trail created",
+      "failureOutcome": "Resources preserved, error logged, user notified"
+    },
+
+    "statusTracking": {
+      "trigger": "User initiates any infrastructure operation",
+      "steps": [
+        {
+          "step": 1,
+          "actor": "System",
+          "action": "Generates correlation ID at operation start",
+          "persistence": "Correlation ID stored with workflow metadata"
+        },
+        {
+          "step": 2,
+          "actor": "User Interface",
+          "action": "Begins polling status endpoint with correlation ID",
+          "frequency": "Every 10 seconds"
+        },
+        {
+          "step": 3,
+          "actor": "System",
+          "action": "Queries workflow engine for status",
+          "lookup": "Find workflow by correlation ID"
+        },
+        {
+          "step": 4,
+          "actor": "System",
+          "action": "Aggregates status information",
+          "data": "Current state, progress %, messages, links"
+        },
+        {
+          "step": 5,
+          "actor": "User Interface",
+          "action": "Updates display with current status",
+          "display": "Progress bar, status text, action links"
+        },
+        {
+          "step": 6,
+          "actor": "User Interface",
+          "action": "Continues polling until terminal state",
+          "terminalStates": ["completed", "failed"]
+        }
+      ],
+      "successOutcome": "User sees real-time progress of operation",
+      "failureOutcome": "Status unavailable message, retry mechanism engaged"
+    }
+  },
+
+  "qualityAttributes": {
+    "description": "Non-functional requirements and system qualities",
+    
+    "scalability": {
+      "requirement": "Support increasing number of infrastructure requests",
+      "approach": "Stateless architecture allows horizontal scaling",
+      "metrics": [
+        "Concurrent workflows: 50+",
+        "API requests per second: 100+",
+        "Infrastructure projects: 1000+"
+      ],
+      "constraints": [
+        "Version control system rate limits",
+        "Workflow engine concurrency limits"
+      ]
+    },
+
+    "reliability": {
+      "requirement": "High availability for infrastructure operations",
+      "approach": "Idempotent operations, retry logic, graceful degradation",
+      "metrics": [
+        "Uptime target: 99.5%",
+        "Mean time to recovery: < 1 hour",
+        "Data loss tolerance: Zero for metadata"
+      ],
+      "mechanisms": [
+        "Declarative infrastructure allows retry",
+        "Metadata versioned in git prevents loss",
+        "Failed workflows can be manually restarted"
+      ]
+    },
+
+    "security": {
+      "requirement": "Secure infrastructure operations with audit trail",
+      "approach": "Least privilege, approval workflows, comprehensive logging",
+      "controls": [
+        "Authentication required for all operations",
+        "Approval for destructive operations",
+        "Correlation ID tracks all actions",
+        "Credentials rotated regularly",
+        "Sensitive data never logged"
+      ]
+    },
+
+    "usability": {
+      "requirement": "Self-service interface accessible to technical teams",
+      "approach": "Form-based interaction, real-time feedback, clear error messages",
+      "goals": [
+        "Infrastructure provisioned in < 5 minutes (automated)",
+        "Clear status updates throughout process",
+        "Helpful error messages with remediation steps"
+      ]
+    },
+
+    "maintainability": {
+      "requirement": "System easy to modify and extend",
+      "approach": "Modular architecture, clear separation of concerns, comprehensive documentation",
+      "practices": [
+        "Domain-driven component organization",
+        "Technology choices documented with rationale",
+        "API contracts versioned and stable",
+        "Correlation IDs simplify debugging"
+      ]
+    },
+
+    "auditability": {
+      "requirement": "Complete trail of who did what when",
+      "approach": "All changes tracked in version control, correlation IDs in logs",
+      "capabilities": [
+        "Track request from UI to infrastructure change",
+        "Associate infrastructure with requester",
+        "View approval history for deletions/promotions",
+        "Query logs by correlation ID"
+      ]
+    }
+  },
+
+  "deploymentViews": {
+    "description": "How system is deployed (conceptual, not technology-specific)",
+    
+    "logicalDeployment": {
+      "tiers": [
+        {
+          "tier": "Presentation",
+          "responsibility": "User interface for infrastructure operations",
+          "scalability": "Served from static content distribution",
+          "deployment": "Web browser execution"
+        },
+        {
+          "tier": "Application",
+          "responsibility": "Business logic and orchestration",
+          "scalability": "Horizontally scalable, stateless",
+          "deployment": "Container-based, multiple replicas"
+        },
+        {
+          "tier": "Integration",
+          "responsibility": "Interface with external systems",
+          "scalability": "Scaled with application tier",
+          "deployment": "Integrated within application containers"
+        },
+        {
+          "tier": "Workflow Execution",
+          "responsibility": "Execute infrastructure operations",
+          "scalability": "Managed by workflow engine platform",
+          "deployment": "Platform-managed execution environment"
+        },
+        {
+          "tier": "Data",
+          "responsibility": "Metadata persistence",
+          "scalability": "Version control platform handles scaling",
+          "deployment": "Version control repository"
+        }
+      ]
+    }
+  },
+
+  "integrationPoints": {
+    "description": "External systems this architecture integrates with",
+    
+    "versionControl": {
+      "purpose": ["Store metadata", "Trigger workflows", "Approval workflows"],
+      "dataExchange": ["JSON files", "Workflow definitions", "Pull requests"],
+      "dependencies": ["Metadata reads", "Workflow triggers", "PR approvals"]
+    },
+
+    "cloudProvider": {
+      "purpose": ["Infrastructure provisioning", "Container orchestration"],
+      "dataExchange": ["Infrastructure state", "Deployment manifests"],
+      "dependencies": ["Resource creation", "Status queries"]
+    },
+
+    "containerRegistry": {
+      "purpose": ["Store container images for deployment"],
+      "dataExchange": ["Image pulls during deployment"],
+      "dependencies": ["Image availability for AKS deployments"]
+    }
+  },
+
+  "extensionPoints": {
+    "description": "Areas designed for future extension without architectural change",
+    
+    "additionalModules": {
+      "description": "Add new infrastructure modules to catalog",
+      "mechanism": "Register module metadata, module remains black box to system",
+      "impact": "No code changes required"
+    },
+
+    "additionalTemplates": {
+      "description": "Create new infrastructure templates",
+      "mechanism": "Define template as module composition",
+      "impact": "No code changes required"
+    },
+
+    "alternativeAuthentication": {
+      "description": "Support additional identity providers",
+      "mechanism": "Authentication interface abstracts provider details",
+      "impact": "Add new authentication adapter"
+    },
+
+    "additionalEnvironments": {
+      "description": "Deploy to new environments",
+      "mechanism": "Environment configuration, no architecture change",
+      "impact": "Configuration update only"
+    },
+
+    "notificationChannels": {
+      "description": "Add email, Slack, Teams notifications",
+      "mechanism": "Notification adapter pattern",
+      "impact": "Implement new notification adapter"
+    }
+  },
+
+  "technologyConstraints": {
+    "description": "Technology-agnostic constraints that any implementation must satisfy",
+    
+    "mustSupport": [
+      "HTTPS for client-server communication",
+      "JSON for data serialization",
+      "OAuth/Application authentication for version control API",
+      "Container packaging for application deployment",
+      "Declarative infrastructure-as-code",
+      "Git as version control system"
+    ],
+
+    "mustNotRequire": [
+      "Relational database management system",
+      "Message queue for workflow orchestration",
+      "Websocket for real-time updates",
+      "Server-side session storage"
+    ]
+  },
+
+  "migrationConsiderations": {
+    "description": "Guidance for technology stack changes without architectural redesign",
+    
+    "srcV2Implementation": {
+      "description": "Vue 3 srcV2 implementation captures all architectural patterns with modern technology",
+      "keyPatterns": {
+        "auditTrail": {
+          "pattern": "Authenticated user email (triggeredBy) passed to all workflows",
+          "implementation": "req.user?.email || owner || 'unknown'",
+          "coverage": "All 6 workflow types: custom, template, delete, promote, aks, label",
+          "visibility": "Included in GitHub PR descriptions for compliance"
+        },
+        "dynamicConfiguration": {
+          "pattern": "External JSON configs (modules, templates, roles, agents) loaded via API",
+          "endpoints": [
+            "GET /api/modules",
+            "GET /api/templates", 
+            "GET /api/roles (App Configuration roles added)",
+            "GET /api/agents"
+          ],
+          "rationale": "True dynamic loading enables external management without code changes"
+        },
+        "apiStandardization": {
+          "pattern": "All endpoints return {success, data, error, correlationId}",
+          "clientImplementation": "Centralized api.ts with axios interceptors",
+          "errorHandling": "401 triggers automatic token refresh"
+        },
+        "workflowSequence": {
+          "pattern": "GitHub Actions → Pull Request (not PR → Actions)",
+          "uiProgress": "60% Actions running, 90% PR created, 100% complete",
+          "components": ["DeploymentPage.vue", "StatusModal.vue"]
+        },
+        "typesSafety": {
+          "pattern": "Full TypeScript coverage in srcV2",
+          "types": "srcV2/types/infrastructure.types.ts",
+          "validation": "npm run type-check"
+        }
+      }
+    },
+    
+    "frontendFrameworkMigration": {
+      "scenario": "Replace vanilla JavaScript with modern framework (React, Vue, Angular)",
+      "status": "IMPLEMENTED - Vue 3 with TypeScript in srcV2/",
+      "architecturalStability": [
+        "Data models remain unchanged",
+        "API contracts unchanged",
+        "Workflow patterns unchanged",
+        "Polling mechanism replaced with Vue composables (useWorkflowPolling)"
+      ],
+      "implementation": {
+        "framework": "Vue 3 with Composition API",
+        "language": "TypeScript 5.x",
+        "buildTool": "Vite 7.3.1",
+        "stateManagement": "Pinia stores",
+        "routing": "Custom navigation via stores/navigation.ts (future: Vue Router)",
+        "testing": "Vitest with @vue/test-utils",
+        "pages": [
+          "CustomInfrastructurePage",
+          "TemplateDeployPage", 
+          "AKSDeployPage",
+          "InstalledAppsPage",
+          "ExistingInfraChangePage",
+          "DocsPage",
+          "FeaturePreviewPage"
+        ],
+        "components": {
+          "infrastructure": [
+            "DeploymentPage",
+            "ModuleSelector",
+            "ProjectInfoForm",
+            "ResourceForm",
+            "ReviewPage",
+            "RbacManager"
+          ],
+          "modals": ["StatusModal", "ConfirmModal"],
+          "common": ["LoginButton"]
+        },
+        "composables": [
+          "useApi - Centralized API client with automatic auth token refresh",
+          "useAuth - Authentication state management",
+          "useWorkflowPolling - Status polling with cleanup",
+          "useNotification - User notifications"
+        ]
+      },
+      "mappingGuidance": {
+        "vanillaPages": "Migrated to Vue page components with reactive state",
+        "vanillaModals": "Migrated to Vue modal components",
+        "vanillaPolling": "Replaced with useWorkflowPolling composable",
+        "vanillaFormValidation": "Replaced with reactive form validation in components"
+      },
+      "preservedConcepts": [
+        "Correlation ID tracking",
+        "Status polling pattern (now via composables)",
+        "Form-based user input",
+        "Table-based infrastructure display",
+        "Modal-based workflow status"
+      ],
+      "developmentModes": {
+        "hotReload": "npm run dev:client (Vite on :5173, proxies /api to Express :3000)",
+        "production": "npm run build:client → USE_VUE=true npm start"
+      }
+    },
+
+    "backendLanguageMigration": {
+      "scenario": "Replace Node.js with Go, Python, Java, etc.",
+      "architecturalStability": [
+        "RESTful API contracts unchanged",
+        "Data models remain the same",
+        "Integration patterns unchanged",
+        "Workflow triggering mechanism unchanged"
+      ],
+      "requirementsForNewImplementation": [
+        "HTTP server with JSON support",
+        "Version control API client library",
+        "UUID generation for correlation IDs",
+        "Logging framework with structured output"
+      ]
+    },
+
+    "authenticationMigration": {
+      "scenario": "Add Entra ID (Azure AD) authentication",
+      "status": "IMPLEMENTED in srcV2",
+      "architecturalStability": [
+        "Stateless backend maintained",
+        "API contracts add auth header support",
+        "All operations still tracked via correlation ID"
+      ],
+      "implementation": [
+        "JWT Bearer tokens validated via middleware/auth.js",
+        "User identity extracted from req.user.email for all authenticated requests",
+        "User email captured as triggeredBy and passed to all 6 workflow types",
+        "Safe fallback pattern: req.user?.email || owner || 'unknown'",
+        "Centralized API client (srcV2/services/api.ts) with automatic 401 token refresh",
+        "Protected endpoints use requireAuth middleware",
+        "Public endpoints: GET /api/roles, GET /api/modules, GET /api/templates, GET /api/agents"
+      ],
+      "workflowIntegration": [
+        "All workflows receive triggeredBy parameter in inputs",
+        "GitHub Actions include triggeredBy in PR descriptions for audit trail",
+        "Workflow types: provision-custom, provision-template, delete, promote, deploy-aks, label-change"
+      ]
+    },
+
+    "storageMigration": {
+      "scenario": "Introduce database for metadata (if needed)",
+      "architecturalStability": [
+        "Data models unchanged",
+        "API contracts unchanged",
+        "Workflow patterns unchanged"
+      ],
+      "changes": [
+        "Replace file-based storage with database queries",
+        "Maintain same data structure",
+        "Keep git as audit trail, database as query optimization"
+      ]
+    }
+  }
+}

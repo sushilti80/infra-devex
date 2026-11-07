@@ -1,0 +1,85 @@
+{
+  "feature": "edit-existing-infra-ui-path",
+  "scan_date": "2026-06-03",
+  "scanner": "npm-audit + manual code review",
+  "scanner_notes": "wizcli binary present at /opt/homebrew/bin/wizcli but WIZ_CLIENT_ID / WIZ_CLIENT_SECRET not set in environment. Fallback: npm audit for dependency CVEs + manual OWASP-Top-10 review of feature diff. To run full Wiz scan: wizcli scan dir srcV2/ --stdout json --json-output-file docs/security/wiz-edit-existing-infra-ui-path-wiz.json --no-publish (requires WIZ_CLIENT_ID + WIZ_CLIENT_SECRET).",
+  "target": "srcV2/",
+  "environment": "sand",
+  "severity_gate": "critical",
+  "gate": "pass",
+  "gate_rationale": "Zero critical findings introduced by this feature. Two pre-existing npm critical advisories (vitest GHSA-5xrq-8626-4rwp) are devDependencies absent from the production Docker image (Stage 2 uses npm ci --only=production). These are carryover findings tracked in wiz-service-catalog-prefill-report.json.",
+  "critical_findings": 0,
+  "high_findings": 0,
+  "medium_findings": 0,
+  "findings": [],
+  "dependency_scan": {
+    "tool": "npm audit",
+    "scope": "all dependencies",
+    "critical": 2,
+    "high": 0,
+    "moderate": 0,
+    "low": 0,
+    "feature_introduced_criticals": 0,
+    "pre_existing_criticals": [
+      {
+        "package": "vitest",
+        "advisory": "GHSA-5xrq-8626-4rwp",
+        "title": "When Vitest UI server is listening, arbitrary file can be read and executed",
+        "severity": "critical",
+        "scope": "devDependencies only",
+        "in_production_image": false,
+        "rationale": "Dockerfile Stage 2 uses 'npm ci --only=production'; vitest absent from production container",
+        "introduced_by_this_feature": false,
+        "fix": "Upgrade vitest >= 4.1.8 (semver-major) — tracked separately"
+      },
+      {
+        "package": "@vitest/coverage-v8",
+        "advisory": "GHSA-5xrq-8626-4rwp (transitive)",
+        "title": "Transitive critical via vitest",
+        "severity": "critical",
+        "scope": "devDependencies only",
+        "in_production_image": false,
+        "introduced_by_this_feature": false,
+        "fix": "Resolved when vitest is upgraded"
+      }
+    ]
+  },
+  "code_review": {
+    "method": "Manual OWASP-Top-10 review of feature diff (InstalledAppsPage.vue, navigation.ts, CustomInfrastructurePage.vue, AppSelector.vue, routes/api.js)",
+    "xss": {
+      "result": "PASS",
+      "notes": "No v-html directives in new code. All data bound via Vue template auto-escaping."
+    },
+    "injection": {
+      "result": "PASS",
+      "notes": "appName/environment validated client-side with /^[a-zA-Z0-9_-]{1,64}$/ regex in CustomInfrastructurePage.vue (line 660-661) before API call. Backend enforces tighter /^[a-zA-Z0-9]{1,8}$/ on appName and environment allowlist from data/environments.json."
+    },
+    "broken_auth": {
+      "result": "PASS",
+      "notes": "GET /api/app-metadata/:appName/:env has requireAuth middleware. No auth bypass introduced."
+    },
+    "sensitive_data_exposure": {
+      "result": "PASS",
+      "notes": "No secrets or PII introduced. prefillContext only holds appName + environment (non-sensitive). Context cleared immediately after consumption (line 664, 672)."
+    },
+    "hardcoded_secrets": {
+      "result": "PASS",
+      "notes": "No hardcoded credentials in new files. VITE_ENABLE_CATALOG_PREFILL is a build-time env var (VITE_ prefix), not set in Dockerfile."
+    },
+    "context_leak": {
+      "result": "PASS",
+      "notes": "prefillContext.value set to null on both success and failure paths in onMounted (FR-004 / NFR-004). navigateToPage() without context sets prefillContext.value = null (navigation.ts line 29)."
+    }
+  },
+  "dockerfile_review": {
+    "vite_env_vars_hardcoded": false,
+    "vite_enable_catalog_prefill_in_dockerfile": false,
+    "srcV2_included_in_build": true,
+    "dist_copied_to_release_stage": true,
+    "non_root_user": true,
+    "notes": "COPY . . in Stage 1 captures srcV2/. npm run build:client produces dist/. COPY --from=frontend-builder /app/dist ./dist in Stage 2. VITE_ENABLE_CATALOG_PREFILL must be injected via CI build-arg at image build time (e.g., --build-arg VITE_ENABLE_CATALOG_PREFILL=true).",
+    "result": "PASS"
+  },
+  "remediation_plan": null,
+  "next_action": "Run full wizcli scan in CI pipeline with WIZ_CLIENT_ID + WIZ_CLIENT_SECRET set as GitHub Actions secrets before promoting to prod. Upgrade vitest >= 4.1.8 to resolve pre-existing devDependency criticals."
+}

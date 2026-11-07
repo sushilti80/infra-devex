@@ -1,0 +1,371 @@
+{
+  "info": {
+    "name": "Self-Service Infrastructure - Auth Testing",
+    "description": "Postman collection for testing Entra ID JWT authentication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "YOUR_JWT_TOKEN_HERE",
+      "type": "string"
+    },
+    {
+      "key": "tenantId",
+      "value": "c32ce235-4d9a-4296-a647-a9edb2912ac9",
+      "type": "string"
+    },
+    {
+      "key": "clientId",
+      "value": "ee62dfaa-bd92-4f1d-888d-16e7e81f8e18",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Phase A - Baseline Tests (No Auth)",
+      "item": [
+        {
+          "name": "Get Templates (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "templates"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Modules (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/modules",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "modules"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Health Check (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Phase C - Authentication Tests",
+      "item": [
+        {
+          "name": "Test 1 - No Token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Error message mentions token', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.error.toLowerCase()).to.include('token');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "templates"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test 2 - Invalid Token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Error indicates invalid token', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.error.toLowerCase()).to.match(/invalid|malformed|signature/);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid.token.here",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "templates"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test 3 - Valid Token (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is an array', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Response time is acceptable', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "templates"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test 3b - Installed Apps (Protected)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success flag', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Response includes correlation ID', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.correlationId).to.be.a('string');",
+                  "    pm.environment.set('lastCorrelationId', response.correlationId);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/installed-apps",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "installed-apps"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Protected Operations",
+      "item": [
+        {
+          "name": "Create Custom Infrastructure",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response includes correlation ID', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.correlationId).to.be.a('string');",
+                  "    pm.environment.set('workflowCorrelationId', response.correlationId);",
+                  "});",
+                  "",
+                  "pm.test('Response includes workflow URL', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.url).to.include('github.com');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectName\": \"testproj\",\n  \"project_desc\": \"Test Project for Auth\",\n  \"environment\": \"sand\",\n  \"modules\": [\"virtual-network\", \"storage-account\"],\n  \"owner\": \"test-user\",\n  \"crNumber\": \"TEST-123\",\n  \"projectAge\": 30,\n  \"correlationId\": \"cid-{{$timestamp}}-{{$randomInt}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/custom",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "custom"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check Workflow Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response includes workflow status', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.status).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/status/{{workflowCorrelationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "status", "{{workflowCorrelationId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Get Azure AD Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "grant_type",
+              "value": "client_credentials",
+              "type": "text"
+            },
+            {
+              "key": "client_id",
+              "value": "{{clientId}}",
+              "type": "text"
+            },
+            {
+              "key": "client_secret",
+              "value": "YOUR_CLIENT_SECRET_HERE",
+              "type": "text"
+            },
+            {
+              "key": "scope",
+              "value": "{{clientId}}/.default",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "https://login.microsoftonline.com/{{tenantId}}/oauth2/v2.0/token",
+          "protocol": "https",
+          "host": ["login", "microsoftonline", "com"],
+          "path": ["{{tenantId}}", "oauth2", "v2.0", "token"]
+        }
+      },
+      "response": []
+    }
+  ]
+}

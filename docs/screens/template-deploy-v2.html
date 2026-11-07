@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Self Service Catalog - Deploy Template</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2463eb",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>body {
+    font-family: "Inter", sans-serif
+    }
+.custom-select-arrow {
+    appearance: none;
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuCtAM4nlXaqjXhy9JuBaTT2jjKyTPyoyeN3_VxNRqbUPfg0CgzFLNj86xpEhiGD8CG2iqHaAPLFXglYFtyFovgfyiB-ZAHP0uf1R1G-Bo2odHRhHHJVMULImvP5IuPIawjpP-NKJk2m-9-oVSuNa2OjB9As1ffiFG7-zJRq1B4NnI6Gn2zsZgVddPlOTiMfH-6K3akCEQaNqy7IIXMzkTvnlPmKOKIrDJKCc700nljlAonJrLypWcTT6ZzwhDkv4Ri48M41wdSnjgS0);
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1.5rem
+    }</style>
+</head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Sticky Top Bar -->
+<header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200 dark:border-gray-800 bg-white dark:bg-background-dark px-10 py-3">
+<div class="flex items-center gap-4 text-[#111318] dark:text-white">
+<div class="text-primary">
+<span class="material-symbols-outlined text-3xl">deployed_code</span>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">Self Service Catalog</h2>
+</div>
+<div class="flex flex-1 justify-end gap-8">
+<nav class="flex items-center gap-9">
+<a class="text-gray-500 hover:text-primary text-sm font-medium transition-colors" href="#">Dashboard</a>
+<a class="text-primary text-sm font-bold border-b-2 border-primary py-1" href="#">Templates</a>
+<a class="text-gray-500 hover:text-primary text-sm font-medium transition-colors" href="#">History</a>
+<a class="text-gray-500 hover:text-primary text-sm font-medium transition-colors" href="#">Resources</a>
+</nav>
+<div class="flex items-center gap-4 border-l border-gray-200 dark:border-gray-800 pl-8">
+<button class="flex min-w-[84px] cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold">
+<span>Profile</span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border border-gray-200" data-alt="User profile avatar placeholder" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBf3sUlXG0j2SIZ09g8bxEKzPOrkuHMCj5v0x7e-5Fuk9lM7RuvQLyNVUbGjW5lD2jkiDGXumo7QS2aLtV6OVNcy-f-VbuEB309KWNPSLG82R4RGe3sKi2QuXiEw4cFSsSASk30bpme49Nk7BWRI51mOEMrkfwdqSpQobsDZeziJ4QfPqCfxL4a3cLX8wl1_dEjzEJW0YEVaf-LVuTT5LVLHCMNDaVbxPq0HTiHUvvV9_vA3oSpBkpGzf2WA5pfvJvRST3OeLpE03Us");'></div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 flex justify-center py-10 px-4">
+<div class="max-w-[1200px] w-full flex flex-col gap-8">
+<!-- Page Heading -->
+<div class="flex flex-col gap-1">
+<h1 class="text-[#111318] dark:text-white text-4xl font-black leading-tight tracking-tight">Deploy from Template</h1>
+<p class="text-gray-500 dark:text-gray-400 text-lg">Use pre-configured templates for common scenarios</p>
+</div>
+<!-- Template Selection Card -->
+<div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-8">
+<div class="flex flex-col gap-6">
+<div class="max-w-xl">
+<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Select Template</label>
+<select class="custom-select-arrow w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-primary focus:border-primary h-12 px-4 text-base transition-all">
+<option selected="" value="starter-1">Aya starter 1</option>
+<option value="starter-2">Aya starter 2</option>
+<option value="custom">Custom Enterprise Template</option>
+</select>
+</div>
+<!-- Template Details Box -->
+<div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6 border border-gray-100 dark:border-gray-800">
+<h3 class="text-gray-900 dark:text-white font-bold text-lg mb-2">Template Details</h3>
+<p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-6">
+                                Standardized deployment for multi-tier web applications. Includes auto-scaling capabilities, integrated key vault for secrets, and pre-configured diagnostics settings for Azure Monitor.
+                            </p>
+<div class="flex flex-col gap-3">
+<span class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Included Modules</span>
+<div class="flex flex-wrap gap-2">
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+<span class="material-symbols-outlined text-sm mr-1">web</span> App Service
+                                    </span>
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+<span class="material-symbols-outlined text-sm mr-1">database</span> Storage
+                                    </span>
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+<span class="material-symbols-outlined text-sm mr-1">settings</span> App Config
+                                    </span>
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+<span class="material-symbols-outlined text-sm mr-1">vpn_key</span> Key Vault
+                                    </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Configuration Card -->
+<div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+<div class="border-b border-gray-100 dark:border-gray-800 px-8 py-5">
+<h2 class="text-xl font-bold text-gray-900 dark:text-white">Project Configuration</h2>
+</div>
+<div class="p-8">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+<!-- Left Column -->
+<div class="space-y-6">
+<div>
+<label class="flex justify-between mb-2">
+<span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Project Name</span>
+<span class="text-xs text-gray-400">4 / 8 characters</span>
+</label>
+<input class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-primary focus:border-primary h-12 px-4" maxlength="8" placeholder="Enter unique ID" type="text" value="PROJ"/>
+</div>
+<div>
+<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Descriptive Name</label>
+<input class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-primary focus:border-primary h-12 px-4" placeholder="Production Frontend API" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Environment</label>
+<select class="custom-select-arrow w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-primary focus:border-primary h-12 px-4 transition-all">
+<option value="sand">sand</option>
+<option selected="" value="devsand">devsand</option>
+</select>
+</div>
+</div>
+<!-- Right Column -->
+<div class="space-y-6">
+<div>
+<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Owner</label>
+<input class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-primary focus:border-primary h-12 px-4" type="email" value="alex.engineer@enterprise.com"/>
+</div>
+<div>
+<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Jira/CR Number <span class="text-gray-400 font-normal">(optional)</span></label>
+<input class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-primary focus:border-primary h-12 px-4" placeholder="e.g. INFRA-1234" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Project Life</label>
+<div class="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+<button class="flex-1 py-2 text-sm font-medium rounded-md transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm">3 Days</button>
+<button class="flex-1 py-2 text-sm font-medium rounded-md transition-all text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">1 Month</button>
+<button class="flex-1 py-2 text-sm font-medium rounded-md transition-all text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">3 Months</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Actions Footer -->
+<div class="bg-gray-50 dark:bg-gray-800/80 px-8 py-6 flex justify-end gap-4 border-t border-gray-100 dark:border-gray-800">
+<button class="px-6 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            Cancel
+                        </button>
+<button class="px-8 py-2.5 rounded-lg bg-primary text-white font-bold shadow-md shadow-primary/20 hover:bg-blue-700 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">code</span>
+                            Generate Template Code
+                        </button>
+</div>
+</div>
+<!-- Help Info -->
+<div class="flex items-start gap-4 p-4 rounded-lg bg-blue-50 dark:bg-primary/10 border border-blue-100 dark:border-primary/20">
+<span class="material-symbols-outlined text-primary">info</span>
+<div>
+<p class="text-sm font-medium text-blue-900 dark:text-blue-300">Next Steps</p>
+<p class="text-sm text-blue-700 dark:text-blue-400/80">Generating the template will create the necessary Terraform/Bicep configurations in your connected repository for deployment review.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Decoration -->
+<footer class="py-10 text-center">
+<p class="text-xs text-gray-400 dark:text-gray-600">Enterprise Self Service Portal • v2.4.0</p>
+</footer>
+</div>
+</body></html>

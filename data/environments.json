@@ -1,0 +1,60 @@
+{
+  "_comment": "Environment configuration for UI dropdowns and Azure Portal links",
+  "environments": [
+    {
+      "id": "devsand",
+      "displayName": "Dev Sandbox (devsand)",
+      "subscriptionId": "11844065-4a70-473d-a17c-9c2b636fc250",
+      "description": "Development and testing sandbox environment",
+      "enabled": true,
+      "features": {
+        "customInfra": true,
+        "templates": true,
+        "aks": true,
+        "secrets": true,
+        "shipFromRepo": true
+      }
+    },
+    {
+      "id": "sand",
+      "displayName": "IT Sandbox (sand)",
+      "subscriptionId": "552bdc54-0a39-4040-9d8f-4002e8f572aa",
+      "description": "IT sandbox environment with AKS support",
+      "enabled": true,
+      "features": {
+        "customInfra": true,
+        "templates": true,
+        "aks": true,
+        "secrets": true
+      }
+    },
+    {
+      "id": "dataopssand",
+      "displayName": "DataOps Sandbox (dataopssand)",
+      "subscriptionId": "24fadfb5-071d-447d-b7d6-49c25321c319",
+      "description": "DataOps sandbox environment",
+      "enabled": true,
+      "features": {
+        "customInfra": true,
+        "templates": true,
+        "aks": false,
+        "secrets": true
+      }
+    },
+    {
+      "id": "aixsand",
+      "displayName": "AIX SandBox",
+      "subscriptionId": "a0238c79-2cfd-408d-aaa0-0f86db341f79",
+      "description": "AI/ML workload sandbox environment",
+      "enabled": false,
+      "features": {
+        "customInfra": true,
+        "templates": true,
+        "aks": false,
+        "secrets": false
+      }
+    }
+  ],
+  "defaultEnvironment": "devsand",
+  "defaultSubscriptionId": "11844065-4a70-473d-a17c-9c2b636fc250"
+}

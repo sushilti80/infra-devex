@@ -1,0 +1,305 @@
+{
+  "title": "Self Service Infra — API Health",
+  "description": "SLO: Availability 99.9% | p95 latency ≤750ms | 5xx <0.5% | Window: 30d. Uses dd-trace auto-APM metrics (trace.express.request.*).",
+  "layout_type": "ordered",
+  "reflow_type": "fixed",
+  "tags": [
+    "team:devsecops"
+  ],
+  "notify_list": [],
+  "widgets": [
+    {
+      "definition": {
+        "type": "note",
+        "content": "## API Health — SLO Targets\n| SLI | Target | P1 Alert |\n|---|---|---|\n| Availability | ≥ 99.9% / 30d | < 99.0% for 10m |\n| p95 Latency | ≤ 750ms | > 1500ms for 15m |\n| Error Rate | < 0.5% | > 5% for 5m |",
+        "background_color": "blue",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_edge": "left",
+        "tick_pos": "50%",
+        "has_padding": true
+      },
+      "layout": { "x": 0, "y": 0, "width": 12, "height": 2 }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "API Availability (30d)",
+        "precision": 3,
+        "autoscale": false,
+        "requests": [
+          {
+            "formulas": [{ "formula": "(1 - query_errors / query_hits) * 100" }],
+            "queries": [
+              {
+                "name": "query_errors",
+                "data_source": "metrics",
+                "query": "sum:trace.express.request.errors{service:self-service-infra,env:$env}.as_count()",
+                "aggregator": "sum"
+              },
+              {
+                "name": "query_hits",
+                "data_source": "metrics",
+                "query": "sum:trace.express.request.hits{service:self-service-infra,env:$env}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "response_format": "scalar",
+            "conditional_formats": [
+              { "comparator": ">=", "value": 99.9, "palette": "white_on_green" },
+              { "comparator": ">=", "value": 99.0, "palette": "white_on_yellow" },
+              { "comparator": "<", "value": 99.0, "palette": "white_on_red" }
+            ]
+          }
+        ]
+      },
+      "layout": { "x": 0, "y": 2, "width": 3, "height": 3 }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "Error Rate (%)",
+        "precision": 2,
+        "autoscale": false,
+        "requests": [
+          {
+            "formulas": [{ "formula": "(query_errors / query_hits) * 100" }],
+            "queries": [
+              {
+                "name": "query_errors",
+                "data_source": "metrics",
+                "query": "sum:trace.express.request.errors{service:self-service-infra,env:$env}.as_count()",
+                "aggregator": "sum"
+              },
+              {
+                "name": "query_hits",
+                "data_source": "metrics",
+                "query": "sum:trace.express.request.hits{service:self-service-infra,env:$env}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "response_format": "scalar",
+            "conditional_formats": [
+              { "comparator": "<", "value": 0.5, "palette": "white_on_green" },
+              { "comparator": "<", "value": 5.0, "palette": "white_on_yellow" },
+              { "comparator": ">=", "value": 5.0, "palette": "white_on_red" }
+            ]
+          }
+        ]
+      },
+      "layout": { "x": 3, "y": 2, "width": 3, "height": 3 }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "p95 Latency (last 1h)",
+        "precision": 0,
+        "autoscale": false,
+        "requests": [
+          {
+            "formulas": [{ "formula": "query1" }],
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "avg:trace.express.request.duration.by.service.95p{service:self-service-infra,env:$env}",
+                "aggregator": "avg"
+              }
+            ],
+            "response_format": "scalar",
+            "conditional_formats": [
+              { "comparator": "<=", "value": 750, "palette": "white_on_green" },
+              { "comparator": "<=", "value": 1500, "palette": "white_on_yellow" },
+              { "comparator": ">", "value": 1500, "palette": "white_on_red" }
+            ]
+          }
+        ]
+      },
+      "layout": { "x": 6, "y": 2, "width": 3, "height": 3 }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "Total Requests (last 1h)",
+        "precision": 0,
+        "autoscale": true,
+        "requests": [
+          {
+            "formulas": [{ "formula": "query1" }],
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "sum:trace.express.request.hits{service:self-service-infra,env:$env}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "response_format": "scalar"
+          }
+        ]
+      },
+      "layout": { "x": 9, "y": 2, "width": 3, "height": 3 }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Request Rate by Resource (req/s)",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "max", "value"],
+        "requests": [
+          {
+            "formulas": [{ "formula": "query1", "alias": "req/s" }],
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "sum:trace.express.request.hits{service:self-service-infra,env:$env} by {resource_name}.as_rate()"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": { "palette": "dog_classic", "line_type": "solid", "line_width": "normal" },
+            "display_type": "line"
+          }
+        ],
+        "yaxis": { "include_zero": true },
+        "markers": []
+      },
+      "layout": { "x": 0, "y": 5, "width": 6, "height": 4 }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Error Rate by Resource (%)",
+        "show_legend": true,
+        "requests": [
+          {
+            "formulas": [{ "formula": "(errors / total) * 100", "alias": "error %" }],
+            "queries": [
+              {
+                "name": "errors",
+                "data_source": "metrics",
+                "query": "sum:trace.express.request.errors{service:self-service-infra,env:$env} by {resource_name}.as_count()"
+              },
+              {
+                "name": "total",
+                "data_source": "metrics",
+                "query": "sum:trace.express.request.hits{service:self-service-infra,env:$env} by {resource_name}.as_count()"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": { "palette": "warm", "line_type": "solid", "line_width": "normal" },
+            "display_type": "line"
+          }
+        ],
+        "yaxis": { "include_zero": true, "max": "20" },
+        "markers": [
+          { "value": "y = 5", "display_type": "error dashed", "label": "P1 threshold" },
+          { "value": "y = 0.5", "display_type": "warning dashed", "label": "SLO target" }
+        ]
+      },
+      "layout": { "x": 6, "y": 5, "width": 6, "height": 4 }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "API Latency p50 / p95 (ms)",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "requests": [
+          {
+            "formulas": [{ "formula": "query_p50", "alias": "p50" }],
+            "queries": [
+              {
+                "name": "query_p50",
+                "data_source": "metrics",
+                "query": "avg:trace.express.request.duration.by.service.50p{service:self-service-infra,env:$env}"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": { "palette": "cool", "line_type": "solid", "line_width": "thin" },
+            "display_type": "line"
+          },
+          {
+            "formulas": [{ "formula": "query_p95", "alias": "p95" }],
+            "queries": [
+              {
+                "name": "query_p95",
+                "data_source": "metrics",
+                "query": "avg:trace.express.request.duration.by.service.95p{service:self-service-infra,env:$env}"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": { "palette": "purple", "line_type": "solid", "line_width": "normal" },
+            "display_type": "line"
+          }
+        ],
+        "yaxis": { "include_zero": true },
+        "markers": [
+          { "value": "y = 750", "display_type": "warning dashed", "label": "SLO p95 target" },
+          { "value": "y = 1500", "display_type": "error dashed", "label": "P2 alert" }
+        ]
+      },
+      "layout": { "x": 0, "y": 9, "width": 6, "height": 4 }
+    },
+    {
+      "definition": {
+        "type": "toplist",
+        "title": "Slowest Endpoints (p95 ms, last 1h)",
+        "requests": [
+          {
+            "formulas": [{ "formula": "query1", "limit": { "count": 10, "order": "desc" } }],
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "avg:trace.express.request.duration.by.resource_name.95p{service:self-service-infra,env:$env} by {resource_name}",
+                "aggregator": "avg"
+              }
+            ],
+            "response_format": "scalar",
+            "conditional_formats": [
+              { "comparator": ">", "value": 1500, "palette": "white_on_red" },
+              { "comparator": ">", "value": 750, "palette": "white_on_yellow" },
+              { "comparator": "<=", "value": 750, "palette": "white_on_green" }
+            ]
+          }
+        ]
+      },
+      "layout": { "x": 6, "y": 9, "width": 6, "height": 4 }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "HTTP Status Code Breakdown",
+        "show_legend": true,
+        "requests": [
+          {
+            "formulas": [{ "formula": "query1", "alias": "by status" }],
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "sum:trace.express.request.hits{service:self-service-infra,env:$env} by {http.status_code}.as_count()"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": { "palette": "semantic", "line_type": "solid", "line_width": "normal" },
+            "display_type": "bars"
+          }
+        ]
+      },
+      "layout": { "x": 0, "y": 13, "width": 12, "height": 3 }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "env",
+      "prefix": "env",
+      "available_values": ["sand", "prod"],
+      "default": "sand"
+    }
+  ]
+}

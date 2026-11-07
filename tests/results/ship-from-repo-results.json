@@ -1,0 +1,519 @@
+{
+  "feature": "ship-from-repo",
+  "status": "fail",
+  "verdict": "round_5_delta_QA-013_verified_fixed__no_regression_QA-001..QA-012__L-1_unchanged_and_bounded__redos_linear__1_new_low_QA-014_pre-existing_embedded_double_quote_in_multiword_value_at_json_in_json_levels_2-4__status_fail_by_rule_no_high_or_medium_open",
+  "mode": "feature",
+  "date": "2026-10-22",
+  "branch": "feature/ship-from-repo-prd",
+  "head_under_test": "1b099b2",
+  "round_5_scope": "ROUND 5 (DELTA re-check of QA-013 ONLY plus regression; Dev rework_round_4: commits d14279e, 1b099b2). `git diff 7f5c4a8..HEAD --stat` = exactly 3 files, 21 insertions / 4 deletions: utils/logRedactor.js (1 line, the escaped-value alternative `\\\\\"(?:(?!\\\\\")[^])*\\\\\"` -> `(\\\\{1,7})\"(?:(?!\\1\")[^])*\\1\"`), tests/integration/service/shipQaRound4.spec.ts (the [DEFECT QA-013] it.fails flipped to a plain it + header comment), docs/readiness/ship-from-repo-dev-status.json (rework_round_4 block). Nothing else changed: Dev's claim verified. No production edit by QA, no Wiz ignore rules, credential-shaped strings built at runtime.",
+  "round_5_note": "Round-5 result (honest): STATUS `fail`. (1) QA-013 is VERIFIED FIXED by 67 new tests (shipQaRound5.spec.ts) and node probes that Dev did not write: multi-word values of 2-6 words with space / tab / ', ' / ' - ' separators and punctuation, 11 key names, real JSON.stringify nesting 1-4 and literal 1-7 backslash forms (also `=` separator, glued trailing word, closing run longer than the opening run) are redacted WHOLE, the field before the secret stays readable. (2) L-1 (accepted by the human 2026-10-22) is UNCHANGED: for 8..31 literal backslashes and real nesting levels 5-6 the new and the old pattern produce byte-identical output (differential), single- and multi-word, so the limit is bounded and consistent, not a new defect. (3) Mismatched / unterminated / single-quote forms: a 1000-line grid (open 0-9 x close 0-9 x 5 tails x 2 quote kinds) shows 0 regressions vs the old pattern (165 improved, 835 identical); an unterminated or shorter-closed escaped value still redacts only its first word (same behaviour class as before the fix for malformed input, no throw, idempotent). (4) No regression of QA-001..QA-012 (full node suite green; spot checks of PEM, userinfo, bearer, env var, npm token, SAS) and 17 benign lines untouched. (5) ReDoS: the backreference `\\1` + lookahead is linear: 19 hostile shapes in the probes, 16 of them in the spec (long backslash runs, many unterminated/near-match escaped quotes, descending/ascending 7..1 opens repeated, mismatched closers) at 200 KB / 800 KB / 1 MB: worst 17.1 ms at 1 MB, 4x input = 3.6x-4.6x time (<= 5x); 20 000 nested lines (2.86 MB) 30 ms. (6) NEW finding QA-014 (low, pre-existing, NOT introduced by the fix): a multi-word value that itself contains a double quote leaks the words after the embedded quote at real JSON-in-JSON levels 2-4 (real JSON.stringify serialises an embedded quote with MORE backslashes than the delimiter, e.g. level 2: 3 vs 1, level 3: 7 vs 3, and `(?!\\1\")` also matches the tail of that longer run, so the value closes early). Level 1 is correct. The old pattern leaks the same words at level 2 and more at levels 3-4, so the fix is not worse (differential test: new <= old at levels 1-5). It is within the declared 0-7 bound and leaks secret material, so it is recorded as a defect, reproduced by one `it.fails`; a one-line candidate fix (require an EXACT-length closing run: `(\\\\{1,7})\"(?:(?!(?<!\\\\)\\1\")[^])*(?<!\\\\)\\1\"`) was verified on an in-memory copy only: 0 leaks at levels 1-4 for embedded-quote, lone-backslash, trailing-backslash and plain values; production untouched, full suite not run against the candidate. It is a narrow shape (a passphrase containing a double quote AND a space, serialised inside a JSON string at least once more); the human may accept it as a documented limit like L-1, then the status can become `pass`. (7) Live-server health specs: this run had a server listening on :3001 (see baseline_failures), so the 20 known tests PASSED; pointed at an unreachable port they fail exactly as the baseline (20 failed | 1 passed). Deviation #7 stays an open Architect/H-2 item.",
+  "spec_path": "docs/architecture/ship-from-repo-spec.json",
+  "review_path": "docs/reviews/ship-from-repo-arch-review-round3.md",
+  "dev_status_path": "docs/readiness/ship-from-repo-dev-status.json",
+  "scope": "ROUND 4 (FINAL delta re-check after Dev rework_round_3: commits 0268ff6, ea91c45): (a) QA-012 re-verified with independent variants, (b) O-7 (findPullRequestForBranch github_api_call) verified, (c) shipUtils.spec.ts fixture change verified equivalent, (d) full regression, (e) Wiz-risk cleanup of QA-authored test files (tests only, no production edit, no Wiz ignore rules). Everything below this line is the round-3 scope text, kept as history. (Round-3 scope:) ROUND 3 (final delta re-check after Dev's human-authorized rework round 2: commits 6bb6b88, 5c0348f, 8dca0ff): ONLY QA-008..QA-011 independently re-verified with new adversarial variants, plus a full regression run and judgement of Dev's three new deviations. Sections below that describe rounds 1-2 (test_id_mapping, QA-001..QA-007, earlier deviations) are unchanged history. SRE items O-1..O-6 were not re-verified by QA beyond the existing Dev-written tests passing (out of this dispatch's scope). Everything in aya-flux, the V-gates, E2E, load, SR-01 and UX-01 remains under not_run and is NOT claimed. (Round-2 scope, kept for history: re-verification of Dev rework round 1 (a6fcdc8, afb3208, 8f5b059) against QA-001..QA-007.)",
+  "round_4_note": "Final-round result (honest): STATUS `fail`. (1) QA-012 is FIXED for what it reported: a single-word secret inside real JSON.stringify nesting levels 1-4 (0-7 backslashes before the quote) is redacted for all 11 key names probed, the field before it stays readable, no regression of QA-001..QA-011, false positives unchanged, 16 hostile shapes incl. long backslash runs are linear (<= 26 ms at 1 MB; 4x input ~ 4-5x time). Level 5 (15 backslashes) and literal 8+ backslash forms are outside the declared 0-7 bound and are NOT redacted: judged an accepted documented limit (no spec contract covers it, the bound keeps matching linear; 5-deep serialisation of a secret is not a realistic CI-log shape), recorded as L-1, not a defect. (2) The adversarial pass found ONE new low defect, QA-013, inside the declared bound: a MULTI-WORD quoted value (passphrase with spaces) at JSON-in-JSON levels 3 and 4 is redacted only up to its first word; words 2..n leak (levels 1-2 take the whole value). Cause: the escaped-value alternative accepts exactly one backslash before the quote, so at 3+ backslashes the value falls back to `\\S+`. One `it.fails` reproduces it; a one-line candidate fix (`(\\\\{1,7})\"(?:(?!\\1\")[^])*\\1\"`) was verified on a /tmp copy: levels 1-4 whole-value, linear (<= 6.4 ms at 1 MB), production untouched. Also observed (not defects): at levels 3-4 everything after the secret on the same line is over-redacted (safe side). (3) O-7 verified (see dev_claims_verified_round_4); observation O-7b: the two production callers (shipStatusService.getPr, aksService.getAppState) call it with 3 arguments, so live PR-lookup metrics carry correlation_id `unknown` until a caller passes the ship correlation id. (4) shipUtils.spec.ts: the 3 changed fixtures evaluate to byte-identical strings to the originals, assertions untouched, no contiguous credential-shaped literal remains. (5) QA-authored files cleaned of literal PEM headers / bearer / userinfo / token-shaped strings (built at runtime). No Wiz ignore rules added.",
+  "round_3_note": "Result: QA-008, QA-009, QA-010 and QA-011 are each verified FIXED by new tests that Dev did not write (shipQaRound3.spec.ts, 32 tests) plus node probes; all 5 converted tests pass; no regression of QA-001..QA-007; node 1157 passed, jsdom 794/794, type-check clean; the only failures are the 20 known live-server health tests. The adversarial pass found ONE new low-severity residual, QA-012: a secret inside three or more levels of JSON-in-JSON-string (the key is preceded by 2+ backslashes before the quote) is still returned in clear; it extends the QA-010 form by one escaping level (one and two levels are fine). It is reproduced by one `it.fails`. Status stays `fail` under the stated rule (pass only with no unresolved defect). This is the final round: nothing is looped; the Orchestrator/human decides fix-or-accept.",
+  "note": "Round-2 note (history): Every number below was produced by running the suites in this session. Round-1 baseline: status fail, 7 defects (QA-001..QA-007), 7 it.fails reproductions. Round 2: Dev converted the 7 it.fails to plain it (all 7 pass), and QA independently re-verified each fix with 154 NEW adversarial tests (not the converted ones). All seven round-1 defects are fixed. The adversarial pass found four NEW defects (QA-008..QA-011), all in or adjacent to the rework (none high). They are reproduced by 5 new `it.fails` tests named `[DEFECT QA-nnn]` (counted as expected_fail, not passed; they flip to 'unexpectedly passed' once fixed, which is the cue to convert them to plain `it`). Status stays `fail` because unresolved defects remain; no in-scope test fails.",
+  "reverification_history": [
+    {
+      "round": 1,
+      "date": "2026-10-22",
+      "head": "542d8db",
+      "status": "fail",
+      "defects": ["QA-001", "QA-002", "QA-003", "QA-004", "QA-005", "QA-006", "QA-007"],
+      "counts": "node 971 run (944 passed, 20 failed, 7 expected_fail); jsdom 794/794; type-check exit 0"
+    },
+    {
+      "round": 2,
+      "date": "2026-10-22",
+      "head": "8f5b059",
+      "status": "fail",
+      "defects_closed": ["QA-001", "QA-002", "QA-003 (as reported)", "QA-004", "QA-005", "QA-006", "QA-007"],
+      "defects_open": ["QA-008", "QA-009", "QA-010", "QA-011"],
+      "counts": "node 1136 run (1111 passed, 20 failed, 5 expected_fail); jsdom 794/794; type-check exit 0"
+    },
+    {
+      "round": 3,
+      "date": "2026-10-22",
+      "head": "8dca0ff",
+      "status": "fail",
+      "defects_closed": ["QA-008", "QA-009", "QA-010", "QA-011"],
+      "defects_open": ["QA-012 (new, low, residual of the QA-010 form at 3+ escaping levels)"],
+      "counts": "node 1178 run (1157 passed, 20 failed [known live-server health specs], 1 expected_fail [QA-012]); jsdom 794/794; type-check exit 0"
+    },
+    {
+      "round": 4,
+      "date": "2026-10-22",
+      "head": "ea91c45",
+      "status": "fail",
+      "defects_closed": ["QA-012 (single-word secrets, nesting levels 1-4 / 0-7 backslashes)"],
+      "defects_open": ["QA-013 (new, low, multi-word quoted value at JSON-in-JSON levels 3-4 leaks words 2..n)"],
+      "documented_limits": ["L-1: 5+ real nesting levels / 8+ literal backslashes are outside the declared 0-7 bound and not redacted (accepted, not a defect)"],
+      "counts": "node 1249 run (1228 passed, 20 failed [known live-server health specs], 1 expected_fail [QA-013]); jsdom 794/794; type-check exit 0"
+    },
+    {
+      "round": 5,
+      "date": "2026-10-22",
+      "head": "1b099b2",
+      "status": "fail",
+      "defects_closed": ["QA-013 (multi-word quoted value at JSON-in-JSON levels 3-4)"],
+      "defects_open": ["QA-014 (new, low, pre-existing: multi-word value containing a double quote leaks the words after the quote at JSON-in-JSON levels 2-4)"],
+      "documented_limits": ["L-1: 5+ real nesting levels / 8+ literal backslashes are outside the declared 0-7 bound and not redacted (accepted by the human 2026-10-22, not a defect; verified unchanged by the QA-013 fix)"],
+      "counts": "node 1316 run (1315 passed [incl. the 20 known health specs, which passed because a server was listening on :3001], 0 failed, 1 expected_fail [QA-014]); with an unreachable API_URL the 20 health specs fail as baseline (1295 passed | 20 failed | 1 expected_fail); jsdom 794/794; type-check exit 0"
+    }
+  ],
+  "summary": {
+    "total": 2110,
+    "passed": 2109,
+    "failed": 0,
+    "skipped": 0,
+    "expected_fail": 1,
+    "note_summary": "Round 5 (delta). total = passed + failed + expected_fail. node project: 1316 run in 42 files (1315 passed, 0 failed, 1 expected_fail [QA-014]); jsdom project: 794 run, 794 passed, 44 files. The 20 known live-server health tests (tests/integration/api/health.spec.ts 11 + tests/smoke/health.spec.ts 9) are a baseline reported SEPARATELY and not counted against the feature: in this run they PASSED only because a node server (nodemon -> `node server.js`, pid 53118, started 14:03:24, parent nodemon pid 51131 started 14:02:20, cwd = this repo) was listening on :3001 and answered /health with 200 (QA did not start it); with API_URL/APP_URL pointed at an unreachable port the same two files give 20 failed | 1 passed (ECONNREFUSED), identical to the baseline. In-scope failures: 0. Status is `fail` solely because the unresolved low defect QA-014 remains.",
+    "known_baseline_live_server_failures": 20,
+    "in_scope_failed": 0
+  },
+  "counts": {
+    "node": { "files": 42, "run": 1316, "passed": 1315, "failed": 0, "expected_fail": 1, "note": "the 20 known health specs passed because a server was listening on :3001; with an unreachable API_URL: 1295 passed, 20 failed, 1 expected_fail" },
+    "jsdom": { "files": 44, "run": 794, "passed": 794, "failed": 0 },
+    "type_check": "exit 0 (vue-tsc -p tsconfig.json --noEmit)",
+    "delta_vs_round_4": {
+      "node_run": "1249 -> 1316 (+67 = 67 new QA round-5 tests in shipQaRound5.spec.ts; Dev added no tests, it flipped the QA-013 it.fails in shipQaRound4.spec.ts to a plain it)",
+      "node_expected_fail": "1 -> 1 (QA-013 reproduction now a passing `it`; one new reproduction, QA-014)",
+      "jsdom_run": "794 -> 794"
+    },
+    "delta_vs_round_3": {
+      "node_run": "1178 -> 1249 (+71 = +70 new QA round-4 tests in shipQaRound4.spec.ts + 1 Dev O-7 test in shipGithubApiCallMetric.spec.ts)",
+      "node_expected_fail": "1 -> 1 (Dev converted the QA-012 reproduction to a passing `it`; one new reproduction, QA-013)",
+      "jsdom_run": "794 -> 794"
+    },
+    "delta_vs_round_2": {
+      "node_run": "1136 -> 1178 (+42 = +32 new QA round-3 tests in shipQaRound3.spec.ts + 10 Dev rework tests: shipGithubApiCallMetric.spec.ts and shipObservability.spec.ts)",
+      "node_expected_fail": "5 -> 1 (Dev converted the 5 round-2 reproductions to passing `it`; one new reproduction, QA-012)",
+      "jsdom_run": "794 -> 794"
+    },
+    "delta_vs_round_1": {
+      "node_run": "971 -> 1136 (+165 = +154 new QA round-2 tests + 11 Dev rework tests: shipRedactionLinear.spec.ts and the ship.spec.ts addition)",
+      "node_expected_fail": "7 -> 5 (round-1 seven converted to passing `it` by Dev; five new round-2 reproductions)",
+      "jsdom_run": "794 -> 794"
+    },
+    "qa_new_tests": {
+      "round_1": { "node": 214, "jsdom": 6, "total": 220 },
+      "round_2": { "node": 154, "jsdom": 0, "total": 154, "of_which_defect_reproduction_xfail": 5 },
+      "round_3": { "node": 32, "jsdom": 0, "total": 32, "of_which_defect_reproduction_xfail": 1 },
+      "round_4": { "node": 70, "jsdom": 0, "total": 70, "of_which_defect_reproduction_xfail": 1 },
+      "round_5": { "node": 67, "jsdom": 0, "total": 67, "of_which_defect_reproduction_xfail": 1 },
+      "cumulative": 543
+    }
+  },
+  "coverage": {
+    "unit": "not measured (no coverage run requested; vitest config reports but does not enforce thresholds)",
+    "integration": "BT-01..BT-26 mapped below; 1315 node tests pass in round 5 (1295 excluding the 20 live-server health specs, which passed only because a server was listening on :3001)",
+    "e2e": "0% - not run (needs live devsand + flag on + aya-flux + H-2 identity); see not_run"
+  },
+  "baseline_failures": {
+    "files": ["tests/integration/api/health.spec.ts (11 tests)", "tests/smoke/health.spec.ts (9 tests)"],
+    "cause": "These specs call a live server on http://localhost:3001 (API_URL). Rounds 1-4: nothing was listening (ECONNREFUSED 127.0.0.1:3001 and ::1:3001). Round 5: a node server (nodemon -> `node server.js`, pid 53118 started 14:03:24, nodemon pid 51131 started 14:02:20, cwd = this repo) WAS listening on :3001 and returned 200 on /health, so the 20 specs passed (QA did not start it). Re-run against an unreachable port (API_URL=APP_URL=http://127.0.0.1:3999) the same two files gave 20 failed | 1 passed (ECONNREFUSED), i.e. the baseline is unchanged; the pass depends on the environment, not on a code change.",
+    "evidence": "Round 1: ran both files at baseline commit 4b1a9c1 in a temporary git worktree: 20 failed | 1 passed, failing names byte-identical to the 20 failures at HEAD. Round 2: the failing set is exactly these two files (11 + 9) and nothing else.",
+    "regression_from_ship_changes": false
+  },
+  "commands": [
+    "ROUND 5 git diff 7f5c4a8..HEAD --stat: 3 files, 21 insertions(+), 4 deletions(-): docs/readiness/ship-from-repo-dev-status.json, tests/integration/service/shipQaRound4.spec.ts, utils/logRedactor.js (1 line) - matches Dev's claim exactly",
+    "ROUND 5 npx vitest run --project node (HEAD 1b099b2 + QA round-5 spec: 42 files, 1316 run, 1315 passed, 0 failed, 1 expected fail [QA-014]; the 20 known health specs passed because a server was listening on :3001)",
+    "ROUND 5 npx vitest run --project jsdom (794/794, 44 files)",
+    "ROUND 5 npm run type-check (vue-tsc -p tsconfig.json --noEmit, no output, exit 0)",
+    "ROUND 5 API_URL=http://127.0.0.1:3999 APP_URL=http://127.0.0.1:3999 npx vitest run --project node tests/integration/api/health.spec.ts tests/smoke/health.spec.ts (20 failed | 1 passed, ECONNREFUSED: baseline confirmed independent of the listener)",
+    "ROUND 5 npx vitest run --project node tests/integration/service/shipQaRound5.spec.ts (67 tests: 66 passed | 1 expected fail [QA-014])",
+    "ROUND 5 node probes (kept outside the repo, /tmp/qa5probe.js, qa5probe2.js, qa5time.js, qa5cand.js): 11 keys x 2-6 words x 5 separators x levels 1-4 (0 leaks, 0 neighbour-before losses); literal 1-7 bs x 11 keys; 8-31 bs and levels 5-6 old-vs-new differential (all byte-identical); open/close mismatch matrix; 1000-line old-vs-new grid (0 regressions, 165 improved, 835 identical); embedded quote / backslash / newline / unicode values at real levels 1-5 old vs new vs full redactText; 19 hostile shapes at 200k / 800k / 1M (median of 3): worst 17.1 ms (1 MB single run of backslashes after an unterminated 3-bs open), 4x input 3.6x-4.6x time; 20 000 nested lines 30 ms; in-memory candidate fix for QA-014 (production not edited)",
+    "ROUND 4 npx vitest run --project node (HEAD ea91c45 + QA round-4 changes: 1249 run, 1228 passed, 20 failed [only tests/integration/api/health.spec.ts x11 and tests/smoke/health.spec.ts x9; known baseline, reported separately], 1 expected fail [QA-013]; 41 files)",
+    "ROUND 4 npx vitest run --project jsdom (794/794, 44 files)",
+    "ROUND 4 npm run type-check (vue-tsc -p tsconfig.json --noEmit, no output, exit 0)",
+    "ROUND 4 npx vitest run --project node tests/integration/service/shipQaRound4.spec.ts tests/integration/service/shipQaRedaction.spec.ts tests/integration/service/shipQaRound3.spec.ts tests/integration/service/shipUtils.spec.ts tests/integration/service/shipGithubApiCallMetric.spec.ts (x3 consecutive runs, stable: 170 passed | 1 expected fail)",
+    "ROUND 4 npx vitest run --project node tests/integration/service/shipQaRound2Redaction.spec.ts after the JWT-shaped unit rewrite (122/122)",
+    "ROUND 4 throw-away copy of shipQaRound4.spec.ts with `it.fails` -> `it` (deleted afterwards): the QA-013 reproduction fails on the intended assertion (level 3: expected the output not to contain 'betaWord')",
+    "ROUND 4 node probes of utils/logRedactor.js (scripts kept outside the repo, /tmp): 11 key names x real JSON.stringify chains of 1..5 levels (44/55 redacted: all of levels 1-4, none of level 5); literal 0..9, 12, 16 backslash forms x double/single quote x {escaped value, plain value, `=` separator} (0-7 redacted, 8+ not); multi-word and quote-in-value at levels 1..5; neighbour before/after the key; 18 hostile shapes at 200 KB and 1 MB incl. long backslash runs, keyword+7/8 bs+quote, suffix 32/33 chars + bs, unterminated escaped quote (max 26 ms, 4-5x time for 5x input); 1 MB backslash run followed by a secret (4 ms); 20 000 lines of escaped-JSON secrets (15 ms)",
+    "ROUND 4 candidate fix for QA-013 tried on a /tmp copy (production NOT edited): value alternative `(\\\\{1,7})\"(?:(?!\\1\")[^])*\\1\"` redacts multi-word values whole at levels 1-4, keeps the field after the key, hostile 1 MB shapes <= 6.4 ms",
+    "ROUND 4 shipUtils.spec.ts: git show 0268ff6^ vs HEAD diff = 3 fixture lines only; node evaluation of the three rebuilt strings equals the original literals (true/true/true); assertions untouched",
+    "ROUND 4 credential-shape grep over tests/integration/service/shipQa*.spec.ts, srcV2/pages/ShipFromRepoPage.qa.spec.ts, tests/helpers/shipQaHarness.js and shipUtils.spec.ts (PEM headers, userinfo URLs, Bearer/Basic/token values, ghp_/github_pat_/AKIA/xox/JWT/AccountKey/sig=/_authToken, keyword=value): only prose/test titles remain; wizcli was NOT run (needs tenant auth)",
+    "ROUND 3 npx vitest run --project node (HEAD 8dca0ff, final with shipQaRound3.spec.ts: 1178 run, 1157 passed, 20 failed [only tests/integration/api/health.spec.ts x11 and tests/smoke/health.spec.ts x9], 1 expected fail [QA-012]; 40 files)",
+    "ROUND 3 npx vitest run --project jsdom (794/794, 44 files)",
+    "ROUND 3 npm run type-check (vue-tsc -p tsconfig.json --noEmit, no output, exit 0)",
+    "ROUND 3 npx vitest run --project node tests/integration/service/shipQaRound3.spec.ts (x4 consecutive runs, stable: 31 passed | 1 expected fail)",
+    "ROUND 3 throw-away copy of shipQaRound3.spec.ts with `it.fails` -> `it` (deleted afterwards): the QA-012 reproduction fails on the intended assertion (level 3: expected the output not to contain the value)",
+    "ROUND 3 node probes of utils/logRedactor.js (scripts kept outside the repo): 8 key names x escaped/double-escaped/3-level/single-quote/spaced/equals forms; real JSON.stringify chains of 1..5 levels; 25 glued-tail and JSON-neighbour variants; 10 false-positive lines; 14 hostile 200k-repeat shapes (max 31 ms); lines of 1/6/20 MB x {secret at start/end, escaped-JSON secret, benign, spaces, token mid-line}; 1-20 MB RangeError-shaped lines (ghp_+letters, keyword+opening quote, eyJ- run) with a secret before and after; 8 MB huge line between ordinary lines; ESC[ / OSC oversized shapes; 38 MB of dense matches (0.4 s)",
+    "ROUND 3 sanity of the suggested QA-012 fix on a copy in /tmp (production file NOT edited): `\\\\{0,7}` before the quote and `\\\\{1,7}\"..\\\\{1,7}\"` for the value redacts levels 1-4 and keeps neighbours; 100k hostile repeats 5 ms",
+    "npx vitest run --project node  (round 2, HEAD 8f5b059 before QA round-2 tests: 982 run, 962 passed, 20 failed; Dev's 7 converted tests all pass)",
+    "npx vitest run --project jsdom (794/794)",
+    "npm run type-check (exit 0, before and after the new tests)",
+    "node probes of utils/logRedactor.js: 1 MB hostile line per pattern (39 shapes, max 21 ms), 10 MB / 30 MB single-line size sweep (RangeError threshold), 100 MB benign and secret-dense logs (~0.9 s each), probes of JSON/escaped/quoted/glued-tail/JWT-placement/false-positive lines; original 542d8db redactor loaded via git show for the pre-fix comparison",
+    "npx vitest run --project node tests/integration/service/shipQaRound2Behaviour.spec.ts tests/integration/service/shipQaRound2Redaction.spec.ts (x3 consecutive runs, stable: 149 passed | 5 expected fail)",
+    "throw-away copies of both new specs with `it.fails` replaced by `it` (deleted afterwards) to confirm each of the 5 reproductions fails for the intended assertion",
+    "npx vitest run --project node (final: 1136 run, 1111 passed, 20 failed, 5 expected fail; failures only the two health specs)",
+    "npx vitest run --project jsdom (final: 794/794)",
+    "npm run type-check (final: exit 0)",
+    "node scripts/validate-delivery-contract.mjs qa --feature ship-from-repo --path tests/results/ship-from-repo-results.json"
+  ],
+  "new_tests": [
+    {
+      "file": "tests/integration/service/shipQaRound5.spec.ts",
+      "round": 5,
+      "tests": 67,
+      "covers": "QA-013 independent verification (11 keys x 2-6 words x 5 separators x real nesting 1-4; punctuation values; literal 1-7 backslashes; '=' separator and glued tail; closing run longer than opening; idempotence; offset stability); L-1 unchanged (old-vs-new differential for 8-31 backslashes and levels 5-6; characterisation of the bound; 1 MB linear at 7 and 8 backslashes); mismatched/unterminated/single-quote forms (10 open/close pairs, 1000-line old-vs-new grid: 0 regressions, shorter-run quote inside a longer-run value, empty/adjacent values); [DEFECT QA-014] it.fails (embedded double quote in a multi-word value at levels 2-4) + control at level 1 + not-worse-than-old + unaffected values; false-positive sanity (17 benign lines, non-secret nested JSON, two secrets on one line, QA-001..012 spot checks); ReDoS/timing (16 hostile shapes at 200 KB and 1 MB: < 400 ms and <= 10x time for 5x input, plus 20 000 nested lines)",
+      "secrets": "fixtures assembled at runtime (join of fragments); no contiguous secret-shaped literal in the file"
+    },
+    {
+      "file": "tests/integration/service/shipQaRound4.spec.ts",
+      "round": 4,
+      "tests": 70,
+      "covers": "QA-012: 11 key names x real JSON.stringify nesting 1-4 (value redacted, field before it readable); neighbour-after readable at levels 1-2 (3-4 over-redact, safe side); secret as last key; two secrets in one nested line; documented limit L-1 (level 5 not redacted, characterisation); literal 0-7 backslash forms x 11 keys x 4 forms; 8/9/12/16-backslash behaviour (not redacted, characterisation). QA-013: levels 1-2 multi-word redacted whole (pass) and levels 3-4 (`it.fails`). Regression: 12 benign lines unchanged, round 1-3 forms (plain, prefixed env, JSON, escaped JSON, quoted with spaces, glued tail, header, userinfo, PEM), idempotence on nested lines. ReDoS: 16 hostile shapes with long backslash runs at 200 KB and 1 MB (<500 ms each), scaling guard, 1 MB backslash run + secret, 20 000 lines. O-7: success metric (operation, repo, duration, correlation id), request arguments, 2/3-argument callers default state and 'unknown' correlation id, merged/closed/open/none mapping, failure levels for 404/422/403 (warn) and 500/502 (error) with the SAME error rethrown, network error without status, uninitialised client, one metric per lookup, concurrent correlation ids, no branch/PR data in the metric. 1 defect reproduction (`it.fails`): QA-013",
+      "secrets": "fixtures assembled at runtime (join of fragments); no contiguous secret-shaped literal in the file"
+    },
+    {
+      "file": "tests/integration/service/shipQaRedaction.spec.ts and tests/integration/service/shipQaRound2Redaction.spec.ts",
+      "round": 4,
+      "tests": 0,
+      "covers": "Wiz-risk cleanup only (assertions unchanged, test counts unchanged: 30 + 122 pass): PEM BEGIN/END headers, bearer header, userinfo URL, `password=` line and the `Authorization: token` sample are now built at runtime (pemBegin/pemEnd/c() helpers); three JWT-shaped hostile units split with j()."
+    },
+    {
+      "file": "tests/integration/service/shipQaRound3.spec.ts",
+      "round": 3,
+      "tests": 32,
+      "covers": "QA-010: 8 key names x 1 and 2 real JSON.stringify embedding levels (value gone, neighbour kept); single-escaped =, single-quote, spaced and escaped-inner-quote forms. QA-011: 7 glued-tail shapes (double/single quote, doubled quote, $(...), concatenated quote, escaped, export) and JSON/list delimiter preservation. QA-009: 6 MB and 20 MB lines of three RangeError-prone shapes, each with a secret before and after inside the same line, between ordinary lines (no throw, no leak, neighbours intact and still redacted), determinism/idempotence, a 7 MB line, the whole line replaced on the RangeError path. False-positive sanity: 10 benign lines unchanged. QA-008: 2 100 fresh-ID lookups alternated between two users, then ship_succeeded and ship_stage_completed counts unchanged. 1 defect reproduction (`it.fails`): QA-012",
+      "secrets": "fixtures assembled at runtime (join of fragments); no literal secret-shaped strings in the file"
+    },
+    {
+      "file": "tests/integration/service/shipQaRound2Redaction.spec.ts",
+      "tests": 122,
+      "covers": "QA-001: 30 secret names (prefixed, suffixed, header-style, camelCase) x 7 forms x 4 values; QA-003/004: JSON compact/spaced/uppercase/single-quoted/multi-key/nested, escaped quote inside a quoted value, non-string JSON values, URL query strings; QA-002: 39 hostile 1 MB line shapes covering EVERY pattern (<500 ms each), all shapes in one line, 20 MB ordinary log, 4 MB vs 0.5 MB linear-scaling guard; seeded differential fuzz vs the spec-literal §7.3 generic pattern (3 000 unquoted + 3 000 quoted lines), idempotence/append-stability; 29 false-positive sanity lines; JWT lookbehind in 11 placements; ANSI interplay. 3 defect reproductions: QA-009 (unit), QA-010, QA-011 (the QA-009 http reproduction is in the other file)"
+    },
+    {
+      "file": "tests/integration/service/shipQaRound2Behaviour.spec.ts",
+      "tests": 32,
+      "covers": "QA-005: identical POSTs (sequential, key-order shuffled, explicit defaults == omitted, canonical org case) share one dispatch; each of the nine fields changed alone => new dispatch with the new value; per-user key; 10 s window expiry; concurrent identical + different mix. QA-006: 100 fresh IDs => 429 from the 31st with <=31 searches; per-user isolation; one shared counter for old+fresh IDs; starter polling own ship 50x costs 1 search; 3 concurrent own ships; logs/cancel/retry routes also counted; sliding window; future/expired IDs never reach GitHub. QA-007: 6.5 MB log tail/offset contiguity/refetch counts, <=5 MB cached whole, redact-before-slice incl. PEM across the cut, LRU eviction at 11 big logs, >100 MB download cap, in-progress growth. 2 defect reproductions: QA-008, QA-009 (http)"
+    }
+  ],
+  "test_id_mapping": {
+    "backend": {
+      "BT-01": { "status": "pass", "evidence": "shipValidators.spec.ts (118) + QA shipQaHostile.spec.ts hostile matrix through the real express-validator chains" },
+      "BT-02": { "status": "pass", "evidence": "api/ship.spec.ts + QA spoof/whitelist/proto-pollution tests" },
+      "BT-03": { "status": "pass", "evidence": "api/ship.spec.ts + QA shipQaFailClosed (real config + real environments.json); 'extend environmentsConfig.spec.ts' not done (assertions live in new specs) - accepted" },
+      "BT-04": { "status": "pass", "evidence": "shipClassifierIdentity.spec.ts + QA provider none / unknown provider fail-closed" },
+      "BT-05": { "status": "pass", "evidence": "shipCredentials.spec.ts" },
+      "BT-06": { "status": "pass", "evidence": "shipService.spec.ts" },
+      "BT-07": { "status": "partial", "evidence": "GitHub-only ownership + app-state matrix pass; ACR on/off matrix, same_repo/other_repo/unclaimed and alias-file honouring are NOT implemented (shipRegistryClient blocked on H-3)", "defect": null },
+      "BT-08": { "status": "pass", "evidence": "shipService.spec.ts" },
+      "BT-09": { "status": "pass_with_defect", "evidence": "round 2: QA-006 fixed and verified (fresh IDs counted once per user+ID before the GitHub search; 100 fresh IDs => 429 from the 31st, <=31 searches; per-user; starter unaffected; all per-ship routes). The 30-day/2 000-newer-runs => 3 calls, window/zero-call 404s and negative cache still pass. New side effect: the fresh-ID markers share the bounded `flags` LRU and are written even for refused requests", "defect": "QA-008 (low)" },
+      "BT-10": { "status": "pass", "evidence": "shipStatusService.spec.ts incl. attempt fold and N-1 fixtures; 'chart not preview-capable' only via buildPreviewUrl unit (no signal source)" },
+      "BT-11": { "status": "pass", "evidence": "shipStatusService.spec.ts forgery matrix" },
+      "BT-12": { "status": "pass", "evidence": "shipClassifierIdentity.spec.ts" },
+      "BT-13": { "status": "pass", "evidence": "shipStatusService.spec.ts + api/ship.spec.ts + QA oid matrix (e-mail collision, read vs mutate, tampered runs)" },
+      "BT-14": { "status": "pass", "evidence": "shipUtils.spec.ts + shipStatusService.spec.ts" },
+      "BT-15": { "status": "fail", "evidence": "round 2: QA-001, QA-002, QA-003 (as reported) and QA-004 verified fixed: 30 secret names x 7 forms x 4 values redacted, plain JSON/quoted/spaced values redacted, every pattern linear on 1 MB hostile lines (max 21 ms), >=10 patterns (12), ANSI, offset stability, idempotence, 29 false-positive lines untouched, differential fuzz vs spec-literal generic pattern clean. Remaining gaps: escaped-quote JSON leaks entirely; a quoted value with glued trailing characters leaks the tail; a single >=~6 MB line throws RangeError (logs route 503)", "defect": ["QA-009 (low)", "QA-010 (medium)", "QA-011 (low)"] },
+      "BT-16": { "status": "pass", "evidence": "api/ship.spec.ts logs block + QA no-token/URL leakage; round 2: >5 MB view tail, offsets, redact-before-slice, download >5 MB refetch, 100 MB cap verified" },
+      "BT-17": { "status": "pass", "evidence": "api/ship.spec.ts + QA read-vs-mutate matrix" },
+      "BT-18": { "status": "pass", "evidence": "api/ship.spec.ts (17 inputs, retry lock) + QA V-3-off => never applicable" },
+      "BT-19": { "status": "pass", "evidence": "shipStatusService.spec.ts fixtures only (V-4 gate not passed; no live queue semantics verified)", "caveat": "fixture-only" },
+      "BT-20": { "status": "pass", "evidence": "shipStatusService.spec.ts fixtures only (V-4)", "caveat": "fixture-only" },
+      "BT-21": { "status": "pass", "evidence": "shipStatusService.spec.ts + shipService.spec.ts; QA confirmed [correlationId] logging does not leak the bearer token" },
+      "BT-22": { "status": "pass", "evidence": "api/ship.spec.ts BT-22 block + QA owner/system/unknown/prefix/double-by edge cases + empty-platform-roles case" },
+      "BT-23": { "status": "pass", "evidence": "shipStatusService.spec.ts" },
+      "BT-24": { "status": "pass", "evidence": "round 2: QA-005 fixed and verified (key = user + repo,branch,app,env,namespace,teamLabel,port,healthPath,bump; each field changed alone dispatches anew with the new value; genuinely identical POSTs share one dispatch incl. key-order shuffle, explicit defaults, canonical org case; per-user; 10 s expiry; concurrent mixes). Caps, rate-limit guard, workflow-ref refusal, concurrency reservation and release-on-failure still pass" },
+      "BT-25": { "status": "pass", "evidence": "shipService.spec.ts + api/ship.spec.ts + QA exact 14-key full-mode input set (17 in config_only per Dev)" },
+      "BT-26": { "status": "pass", "evidence": "shipUtils.spec.ts" }
+    },
+    "frontend": {
+      "FT-01": { "status": "pass", "evidence": "App.spec.ts (real environments.json) + QA ShipFromRepoPage.qa.spec.ts" },
+      "FT-02": { "status": "pass", "evidence": "environments.ship.spec.ts + QA strict === true variants" },
+      "FT-03": { "status": "pass", "evidence": "ShipCombobox.spec.ts" },
+      "FT-04": { "status": "pass", "evidence": "ShipConfigForm.spec.ts + ship.spec.ts" },
+      "FT-05": { "status": "pass", "evidence": "ShipConfigForm.spec.ts + shipHelpers.spec.ts" },
+      "FT-06": { "status": "pass", "evidence": "closed-label rendered-text assertions on form/progress/result and all 16 failure codes" },
+      "FT-07": { "status": "pass", "evidence": "ShipProgress.spec.ts" },
+      "FT-08": { "status": "pass", "evidence": "useShipPolling.spec.ts (note: merge of useShipPolling remains gated by human decision H-8; not a test failure)" },
+      "FT-09": { "status": "pass", "evidence": "ShipResult.spec.ts" },
+      "FT-10": { "status": "pass", "evidence": "ShipFailurePanel.spec.ts + page retry flow" },
+      "FT-11": { "status": "pass", "evidence": "ShipLogViewer.spec.ts + QA hostile text inert" },
+      "FT-12": { "status": "pass", "evidence": "shipRecentStorage.spec.ts, ship.spec.ts, ShipRecentList.spec.ts, auth.ship.spec.ts" },
+      "FT-13": { "status": "pass", "evidence": "ShipFromRepoPage.spec.ts" },
+      "FT-14": { "status": "pass", "evidence": "ShipFromRepoPage.spec.ts S0/S0e/S1/S2 + QA real-file S1 with zero API calls" },
+      "FT-15": { "status": "partial", "evidence": "hand-written structural audit passes (labels, names, ARIA refs, unique ids, live regions); axe-core was not run (no engine in repo)", "remaining": "real automated a11y engine pass belongs to E2E/UX-01" },
+      "FT-16": { "status": "pass", "evidence": "App.spec.ts deep-link tests + shipHelpers.spec.ts" }
+    },
+    "b5_legacy_status_route": {
+      "status": "pass",
+      "evidence": "401 without/with bad token (introspected + through /api), owner/mixed-case/apostrophe, system/unknown/empty never match, exact-match only, double by=, log-line fallback, unreadable log => platform only, not_found body, response shape {success,status} unchanged with displayTitle/jobId stripped (round 1; untouched by rework)"
+    },
+    "edge_cases_9_5": {
+      "same repo owning two apps": "pass (no dedupe across apps; 4 concurrent starts)",
+      "branch typed but not in first page / with .. / leading - / newline": "pass (BT-01 + QA matrix)",
+      "repo URL pasted instead of org/name": "pass",
+      "run beyond retention (404)": "pass (zero GitHub calls)",
+      "ship 30 days old with thousands of newer runs (<=3 calls)": "pass (Dev BT-09 test, re-run)",
+      "two tabs on one ship (1 upstream call)": "pass (single-flight; starter polling a fresh ship 50x = 1 search)",
+      "deep link across login / by another user": "pass (FT-16; other user => 403 via oid authz)",
+      "log > 5 MB": "pass (round 2: view = last 5 MB, skippedBytes/totalBytes exact, offsets contiguous, in-progress growth while truncated verified for the <=5 MB case, cache bound by LRU eviction, download >5 MB refetched uncached and complete up to 100 MB); a single >=~6 MB line is the QA-009 gap",
+      "reserved namespace (kube-system) rejected": "pass (BT-01, QA matrix incl. configured extras and app-default case)",
+      "cancel racing publish start": "pass (Dev BT-17)",
+      "user e-mail with apostrophe / mixed case; two e-mails sanitising identically": "pass (BT-22, BT-13, QA)",
+      "status request by repo reader: read ok, cancel/retry refused": "pass",
+      "PR closed without merge then re-ship": "partial (PR states in BT-10; no re-ship E2E)",
+      "browser reopened mid-ship": "not_run (E2E-05)",
+      "namespace collision (CONFIG_PR_FAILED hint)": "partial (classifier + UI copy; real collision needs aya-flux)",
+      "Wiz outage / hostile package label / trusted-job log injection / runner-pool saturation / config_only composition against real runs": "not_run (aya-flux WT-08/08b/11b, LT-01) except config_only fold which passes as BT-10 fixtures"
+    },
+    "REV-01": {
+      "status": "partial",
+      "evidence": "git diff c734ce4..HEAD shows no change to AKSDeployPage.vue / AKSInstalledAppsPage.vue (verified by QA in round 1; rework commits touch only services/shipService.js, services/shipStatusService.js, utils/logRedactor.js and tests/docs); 'no runtime logs/health UI' is a human review item"
+    }
+  },
+  "defects": [
+    {
+      "id": "QA-001", "round_found": 1, "severity": "high", "state": "closed_verified_round_2",
+      "title": "Prefixed env-var secret echoes are not redacted",
+      "verification": "Fix a6fcdc8 (no leading \\b; optional bounded _SUFFIX). QA re-ran with 30 names (GITHUB_/GH_/NPM_/SLACK_BOT_/SONAR_/ACCESS_/ID_ TOKEN, DB_/MYSQL_ROOT_/PG/DOCKER_ PASSWORD, REGISTRY_PASSWD, AWS_SECRET_ACCESS_KEY, ARM_/AZURE_CLIENT_SECRET, JWT_/SESSION_SECRET, SECRET_KEY_BASE, *_API_KEY, X-Api-Key, api-key, APIKEY, TF_VAR_db_password, camelCase accessToken/clientSecret/apiKey, Password, PASSWORD) x 7 forms (export, colon, spaced =, double-quoted, single-quoted, env cmd, Actions-timestamped debug line) x 4 value shapes (with / + = ; : - _ . @ ! #): value never survives. Seeded differential fuzz (3 000 lines) vs the spec-literal §7.3 generic pattern: no case where the spec pattern redacts and the implementation does not. 29 benign build-output lines unchanged"
+    },
+    {
+      "id": "QA-002", "round_found": 1, "severity": "high", "state": "closed_verified_round_2",
+      "title": "Quadratic (ReDoS) regexes in the log redactor",
+      "verification": "Fix a6fcdc8 (JWT run-start lookbehind, OSC body excludes ESC). 39 hostile 1 MB shapes covering every one of the 12 patterns + ANSI + PEM: slowest 21 ms. 4 MB vs 0.5 MB scaling test linear. 10 MB single 'token_' run 1.0 s (linear). 100 MB benign log 0.9 s; 100 MB secret-dense log 0.9 s. Residual, distinct problem: single lines >= ~6 MB overflow V8's regexp backtrack stack (see QA-009)"
+    },
+    {
+      "id": "QA-003", "round_found": 1, "severity": "medium", "state": "closed_verified_round_2_as_reported__adjacent_form_open_as_QA-010",
+      "title": "JSON-quoted secrets are not redacted",
+      "verification": "Fix a6fcdc8 (optional quote before the separator). Compact/spaced/uppercase/single-quoted/multi-key/nested JSON and YAML-quoted values are redacted with surrounding structure kept. The adjacent escaped-quote form is not covered: see QA-010"
+    },
+    {
+      "id": "QA-004", "round_found": 1, "severity": "low", "state": "closed_verified_round_2",
+      "title": "A quoted secret containing spaces is redacted only to the first space",
+      "verification": "Fix a6fcdc8 (quoted value as one token). 3 000 generated quoted lines (both quote kinds, two-word values, 12 key spellings, prefixes): neither word survives and text after the closing quote + space is kept. Escaped quote inside a quoted value consumed. Residual: characters glued directly after the closing quote (see QA-011)"
+    },
+    {
+      "id": "QA-005", "round_found": 1, "severity": "medium", "state": "closed_verified_round_2",
+      "title": "10 s dedupe key omits env and the other settings",
+      "verification": "Fix afb3208 (key = oid + JSON of all nine validated fields). Each of env, namespace, teamLabel, port, healthPath, bump, branch, app, repo changed alone within 10 s => new dispatch and the dispatch carries the new value; genuinely identical POSTs (sequential, key order shuffled, explicit defaults vs omitted, canonical org case) share one dispatch and one ship id; different users never share; window expires at 10 s; concurrent identical POSTs share while a different concurrent POST dispatches separately. Observation (not a defect): successful dedupe entries are never pruned (pre-existing; bounded by the 12/h global start cap)"
+    },
+    {
+      "id": "QA-006", "round_found": 1, "severity": "medium", "state": "closed_verified_round_2__side_effect_open_as_QA-008",
+      "title": "Unknown-ID miss cap bypassed by IDs minted within the 3-minute placeholder window",
+      "verification": "Fix afb3208 (getShipContext counts each distinct fresh ID once per user before the GitHub search). 100 distinct fresh IDs by one user => 200 x30 then 429 user_misses with Retry-After and <=31 searches; cap is per user (other users unaffected); old and fresh IDs share one counter (15+16 => 31st refused); the starter polling their own fresh ship 50x costs exactly 1 search and keeps 29 more of headroom; 3 concurrent own ships polled 20x each stay under the cap; applies to status, logs, cancel and retry-config-pr; the 60 s window slides; future/expired IDs never reach GitHub. Side effect: QA-008"
+    },
+    {
+      "id": "QA-007", "round_found": 1, "severity": "low", "state": "closed_verified_round_2",
+      "title": "Log cache memory bound claim did not match the code",
+      "verification": "Fix afb3208 (cache holds only the <=5 MB view tail + total length). 6.5 MB log: view = exactly the last 5 MB, skippedBytes + totalBytes = full length, chunked offsets reassemble the tail byte-exact, repeat views do not refetch; <=5 MB log cached whole (view+download+view = 1 fetch); >5 MB download refetches uncached and returns the whole log (100 MB cap enforced); 11 distinct >5 MB logs => oldest evicted (refetched), newest cached (LRU max 10 verified by call counts); redaction runs BEFORE slicing (secrets in dropped head and kept tail, PEM spanning the cut: none leak). Observation (accepted trade-off): every >5 MB download is one GitHub call + one synchronous redaction pass (~0.9 s per 100 MB)"
+    },
+    {
+      "id": "QA-008", "round_found": 2, "severity": "low", "state": "closed_verified_round_3",
+      "round_3_verification": "Fix 5c0348f (fresh markers in their own bounded TtlSingleFlightCache `freshMarks`, max 2000, 3-min TTL; `flags` is no longer touched by lookups). Dev's converted test passes. Independent variant (shipQaRound3.spec.ts): 2 100 lookups alternated between two users (30/min cap then 429s) after a succeeded ship was composed, status cache invalidated, ship re-read: ship_succeeded still 1 and ship_stage_completed unchanged. Code review: the only writers of `flags` are markOnce (per ship x event x stage), cancel-requested and watchdog-cancelled; none is reachable by unknown-ID lookups. Residual observation (not a defect): `freshMarks` is itself a 2000-entry LRU, so a flood can evict another user's fresh marker, costing that user at most one extra counted lookup; memory stays bounded.",
+      "owner": "Vue.js Developer (services/shipStatusService.js getShipContext)",
+      "title": "Fresh-ID markers share the bounded `flags` LRU and are written even for refused requests: a user can flush other ships' cancel/watchdog/metric de-dup flags",
+      "spec": "DD-14 / T12; NFR-009 (metrics) / BT-21",
+      "repro": "`flags.set('fresh:<user>:<cid>')` runs BEFORE recordMiss, and `flags` (max 2000, LRU) also holds `cancel:`, `wdcancel:` and `metric:` de-dup keys. After the 30/min cap is reached every further distinct fresh ID still inserts a marker before the 429 is thrown, so ~2 100 requests flush the cache. Reproduced: a succeeded ship's metrics are emitted once; after a stranger floods 2 100 fresh IDs (30 x 200, rest 429) and the status cache is invalidated, `ship_succeeded` is emitted a SECOND time (duplicated metrics corrupt the success-rate dashboard; an evicted `cancel:` flag turns CANCELLED into SUPERSEDED once V-4 is on; an evicted `wdcancel:` flag lets the watchdog re-cancel)",
+      "test": "tests/integration/service/shipQaRound2Behaviour.spec.ts :: [DEFECT QA-008 low] (it.fails)",
+      "impact": "Authenticated metric corruption / flag loss; memory stays bounded. Not exploitable for data access.",
+      "suggested_fix": "Keep the fresh markers in their own small Map/cache (max ~200, TTL 3 min) and/or set the marker only after recordMiss succeeded."
+    },
+    {
+      "id": "QA-009", "round_found": 2, "severity": "low", "state": "closed_verified_round_3",
+      "round_3_verification": "Fix 6bb6b88 (redactLine catches RangeError and returns the REPLACEMENT for that line only). Both converted tests pass. Independent probes: lines of 1/6/20 MB of the three throwing shapes (ghp_+letters, keyword+opening quote, eyJ- run) with a secret before AND after in the same line, and an 8 MB line between ordinary lines: no throw, the secret never survives, the neighbouring lines stay readable and are still redacted, the output is deterministic and idempotent; the logs route answers 200. Lines that do not overflow (e.g. 20 MB of letters or spaces with a secret at either end) are redacted in place, so nothing is skipped. Judgement of Dev's deviation 'an oversized line that overflows the regex stack is replaced whole': ACCEPTABLE. It is fail-closed, loses at most one pathological line (a legitimate build line of >5 MB is not realistic; the 5 MB log view cap already truncates), does not shift any other line, and offsets stay safe (getLogs clamps offset to the redacted text length). Residual observation: a still-growing un-newlined line that crosses the overflow threshold changes from partly redacted text to the replacement between two polls; the client's offset is clamped, so it cannot error.",
+      "owner": "Vue.js Developer (utils/logRedactor.js)",
+      "title": "A single log line of ~6 MB or more makes redactText throw RangeError; the logs route answers 503 for everyone",
+      "spec": "§7.3 / BT-15 / NFR availability",
+      "repro": "String.replace overflows V8's regexp backtrack stack on one un-newlined line: `ghp_` + 8 MB of letters, `<keyword>=\"` + 8 MB, and `eyJ-` x 2 M all throw `RangeError: Maximum call stack size exceeded` (threshold ~5-6 MB for the GitHub-token/JWT patterns, ~8 MB for the widened quoted pattern; 4 MB is fine). The reviewed baseline already threw for the GitHub-token pattern; the quoted pattern is newly affected by the widening. Through the route the response is 503 (fail-closed: no secret and no stack text in the body, verified), but the whole stage log is unreadable and downloadable for the starter and platform members",
+      "test": "shipQaRound2Redaction.spec.ts :: [DEFECT QA-009 low] (unit) and shipQaRound2Behaviour.spec.ts :: [DEFECT QA-009 low] (http) (it.fails)",
+      "impact": "A hostile repo can make its own ship's log permanently unreadable (and every viewer's request 503). Availability only.",
+      "suggested_fix": "Hard-wrap lines before the regex pass (e.g. process 64 KB slices of any longer line, with a small overlap) or catch RangeError per line and emit REPLACEMENT for that line."
+    },
+    {
+      "id": "QA-010", "round_found": 2, "severity": "medium", "state": "closed_verified_round_3__residual_at_3plus_levels_open_as_QA-012",
+      "round_3_verification": "Fix 6bb6b88 (optional backslash before the quote preceding the separator; escaped-quote value alternative). Converted test passes. Independent variants: 8 key names (password, secret, token, api_key, client_secret, DB_PASSWORD, GITHUB_TOKEN, accessToken) x real JSON.stringify chains of 1 and 2 embedding levels, plus `=` and `:` separators, single-quote escapes, spaced value, an escaped quote inside the value, a neighbour field kept: value never survives. NOT covered: 3 or more embedding levels (`\\\\\\\"key\\\\\\\":\\\\\\\"value\\\\\\\"`) and the literal two-backslash form: see QA-012.",
+      "owner": "Vue.js Developer (utils/logRedactor.js); Architect to ack in the §7.3 delta",
+      "title": "Escaped-quote JSON (a JSON log line embedded in a JSON string) is not redacted: key and value stay in clear (QA-003 fix is incomplete)",
+      "spec": "§7.3 generic pattern intent; BT-15; NFR-012; QA-003",
+      "repro": "`{\"msg\":\"{\\\"password\\\":\\\"<value>\\\"}\"}`, `password\\\":\\\"<value>\\\"` and `token\\\"=\\\"<value>\\\"` are returned unchanged: after the keyword comes a backslash, which neither the optional `[\"']?` nor `\\s*[:=]` accepts. This is the form docker/kubectl/Actions print when structured logs are serialised again",
+      "test": "shipQaRound2Redaction.spec.ts :: [DEFECT QA-010 medium] (it.fails)",
+      "impact": "Secrets echoed inside nested/serialised JSON reach users and the downloadable log (T10 / NFR-012).",
+      "suggested_fix": "Allow an optional backslash before the quote on both sides of the separator and before an opening value quote (e.g. `(?:\\\\?[\"'])?\\s*[:=]\\s*\\\\?(?:\"...\"|'...'|\\S+)`, with the escaped-quote value body `(?:[^\"\\\\]|\\\\.)*` terminated by `\\\\\"`)."
+    },
+    {
+      "id": "QA-011", "round_found": 2, "severity": "low", "state": "closed_verified_round_3",
+      "round_3_verification": "Fix 6bb6b88 (characters glued to a quoted value's closing quote are taken, stopping at whitespace and , ; ) } ]). Converted test passes. Independent variants: double/single quote, doubled quote, shell concatenation ('...' and \"...\" after the closing quote), $(cmd), escaped-quote form, export form, tail containing a backslash/Unicode/CR: the tail never survives; JSON neighbours ({\"k\":\"v\",\"user\":\"bob\",\"n\":1}, closing brace, list bracket, closing paren, tab-separated word, escaped-JSON neighbour) survive. Known and acceptable: a glued tail that itself contains a comma swallows the rest of the word (fail-closed over-redaction, e.g. `\"v\"abc,\"user\":\"bob\"}`).",
+      "owner": "Vue.js Developer (utils/logRedactor.js)",
+      "title": "Characters glued to the closing quote of a quoted value are left in clear (regression vs spec-literal `\\S+`)",
+      "spec": "§7.3 generic pattern `... \\s*[:=]\\s*\\S+` (took the whole word)",
+      "repro": "`<keyword>=\"abc\"TAIL` => `***REDACTED***TAIL`; shell-escaped `<keyword>='abc'\\''TAIL'` and SQL-style `<keyword>: 'it''TAIL'` likewise leave the continuation. The spec-literal pattern redacted all of these. Ordinary quoted values, JSON with commas/braces after the closing quote, and text after `quote + space` are correctly preserved (the widening is otherwise a superset of the spec pattern: 3 000-line differential fuzz clean)",
+      "test": "shipQaRound2Redaction.spec.ts :: [DEFECT QA-011 low] (it.fails)",
+      "impact": "Partial leak of the tail of unusual quoted secrets.",
+      "suggested_fix": "After the closing quote also consume non-space characters that are not JSON/URL delimiters, e.g. `(?:\"...\"|'...')[^\\s,;&}\\])]*`."
+    },
+    {
+      "id": "QA-012", "round_found": 3, "severity": "low", "state": "closed_verified_round_4__residual_multiword_at_levels_3_4_open_as_QA-013",
+      "round_4_verification": "Fix 0268ff6 (`\\\\{0,7}` before the quote). Converted test passes. Independent variants: 11 key names x real JSON.stringify chains of levels 1-4 redact the value and keep the field before it; literal 0..7 backslash forms x double/single quote x escaped/plain value x `=`/`:`; no regression of QA-001..QA-011 (all round 1-3 specs pass); false-positive lines unchanged; hostile shapes with long backslash runs linear (<= 26 ms at 1 MB). Limits: 5 real nesting levels (15 backslashes) and literal 8+ backslashes are NOT redacted (L-1, outside the declared bound, accepted); levels 3-4 over-redact the rest of the line after the secret (safe side). Residual inside the bound: QA-013.",
+      "owner": "Vue.js Developer (utils/logRedactor.js); Architect to ack in the §7.3 delta",
+      "title": "A secret inside three or more levels of JSON-in-JSON-string (and the literal two-backslash form) is returned in clear (residual of QA-010)",
+      "spec": "§7.3 generic pattern intent; BT-15; NFR-012; QA-010",
+      "repro": "(round 3) `...{\\\\\\\"password\\\\\\\":\\\\\\\"v\\\\\\\"}...` at levels 3-4 and the literal two-backslash form were returned unchanged.",
+      "test": "tests/integration/service/shipQaRound3.spec.ts :: [QA-012 fixed] (plain `it`, passes); plus shipQaRound4.spec.ts",
+      "limits": ["L-1: 5+ real nesting levels / 8+ literal backslashes not redacted (declared bound 0-7)"]
+    },
+    {
+      "id": "QA-013", "round_found": 4, "severity": "low", "state": "closed_verified_round_5", "fixed_in": "d14279e (Dev rework round 4)",
+      "verification": "Round 5: independently verified fixed by shipQaRound5.spec.ts (67 tests) and probes: 2-6 word values with space/tab/', '/' - ' separators and punctuation, 11 key names, real JSON.stringify nesting 1-4 and literal 1-7 backslash forms redacted whole, field before the secret readable; the round-4 [DEFECT QA-013] test is now a passing `it`; 1000-line old-vs-new grid shows 0 regressions; hostile 1 MB shapes <= 17.1 ms.",
+      "owner": "Vue.js Developer (utils/logRedactor.js); Architect to ack in the §7.3 delta",
+      "title": "A MULTI-WORD quoted secret inside 3-4 levels of JSON-in-JSON-string is redacted only up to its first word (words 2..n leak); levels 1-2 take the whole value",
+      "spec": "§7.3 generic pattern intent; BT-15; NFR-012; QA-004 (quoted value taken whole); QA-012",
+      "repro": "Real JSON.stringify chain of `{\"before\":\"b4\",\"<password-key>\":\"alphaWord betaWord gammaWord\",...}`: level 1 and 2 give `***REDACTED***` for the whole value; level 3 and 4 give `\\\\\\\"***REDACTED*** betaWord gammaWord\\\\\\\"`. Cause: the escaped-quote value alternative `\\\\\"(?:(?!\\\\\")[^])*\\\\\"` accepts exactly one backslash before the quote; at 3+ backslashes the value falls back to `\\S+` (first word only). Pass-phrases with spaces are uncommon, and the case needs 3-4 serialisation levels, so low; it is inside the bound Dev declared (0-7) and the Dev fix claims levels 1-4.",
+      "test": "tests/integration/service/shipQaRound4.spec.ts :: [DEFECT QA-013 low] levels 3-4 (it.fails)",
+      "impact": "Part of a multi-word secret echoed in triply serialised JSON reaches users and the downloadable log (T10 / NFR-012). Fail-open, narrow; GitHub Actions masking of registered secrets still applies at source.",
+      "suggested_fix": "Replace the escaped value alternative with a backreferenced one: `(\\\\\\\\{1,7})\"(?:(?!\\\\1\")[^])*\\\\1\"`. QA tried it on a copy in /tmp (production untouched): levels 1-4 whole-value redaction, the field after the key kept, hostile 1 MB shapes <= 6.4 ms (linear).",
+      "decision_needed": "Resolved: Dev applied the suggested one-line fix (d14279e) and QA re-verified it in round 5."
+    },
+    {
+      "id": "QA-014", "round_found": 5, "severity": "low", "state": "open",
+      "owner": "Vue.js Developer (utils/logRedactor.js); Architect to ack in the §7.3 delta; or human acceptance as L-2",
+      "title": "A MULTI-WORD quoted secret that itself contains a double quote leaks the words after the embedded quote when the log line is JSON-in-JSON-string (levels 2-4); level 1 is correct. PRE-EXISTING: not introduced by the QA-013 fix",
+      "spec": "§7.3 generic pattern intent; BT-15; NFR-012; QA-004 (quoted value taken whole); QA-010; QA-013",
+      "repro": "Real JSON.stringify chain of `{\"before\":\"b4\",\"<password-key>\":\"alphaW \\\"betaW\\\" gammaW deltaW\"}` (or `alphaW\\\" betaW gammaW deltaW`): level 1 redacts the whole value; at level 2 the embedded quote is serialised with 3 backslashes (delimiter: 1), at level 3 with 7 (delimiter: 3). The closing test `(?!\\1\")` also matches the tail of the longer run, so the value is closed at the embedded quote and the following words fall outside the match (leaks: level 2 = 2 or 3 words, level 3-4 = 2 or 3 words of 4). Differential: the old pattern leaks the same words at level 2 and more at levels 3-4 (3 vs 2), so the QA-013 fix is not worse; a quote-free value, a lone backslash, a newline and non-ASCII are taken whole at levels 1-4.",
+      "test": "tests/integration/service/shipQaRound5.spec.ts :: [DEFECT QA-014 low] levels 2-4 (it.fails), with a level-1 control and a not-worse-than-old differential test",
+      "impact": "Part of a multi-word secret that contains a double-quote character, echoed in doubly or more serialised JSON, reaches users and the downloadable log (T10 / NFR-012). Fail-open, narrow (needs a quote AND a space in the secret AND at least 2 serialisation levels); GitHub Actions masking of registered secrets still applies at source.",
+      "suggested_fix": "Require an EXACT-length closing run: `(\\\\{1,7})\"(?:(?!(?<!\\\\)\\1\")[^])*(?<!\\\\)\\1\"`. Verified on an in-memory copy only (production untouched, the full suite was not run against it): 0 leaks at levels 1-4 for embedded-quote, lone-backslash, trailing-backslash and plain multi-word values. Convert the `it.fails` to `it` in the same commit and re-run the ReDoS shapes.",
+      "decision_needed": "Orchestrator/human: fix (one line) or accept as a documented limit (L-2) like L-1. Not looped by QA."
+    }
+  ],
+  "defects_summary": {
+    "round_1_closed": 7,
+    "round_2_defects_closed_in_round_3": 4,
+    "round_3_defects_closed_in_round_4": 1,
+    "round_4_defects_closed_in_round_5": 1,
+    "open": 1,
+    "high": 0,
+    "medium": 0,
+    "low": 1,
+    "blocking_for_phase_2": [],
+    "recommended_before_flag_flip": ["QA-014 (or an explicit human acceptance as L-2)"],
+    "documented_limits": ["L-1: 5+ real JSON nesting levels / 8+ literal backslashes not redacted (declared 0-7 bound; accepted by the human 2026-10-22, not a defect; verified unchanged by the QA-013 fix)"],
+    "note": "Round 5 (delta): QA-013 verified fixed; no high or medium defect is open. Status is `fail` solely because one unresolved low defect (QA-014, found by the round-5 adversarial pass, PRE-EXISTING and not worse than before the fix) remains. The round-4 summary (1 open: QA-013 low) is superseded."
+  },
+  "round_4_defects_summary_history": {
+    "round_1_closed": 7,
+    "round_2_defects_closed_in_round_3": 4,
+    "round_3_defects_closed_in_round_4": 1,
+    "open": 1,
+    "low": 1,
+    "open_ids": ["QA-013"]
+  },
+  "round_3_defects_summary_history": {
+    "round_1_closed": 7,
+    "round_2_defects_closed_in_round_3": 4,
+    "open": 1,
+    "high": 0,
+    "medium": 0,
+    "low": 1,
+    "recommended_before_flag_flip": ["QA-012 (or an explicit human acceptance)"],
+    "note": "Round-3 summary kept for history."
+  },
+  "round_2_defects_summary_history": {
+    "round_1_closed": 7,
+    "open": 4,
+    "high": 0,
+    "medium": 1,
+    "low": 3,
+    "blocking_for_phase_2": [],
+    "recommended_before_flag_flip": ["QA-010", "QA-008", "QA-011", "QA-009"],
+    "note": "Round-2 summary kept for history: no open defect was high severity."
+  },
+  "dev_claims_verified_round_5": {
+    "diff_scope": "Verified: `git diff 7f5c4a8..HEAD --stat` = 3 files (utils/logRedactor.js 1 line, tests/integration/service/shipQaRound4.spec.ts 6 lines [it.fails -> it + header comment], docs/readiness/ship-from-repo-dev-status.json +17). Nothing else changed; tests/results and docs/security untouched by Dev.",
+    "QA-013_fixed": "Verified (see defects[QA-013].verification). The new pattern is `(\\\\{1,7})\"(?:(?!\\1\")[^])*\\1\"`; the added capture group does not affect replacement (plain string).",
+    "L-1_unchanged": "Verified: differential old-vs-new for 8-31 backslashes and real levels 5-6 is byte-identical (single- and multi-word); consistent and bounded; accepted by the human 2026-10-22; not a defect.",
+    "dev_test_claim_node_1249_of_1249": "Consistent with the environment: Dev's node 1249/1249 = the old 1228 + 20 health specs that passed + the former it.fails now a plain it. The 20 health specs pass only when a server answers on :3001; this run had one (nodemon -> node server.js, pid 53118, listening *:3001, /health 200; not started by QA). With an unreachable API_URL they fail exactly as baseline.",
+    "no_regression": "node 1316 run (1315 passed + 1 expected fail), jsdom 794/794, type-check exit 0; no regression of QA-001..QA-012."
+  },
+  "dev_claims_verified_round_4": {
+    "QA-012_fixed": "Holds for what was reported (single-word secrets, real nesting levels 1-4 = 0-7 backslashes; the it.fails repro is a plain `it` and passes). Independent variants (11 keys x levels 1-5, literal 0-9/12/16 backslashes, single/double quotes, `=`/`:`) confirm: levels 1-4 redacted, level 5 / 8+ backslashes not (declared 0-7 bound: accepted as L-1). NOT fully holding inside the bound: a multi-word quoted value at levels 3-4 leaks words 2..n (QA-013, new, low). Over-redaction after the secret at levels 3-4 (safe side). ReDoS: linear (<= 26 ms at 1 MB on 18 shapes incl. long backslash runs; 1 MB backslash run + secret 4 ms). No regression of QA-001..QA-011 (all round 1-3 specs pass; false-positive lines unchanged).",
+    "O-7_findPullRequestForBranch_metric": "Verified. Success: one info `github_api_call` (operation findPullRequestForBranch, repo, duration_ms, success true, correlation_id = the 4th argument, `unknown` when omitted); failure: warn for status < 500 (404/422/403) and error for 5xx / no status, status_code kept, the SAME error object rethrown; uninitialised client still rejects `GitHub client not initialized` and now also emits a failure metric (only behavioural difference: one extra log line). pulls.list arguments (owner, repo, head=<owner>:<branch>, state, per_page 1) and the merged/closed/open/null mapping are unchanged; 2- and 3-argument callers (aksService.getAppState, shipStatusService.getPr) get state 'all' as before. Observation O-7b (not a defect): both production callers pass no correlation id, so live metrics carry `unknown` (the ship correlation id `cid` is in scope at shipStatusService.js:596 but getPr is cached/shared across requests; the same accepted pattern as the cache-composed metrics deviation).",
+    "shipUtils_fixture_change": "Verified equivalent, not weakened: diff of 0268ff6 touches exactly 3 fixture lines (bearer header, basic header, url userinfo); the rebuilt strings evaluate byte-identical to the original literals; the it.each assertions (REPLACEMENT present, no hunter2/s3cr3t/abc123+/XYZ123, GH/AWS/npm secrets absent) are untouched; no contiguous credential-shaped literal remains in the file (PEM markers are split across concatenations).",
+    "no_regression": "node 1228 passed + 1 expected fail, jsdom 794/794, type-check exit 0; failures only the 20 known live-server health tests (reported separately)."
+  },
+  "dev_claims_verified_round_3": {
+    "all_four_fixed": "QA-008, QA-009, QA-010, QA-011 verified independently (see defects[].round_3_verification). Claim holds, with the QA-012 residual adjacent to QA-010 (3+ escaping levels)",
+    "five_it_fails_converted": "all 5 pass as plain `it` (and are stable across 4 runs of the node project)",
+    "sre_O1_github_api_call": "Dev's shipGithubApiCallMetric.spec.ts passes; not independently re-verified by QA (out of dispatch scope)",
+    "sre_O2_ship_rate_limited": "Dev's shipObservability.spec.ts passes; the 429 behaviour itself is exercised by QA's QA-006 tests (cap at the 31st lookup, Retry-After, details.limit=user_misses), all passing",
+    "sre_O3_O4_O5_O6": "Dev tests pass; O-4 and O-6 are the QA-008 / QA-009..011 fixes verified above; O-3 and O-5 not independently re-verified (out of scope)",
+    "no_regression": "QA-001..QA-007 round-2 specs (shipQaRound2Redaction, shipQaRound2Behaviour, shipRedactionLinear, shipStatusService, shipService, shipObservability ...) all pass; false-positive sanity (29 + 10 benign lines) unchanged; 14 hostile 200k-repeat shapes run in <= 31 ms (linear)"
+  },
+  "deviations_review_round_4": [
+    { "ref": "retry-config-pr requires the retrying user to have a linked GitHub identity (#7)", "verdict": "open_human_architect_item (H-2)", "reason": "Unchanged: stays an open Architect/H-2 decision; not raised as a defect." },
+    { "ref": "generic redaction pattern bounded to 0-7 backslashes before the quote", "verdict": "acceptable_documented_limit (L-1)", "reason": "Keeps matching linear; 5+ real nesting levels / 8+ backslashes is not a realistic CI-log shape and no spec contract covers it. The in-bound gap is QA-013." }
+  ],
+  "deviations_review_round_3": [
+    { "ref": "oversized line that overflows V8's regexp stack is replaced whole with ***REDACTED***", "verdict": "acceptable", "reason": "Fail-closed per line; a secret inside the oversized line is never returned; other lines are untouched and still redacted; offsets stay safe (clamped). Only pathological >5 MB single lines are affected; the log view is already capped at 5 MB." },
+    { "ref": "duration_ms omitted from ship_stage_completed when GitHub reports no job/step timestamps", "verdict": "acceptable", "reason": "Honest: a missing value is better than the earlier wrong one (O-5); Dev's test asserts 5 min / 15 min from timestamps on a 3-hour-old ship. Dashboards must treat the field as optional (SRE doc note)." },
+    { "ref": "cache-composed metrics (ship_succeeded, ship_stage_completed, ship_failed) carry only the ship correlation id, not the request id", "verdict": "acceptable", "reason": "They are emitted once per ship at compose time (shared across requests by the single-flight cache), so no single request id is correct; the ship id is the join key. Request-scoped lines (ship_authz_denied, ship_rate_limited, cancel/retry/watchdog logs) do carry requestId." },
+    { "ref": "retry-config-pr requires the retrying user to have a linked GitHub identity (#7)", "verdict": "open_human_architect_item (H-2)", "reason": "Unchanged: stays an open Architect/H-2 decision; not raised as a defect." }
+  ],
+  "dev_claims_verified": {
+    "rework_round_1_all_seven_fixed": "verified independently with adversarial variants (see defects[].verification); Dev's converted tests all pass; claims for QA-001, 002, 003 (as reported), 004, 005, 006, 007 hold",
+    "linear_time_claim": "verified: 1 MB hostile lines ~10-21 ms for every pattern (Dev claimed ~10 ms); NOT true for lines >= ~6 MB (QA-009)",
+    "fail_closed_identity_provider_none": "verified (round 1, rework did not touch)",
+    "flag_false_on_devsand_and_400_on_env": "verified (round 1)",
+    "ship_workflow_ref_unset_503": "verified (round 1)",
+    "requireAuth_everywhere": "verified (round 1)",
+    "oid_authorization_read_vs_mutate": "verified (round 1)",
+    "no_secret_or_token_in_responses_logs": "verified in round 1; round 2 additionally verified a 8 MB hostile line never reaches the response and no stack text is returned",
+    "tests_passed_true_in_dev_status": "accurate only with the caveat that 20 pre-existing live-server tests fail identically on the baseline"
+  },
+  "deviations_review": [
+    { "ref": "#0 flag false on devsand (spec 5.1 says true)", "verdict": "acceptable", "reason": "Orchestrator decision resolving a spec self-contradiction; fail-safe; flipping is a recorded human action (G-FLAG)." },
+    { "ref": "#1 SHIP_UNAVAILABLE 503 code, #2 limit='user_misses'", "verdict": "acceptable", "reason": "Additive catalogue entries; frontend treats them correctly. Spec delta recommended." },
+    { "ref": "#3 V-3/V-4 gate switches", "verdict": "acceptable", "reason": "Fail-closed; QA verified the V-3 switch behaviour." },
+    { "ref": "#5 missing/rejected trusted result on a succeeded job => UNKNOWN", "verdict": "acceptable", "reason": "Conservative." },
+    { "ref": "#6 log stage splitting by timestamp; <=10-entry log cache", "verdict": "acceptable (round 2)", "reason": "Round-1 'unacceptable as stated' resolved: the cache now holds only the <=5 MB tail + total length, so the 10 x 5 MB bound is true (QA-007 verified). Timestamp splitting remains best-effort. Accepted trade-off: a >5 MB download is refetched and re-redacted uncached on every request." },
+    { "ref": "#7 retry-config-pr requires the RETRYING user to have a linked GitHub identity", "verdict": "open_human_architect_item (H-2)", "reason": "Left as recorded in round 1 per dispatch: narrows spec 3.6.3 for a platform member with no GitHub link; fail-closed; decide with H-2 before the flag flips. Not raised as a defect." },
+    { "ref": "NEW: redaction widened beyond the §7.3 text (optional bounded _SUFFIX after the keyword, optional quote before the separator, quoted value taken whole)", "verdict": "acceptable, Architect ack still pending (non-blocking)", "reason": "Needed to cover env-var echoes (QA-001) and JSON (QA-003); QA found it a superset of the spec-literal pattern on a 6 000-line differential fuzz with no loss, and benign build output is untouched (29 lines). Known, harmless over-redaction: hyphenated forms such as `token-based: yes`. Gaps remain at the edges of the new grammar: QA-010 (escaped quotes), QA-011 (glued tail). Recommend the Architect records the widened grammar in the §7.3 spec delta together with the fixes for those two." },
+    { "ref": "NEW: dedupe key = user + all nine validated input fields", "verdict": "acceptable", "reason": "Exactly what DD-14/BT-24 need: verified field by field and for genuinely identical POSTs. Defaults are applied before keying, so omitted vs explicit defaults still dedupe." },
+    { "ref": "NEW: JWT match starts only at the beginning of a base64url run (lookbehind)", "verdict": "acceptable (narrow, recorded)", "reason": "Removes the quadratic behaviour (QA-002) and redacts JWTs after space, = : ( \" . , / Bearer and ANSI colour codes (11 placements tested). Narrowing vs the original `\\b`: a JWT glued directly after a hyphen (`x-eyJ...`) is no longer matched by the JWT pattern itself (still caught when a keyword/Authorization header precedes it). Observation, not raised as a defect." },
+    { "ref": "NEW: fresh-ID lookups count once per user+ID against the miss cap", "verdict": "acceptable design, defect in implementation detail", "reason": "Closes QA-006 and never penalises the starter (verified). The marker storage choice causes QA-008." },
+    { "ref": "#13 frontend owns default-view failure copy", "verdict": "acceptable", "reason": "Needed to satisfy the closed label set (FT-06); server wording shown only in Details." },
+    { "ref": "#14 no 'Connect GitHub' action in S2", "verdict": "acceptable", "reason": "Deferred to the H-2 A-delta per spec 3.6.1." },
+    { "ref": "#15 FT-15 structural audit instead of axe-core", "verdict": "acceptable with condition", "reason": "Recorded as partial; a real automated a11y pass is required at E2E/UX-01." },
+    { "ref": "other backend/frontend deviations (#4, #8-#12, #16-#23)", "verdict": "acceptable", "reason": "No contract impact found." }
+  ],
+  "open_human_items_affecting_qa": ["H-1", "H-2 (incl. deviation #7 retry identity)", "H-3", "H-4", "H-5", "H-6", "H-7", "H-8 (useShipPolling merge gate)", "V-3", "V-4", "V-5", "G-FLAG"],
+  "failures": [
+    {
+      "type": "known_baseline_live_server_failures_reported_separately",
+      "tests": "tests/integration/api/health.spec.ts (11) and tests/smoke/health.spec.ts (9)",
+      "error": "Round 5: none in this run (a server was listening on :3001); with an unreachable API_URL they fail with ECONNREFUSED exactly as baseline (20 failed | 1 passed)",
+      "identical_on_baseline_4b1a9c1": true,
+      "counted_against_feature": false
+    },
+    {
+      "type": "defect_reproduction_expected_fail",
+      "tests": "1 it.fails test (shipQaRound5.spec.ts)",
+      "defects": ["QA-014"]
+    }
+  ],
+  "not_run": [
+    { "id": "WT-01..WT-14 (incl. WT-04b, WT-08b, WT-09b, WT-11b)", "reason": "aya-flux workflow validation; out of scope for this repo and this dispatch (H-6 ownership, aya-flux not implemented)" },
+    { "id": "NFR-005 hostile-repo matrix (spec 7.4)", "reason": "runs in aya-flux CI; not available" },
+    { "id": "V-1..V-12 gate evidence", "reason": "need live devsand / aya-flux / platform actions; gates are open (V-3 and V-4 switches default false)" },
+    { "id": "E2E-01..E2E-08 (Playwright, tests/e2e/ship-from-repo.spec.ts)", "reason": "need live devsand with features.shipFromRepo=true (gated human action G-FLAG), the aya-flux workflow and a real identity provider (H-2); spec not written" },
+    { "id": "LT-01, LT-02, LT-03, RC-01", "reason": "need live devsand and aya-devops-rs runners; no environment" },
+    { "id": "SR-01", "reason": "security review / human sign-off (R-A6/R-A7, H-3 waiver) not available" },
+    { "id": "UX-01", "reason": "moderated usability test with 5 users; human activity" },
+    { "id": "BT-07 ACR matrix (unclaimed/same_repo/other_repo, ACR on/off, alias file)", "reason": "shipRegistryClient not implemented; blocked on H-3" },
+    { "id": "Real Entra->GitHub identity provider behaviour, preview host, org allowlist values, platform role values, SHIP_WORKFLOW_REF value", "reason": "open human items H-1, H-2, H-4, H-5, H-7; only fail-closed defaults and a test double exist" },
+    { "id": "V-4 live queue semantics (watchdog, SUPERSEDED, queuedBehind) and V-5 in-progress log behaviour", "reason": "fixtures only; live verification belongs to Phase 2 gates" },
+    { "id": "FT-15 axe-core engine pass", "reason": "no accessibility engine in the repo; structural audit only" },
+    { "id": "Coverage measurement", "reason": "not requested; vitest coverage thresholds are not enforced by repository configuration" }
+  ],
+  "correlation_ids": [],
+  "next_actions": [
+    "Orchestrator / human: decide QA-014 (low, pre-existing, narrow): either have the Vue.js Developer apply the one-line exact-run-closer change (suggested_fix; convert the one `it.fails` in shipQaRound5.spec.ts to `it` in the same commit; QA to re-run the ReDoS shapes) or record it as an accepted limit L-2 next to L-1; with either outcome the status can become `pass` (no other defect is open).",
+    "Architect: ack the widened §7.3 grammar (suffix / quote / quoted-value / glued tail / escaped quotes / oversized-line fail-closed) in the spec delta; decide deviation #7 together with H-2; issue the spec delta for SHIP_UNAVAILABLE / user_misses.",
+    "SRE (optional): O-7b - pass the ship correlation id from shipStatusService.getPr / aksService.getAppState to findPullRequestForBranch so the PR-lookup metric is joinable (today it logs `unknown`). Also document that ship_stage_completed.duration_ms is optional and that cache-composed metrics join on correlationId only.",
+    "Orchestrator: keep features.shipFromRepo=false; E2E/WT/V-gate items remain open human or aya-flux work."
+  ]
+}

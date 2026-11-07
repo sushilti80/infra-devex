@@ -1,0 +1,47 @@
+resources:
+  repositories:
+    - repository: docker
+      type: github
+      name: Aya-DevOpsTeam/docker-infra-live
+      ref: refs/heads/main
+      endpoint: Aya-DevOpsTeam
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - Dockerfile
+      - '**/Dockerfile'
+      - package.json
+      - package-lock.json
+      - server.js
+      - routes/**
+      - services/**
+      - srcV2/**
+      - middleware/**
+      - utils/**
+      - config.js
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - Dockerfile
+      - '**/Dockerfile'
+
+pool: podman-pool-1
+
+variables:
+  - group: docker-vg
+  - group: azdevopsterraform
+
+stages:
+- template: .templates/docker-build.yaml@docker
+  parameters:
+    dockerfilePath: '.'
+    imageName: 'self-service-infra'
+    tag: 'patch'   # Optional to overide the default tag can be major, minor, patch, major-beta, minor-beta, patch-beta

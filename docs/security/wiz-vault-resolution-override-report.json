@@ -1,0 +1,107 @@
+{
+  "feature": "vault-resolution-override",
+  "environment": "sand (pre-merge; no prod deploy evidence yet)",
+  "scan_target": "services/secretsService.js (loadVaultOverrides, resolveVaultNameWithFallback, setVaultNameOverride), routes/api.js (POST /api/secrets/vault-name-override), srcV2/pages/SecretsPage.vue (inline self-heal form), srcV2/services/api.ts (setVaultNameOverride client call)",
+  "gate": "pass",
+  "criticals": 0,
+  "highs": 0,
+  "timestamp": "2026-08-12T00:00:00Z",
+  "scan_date": "2026-08-12",
+  "scanner": "npm audit + manual OWASP-Top-10 review (Wiz CLI installed at /opt/homebrew/bin/wizcli but unauthenticated — WIZ_CLIENT_ID/WIZ_CLIENT_SECRET not set, no interactive browser/device-code auth available in this session)",
+  "severity_gate": "critical",
+  "commit": "74687a4fe1c0d622d23d990af998c5d49ea6766d",
+  "prd_path": "docs/prd/vault-resolution-override.md",
+  "spec_path": "docs/architecture/vault-resolution-override-spec.json",
+  "challenger_review": "docs/reviews/vault-resolution-override-arch-review-round2.md (verdict: approved)",
+  "dev_status": "docs/readiness/vault-resolution-override-dev-status.json (status: pass, 457 jsdom tests + new backend integration tests passing)",
+
+  "sli_slo_mapping": {
+    "applicable": true,
+    "reason": "New write endpoint (POST /api/secrets/vault-name-override) and a new GitHub-content read/write (docs/overrides/keyvault-overrides.json) both fall under existing dashboard coverage; one structured business-metric gap was found and fixed (see observability_gap_fixed below).",
+    "nfr_to_sli_map": [
+      { "nfr": "NFR-001 (Performance) — sidecar fetched at most once per 60s window", "sli": "trace.express.request.* p95/availability for POST /api/secrets/vault-name-override and GET /api/secrets/:appName/:environment (dd-trace auto-APM instruments every Express route automatically — no dashboard edit needed)", "dashboard": "docs/dashboards/api-health.json", "status": "covered, no change needed" },
+      { "nfr": "NFR-002 (Reliability) — write conflicts never silently lost", "sli": "vault_name_override_submitted{outcome:error, error_code:409} rate via logMetric (added this gate — see fix)", "dashboard": "docs/dashboards/dependency-health.json (github_api_call{operation} already covers the underlying getFileContent/createOrUpdateFile GitHub round-trips generically)", "status": "covered after fix" },
+      { "nfr": "NFR-003 (Security) — requireAuth + express-validator on 100% of inputs", "sli": "HTTP 401/400 rate via dd-trace + vault_name_override_submitted{error_code}", "dashboard": "docs/dashboards/api-health.json (error-rate widget, generic by route)", "status": "covered" },
+      { "nfr": "NFR-004 (Observability) — one correlationId-prefixed debug log per vault naming resolution source", "sli": "n/a (debug-level tracing signal, not a dashboard SLI by design — grep-by-correlationId workflow per repo convention)", "dashboard": "none required; verified directly in code, see below", "status": "verified present" },
+      { "nfr": "NFR-006 (Backward compatibility) — unchanged behavior for vaults with no override", "sli": "n/a — regression-test gate (FR-007), not a runtime SLI", "dashboard": "none", "status": "n/a" }
+    ],
+    "conclusion": "api-health.json needs no edit: dd-trace auto-instruments any new Express route by service+env, so the new endpoint is covered immediately. dependency-health.json's github_api_call{operation} metric already covers the new getFileContent call for the sidecar (loadVaultOverrides emits it); createOrUpdateFile (used by setVaultNameOverride) does not emit a logMetric today — this is a pre-existing gap in services/githubService.js shared by every other write path in the codebase (submitSecretViaGitOps, triggerWorkflow's sibling writes), not introduced by this feature; out of this feature's scope to fix comprehensively, flagged as an existing observability gap below."
+  },
+
+  "observability_gap_fixed": {
+    "finding": "POST /api/secrets/vault-name-override was missing a logMetric structured event on any code path (400/422/409/500/success) — every sibling /api/secrets/* endpoint (secret_list_fetched, secret_create_submitted, secret_apps_discovered) emits one per the repo's NFR-OBS-001 convention, but the new endpoint only had logger.warn/logger.error text lines.",
+    "fix_applied": "Added logger.logMetric('vault_name_override_submitted', { correlationId, user, target, appName, environment, outcome, error_code?, latency_ms }) on every branch (400, 422, 409, 500, success) in routes/api.js, matching the exact pattern used by GET /api/secrets/:appName/:environment.",
+    "file": "routes/api.js",
+    "verified": "Re-ran tests/integration/service/vaultNameOverrideRoute.spec.ts (6/6 pass) and get_errors on routes/api.js (clean) after the change."
+  },
+
+  "correlationId_debug_logging_verified": {
+    "requirement": "NFR-004 / FR-006: resolveKeyVaults() emits exactly one correlationId-prefixed logger.debug line per vault naming vaultDir and source ('override'|'metadata'|'live'|'unresolved'), and logging failures never interrupt resolution.",
+    "location": "services/secretsService.js resolveKeyVaults() loop (around the resolveVaultNameWithFallback call)",
+    "evidence": "logger.debug(`[${correlationId}] resolveKeyVaults: vaultDir=${vault.vaultDir} source=${result.source}`) wrapped in its own try/catch so a logging failure cannot break resolution — matches spec exactly.",
+    "result": "PASS"
+  },
+
+  "dependency_scan": {
+    "tool": "npm audit --omit=dev --json",
+    "critical": 0,
+    "high": 0,
+    "moderate": 0,
+    "low": 0,
+    "feature_introduced": 0,
+    "note": "package.json / package-lock.json have zero diff for this feature — no new dependency added."
+  },
+
+  "wiz_cli": {
+    "available_binary": true,
+    "path": "/opt/homebrew/bin/wizcli",
+    "version": "1.36.0",
+    "authenticated": false,
+    "reason": "No WIZ_CLIENT_ID/WIZ_CLIENT_SECRET in environment and no interactive/device-code auth available in this agent session. No fabricated scan output is included.",
+    "commands_attempted": ["which wizcli", "wizcli version", "wizcli auth --help", "wizcli dir scan --help"],
+    "status": "SKIPPED",
+    "substituted_with": [
+      "npm audit --omit=dev (production SCA)",
+      "manual OWASP Top 10 review of the new endpoint, sidecar write path, and Vue self-heal form",
+      "targeted re-run of tests/integration/service/vaultNameOverrideRoute.spec.ts and tests/integration/service/secretsService.spec.ts"
+    ]
+  },
+
+  "focus_area_review": {
+    "new_write_endpoint_input_validation": {
+      "result": "PASS",
+      "notes": "POST /api/secrets/vault-name-override validates every field via express-validator before any GitHub call: vaultDir (1-512 chars), name (1-256), resourceGroup (optional, 1-256), appName (^[a-zA-Z0-9_-]{1,64}$), environment (^[a-zA-Z0-9_-]{1,32}$), target (enum 'live'|'sand'), qualifier (optional, ^[a-zA-Z0-9_-]{1,64}$) — identical regex conventions to the existing GET /api/secrets/:appName/:environment route. A 400 short-circuits before any resolveKeyVaults() or GitHub call. Beyond schema validation, the endpoint also enforces a server-side allow-list check (calls resolveKeyVaults()/matchVaultsFromEntries and rejects with 422 if the submitted vaultDir is not among the vaults actually discovered for appName/environment/target/qualifier) before writing — prevents a client from writing an override for an arbitrary/non-existent vaultDir path (path-traversal-adjacent risk), matching the existing submitSecretViaGitOps() allow-list pattern."
+    },
+    "optimistic_concurrency_sha_handling": {
+      "result": "PASS",
+      "notes": "setVaultNameOverride() reads the sidecar via githubService.getFileContent() (returns { content, sha } or null on 404), merges the entry, and calls createOrUpdateFile(repo, branch, path, content, message, file ? file.sha : null). githubService.createOrUpdateFile() passes sha through to Octokit's createOrUpdateFileContents; a stale sha causes GitHub to reject with an HTTP 409/422/412-class error, which githubService re-throws with .status intact (confirmed by reading services/githubService.js lines 267-295 — no swallowing). setVaultNameOverride() catches exactly error.status in {409,422,412} and rethrows as err.code='CONFLICT', which routes/api.js maps to HTTP 409 with correlationId. No data-loss path: a concurrent edit is never overwritten blindly, the client must re-read and retry. Verified against tests/integration/service/vaultNameOverrideRoute.spec.ts's 409-mapping test."
+    },
+    "no_secret_or_pii_leakage_in_new_log_lines": {
+      "result": "PASS",
+      "notes": "Reviewed every new log/logMetric call in secretsService.js and routes/api.js for this feature: fields logged are vaultDir, source, appName, environment, target, qualifier, error.message, and req.user?.email (verifiedBy/user) — all consistent with existing repo-wide logging conventions (user email is already logged on every other /api/secrets/* and /api/apps route, not a new PII exposure class). No Key Vault secret value, override content beyond name/resourceGroup (which are Key Vault names/RG identifiers, not secret material), or GitHub token/credential ever appears in a log line. grep across services/secretsService.js confirms secretValue-handling code (encryptValueWithSops, 0600 temp file) is pre-existing and untouched by this feature."
+    },
+    "no_new_octokit_client": {
+      "result": "PASS",
+      "notes": "loadVaultOverrides()/setVaultNameOverride() use only githubService.getFileContent()/createOrUpdateFile(), which internally use this.octokit (Infrastructure App) — never codeOctokit. Matches FR-002 AC4 and NFR-003."
+    },
+    "no_new_xss_sink_in_vue_form": {
+      "result": "PASS",
+      "notes": "grep for v-html/innerHTML in srcV2/pages/SecretsPage.vue: no matches. The new inline 'Set name manually' form binds overrideName/overrideResourceGroup via v-model to plain <input> elements and submits via JSON POST — no raw HTML rendering of user input anywhere in the diff."
+    },
+    "sidecar_repo_write_scope": {
+      "result": "PASS (design-verified)",
+      "notes": "loadVaultOverrides()/setVaultNameOverride() always target config.github.serviceRepo directly (never mapRepo(target)), per FR-002 AC5 — confirmed in code (no mapRepo call in either function). This is a deliberate, spec-approved deviation from the branch+PR GitOps pattern (direct commit to default branch); reviewed and accepted by the Architecture Challenger (round 2, approved) with documented rationale (60s TTL requirement can't be met by a PR-gated write) — not re-litigated here."
+    }
+  },
+
+  "executable_checks": [
+    { "command": "npm audit --omit=dev --json", "result": "pass", "notes": "0 critical/high/moderate/low across 302 production dependencies." },
+    { "command": "git diff --stat -- package.json package-lock.json", "result": "pass (empty)", "notes": "No dependency changes for this feature." },
+    { "command": "npx vitest run --project node tests/integration/service/vaultNameOverrideRoute.spec.ts tests/integration/service/secretsService.spec.ts", "result": "pass (with pre-existing unrelated failures)", "notes": "vaultNameOverrideRoute.spec.ts: 6/6 pass. secretsService.spec.ts: 56/59 pass — the 3 failures (TS-043 network-sandboxed live-resolver timeout, 'app-e regression', 'classifyEnvironmentTier nonProduction') are documented pre-existing baseline flakiness in docs/readiness/vault-resolution-override-dev-status.json (reproduced identically with/without this feature via git stash comparison), not introduced by this gate's logMetric edit." },
+    { "command": "npm run type-check", "result": "pass", "notes": "vue-tsc --noEmit: no errors." },
+    { "command": "grep -r 'v-html|innerHTML' srcV2/pages/SecretsPage.vue", "result": "pass (no matches)" }
+  ],
+
+  "remediation_plan": [],
+  "re_scan_condition": "Re-scan if the sidecar write path, endpoint validation, or auth model changes, or if wizcli authentication becomes available (recommend running wizcli dir scan --path . once WIZ_CLIENT_ID/WIZ_CLIENT_SECRET are provisioned for this repo's CI)."
+}

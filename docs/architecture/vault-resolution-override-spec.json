@@ -1,0 +1,492 @@
+{
+  "specVersion": "1.0",
+  "feature": {
+    "name": "vault-resolution-override",
+    "summary": "Add a human-correctable override tier (with a pass-through slot for a future metadata tier) that takes priority over the live Terragrunt resolver, letting users fix vaults the parser cannot resolve directly from the Secrets page."
+  },
+  "sourceDocument": "vault-resolution-override-spec.md",
+  "status": "ready_for_challenger",
+  "lastModified": "2026-08-12",
+
+  "acceptance": {
+    "acceptance_criteria": [
+      "Setting an override for a vaultDir persists across a page reload and is reflected in the next resolveKeyVaults() call within one 60s cache TTL window",
+      "resolveKeyVaults() checks overrides[vaultDir] before invoking terragruntLocalsResolver; when an override exists, the live resolver is never called for that vault",
+      "resolveVaultNameWithFallback() applies priority override > metadata > live and returns { name, resourceGroup, source }",
+      "resolveKeyVaults() always calls the helper with metadata: undefined in this PRD's scope; a missing/absent metadata argument (and, in the future Phase B shape, a missing metadata.keyvaults field) is treated as a normal no-op fall-through to the live resolver, never as an error",
+      "POST /api/secrets/vault-name-override rejects the write with a 4xx response (including correlationId) if the submitted vaultDir is not among the vaults discovered by resolveKeyVaults()/matchVaultsFromEntries for the given appName/environment/target/qualifier",
+      "A sha conflict on the sidecar write returns a non-2xx response with correlationId; the write is never silently lost or overwritten without a fresh read",
+      "loadVaultOverrides() always reads/writes config.github.serviceRepo regardless of the target value passed to resolveKeyVaults(), and never calls mapRepo(target)",
+      "Every resolveKeyVaults() invocation emits exactly one correlationId-prefixed logger.debug line per vault naming vaultDir and source",
+      "Vaults with no override and no metadata entry resolve identically to pre-feature behavior (tier 3, live resolver only)",
+      "The 'Set name manually' control appears only for vaults whose vaultName is null/falsy, and on successful submission the vault list is refetched without a full page reload"
+    ],
+    "user_stories": [
+      {
+        "as": "app owner viewing the Secrets page",
+        "i_want": "to manually correct a Key Vault name the live resolver could not determine",
+        "so_that": "I can list and manage secrets for my app without waiting on a resolver code change",
+        "acceptance_criteria": [
+          "An inline 'Set name manually' control appears next to any vault showing 'Key Vault name unavailable'",
+          "Submitting a name (and optional resource group) persists it and the vault selector shows the corrected name immediately, without a full page reload",
+          "The correction persists across a page reload and across future visits by any user viewing the same app/environment",
+          "On submission failure (validation error or write conflict), an inline error is shown and the form stays editable for retry"
+        ]
+      },
+      {
+        "as": "platform engineer debugging a vault resolution issue",
+        "i_want": "to see which tier (override, metadata, or live) produced a given vault's name",
+        "so_that": "I can diagnose resolution behavior without ad-hoc code changes or manual reproduction",
+        "acceptance_criteria": [
+          "Every resolveKeyVaults() call emits one correlationId-prefixed debug log line per vault stating vaultDir and the resolution source",
+          "Logging failures never interrupt or fail the resolution call itself"
+        ]
+      },
+      {
+        "as": "self-service-infra maintainer",
+        "i_want": "the override feature to ship without any change to the external service-catalog CI workflow or Terraform modules",
+        "so_that": "the fix is deployable immediately without cross-repo coordination",
+        "acceptance_criteria": [
+          "No changes are made to self-service-custom-infra.yml or terraform-modules to ship this feature",
+          "A missing/absent metadata.keyvaults field is treated as a normal no-op fall-through, not an error requiring Phase B implementation here"
+        ]
+      }
+    ]
+  },
+
+  "technical": {
+    "components": {
+      "backend": [
+        {
+          "path": "services/secretsService.js",
+          "change_type": "modify",
+          "endpoints": [],
+          "dependencies": ["githubService", "terragruntLocalsResolver"]
+        },
+        {
+          "path": "routes/api.js",
+          "change_type": "modify",
+          "endpoints": [
+            {
+              "method": "POST",
+              "path": "/api/secrets/vault-name-override",
+              "request_schema": {
+                "vaultDir": "string (required) - exact internal vault directory identifier",
+                "name": "string (required) - corrected Key Vault name",
+                "resourceGroup": "string (optional) - corrected resource group",
+                "appName": "string (required) - matches ^[a-zA-Z0-9_-]{1,64}$",
+                "environment": "string (required) - matches ^[a-zA-Z0-9_-]{1,32}$",
+                "target": "enum 'sand'|'live' (required) - used only to run the discovery allow-list check",
+                "qualifier": "string (optional) - matches ^[a-zA-Z0-9_-]{1,64}$"
+              },
+              "response_schema": {
+                "success": "boolean",
+                "data": "object - the persisted override entry { vaultDir, name, resourceGroup, appName, environment, qualifier, verifiedBy, verifiedAt }",
+                "correlationId": "string (uuid)"
+              },
+              "validation": [
+                "vaultDir, name, appName, environment, target are required",
+                "resourceGroup, qualifier are optional",
+                "appName/environment/qualifier reuse the existing express-validator regex conventions from GET /api/secrets/:appName/:environment",
+                "target restricted to the same enum ('sand'/'live') accepted by resolveKeyVaults()"
+              ],
+              "errors": [
+                {"code": 400, "condition": "express-validator field validation failure", "message": "field-level error array, correlationId included"},
+                {"code": 422, "condition": "vaultDir not among vaults discovered by resolveKeyVaults() for appName/environment/target/qualifier", "message": "vaultDir does not match a discovered vault"},
+                {"code": 409, "condition": "sidecar file sha changed between read and write (concurrent edit)", "message": "Override file was modified concurrently; retry the request"},
+                {"code": 401, "condition": "missing/invalid auth token", "message": "handled by requireAuth middleware"},
+                {"code": 500, "condition": "unexpected GitHub API failure", "message": "Failed to persist vault name override"}
+              ]
+            }
+          ],
+          "dependencies": ["secretsService", "githubService"]
+        }
+      ],
+      "frontend": [
+        {
+          "path": "srcV2/pages/SecretsPage.vue",
+          "change_type": "modify",
+          "ui_changes": [
+            "Inline 'Set name manually' form (name input, optional resource-group input) shown only when a vault's vaultName is null/falsy",
+            "Accessible labels (not placeholder-only) on all inputs; keyboard-operable",
+            "Inline error message on submission failure, form remains editable"
+          ],
+          "user_interactions": [
+            {"action": "open inline form for an unresolved vault", "result": "name/resourceGroup inputs shown alongside existing 'Key Vault name unavailable' text"},
+            {"action": "submit corrected name", "result": "calls POST /api/secrets/vault-name-override, then refetches vault list on success"},
+            {"action": "submission fails", "result": "inline error shown, form stays open and editable"}
+          ]
+        }
+      ],
+      "external": []
+    },
+
+    "api_endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/secrets/vault-name-override",
+        "auth": "requireAuth",
+        "status": "new",
+        "request_schema": {
+          "vaultDir": "string",
+          "name": "string",
+          "resourceGroup": "string (optional)",
+          "appName": "string",
+          "environment": "string",
+          "target": "'sand'|'live'",
+          "qualifier": "string (optional)"
+        },
+        "response_schema": {
+          "success": "boolean",
+          "data": "object (persisted override entry)",
+          "correlationId": "string"
+        },
+        "validation": [
+          "express-validator regex checks matching GET /api/secrets/:appName/:environment conventions",
+          "vaultDir must be discovered by resolveKeyVaults()/matchVaultsFromEntries before the write is accepted"
+        ],
+        "errors": [
+          {"code": 400, "condition": "invalid input", "message": "field-level validation error array"},
+          {"code": 422, "condition": "vaultDir not discovered", "message": "vaultDir does not match a discovered vault"},
+          {"code": 409, "condition": "sha conflict on sidecar write", "message": "Override file was modified concurrently; retry the request"}
+        ]
+      },
+      {
+        "method": "GET",
+        "path": "/api/secrets/:appName/:environment",
+        "auth": "requireAuth",
+        "status": "existing-unchanged",
+        "request_schema": {"appName": "string", "environment": "string", "target": "'sand'|'live'", "vaultDir": "string (optional)", "qualifier": "string (optional)"},
+        "response_schema": {"success": "boolean", "data": "array of secrets", "vaults": "array", "qualifiers": "array", "correlationId": "string"},
+        "validation": ["unchanged from current implementation"],
+        "errors": [
+          {"code": 422, "condition": "qualifier ambiguous or vaultDir mismatch", "message": "unchanged"},
+          {"code": 404, "condition": "no secret file found", "message": "unchanged"}
+        ]
+      }
+    ],
+
+    "data_contracts": {
+      "keyvault_override_sidecar": {
+        "location": "docs/overrides/keyvault-overrides.json in config.github.serviceRepo (Aya-DevOpsTeam/service-catalog), read/written via githubService.getFileContent()/createOrUpdateFile() using githubService.octokit only",
+        "schema": {
+          "<vaultDir>": {
+            "name": "string - corrected Key Vault name",
+            "resourceGroup": "string (optional) - corrected resource group",
+            "appName": "string - display/audit only, never part of the lookup key",
+            "environment": "string - display/audit only, never part of the lookup key",
+            "qualifier": "string (optional) - display/audit only, never part of the lookup key",
+            "verifiedBy": "string - user identity who submitted the override",
+            "verifiedAt": "string (ISO 8601 timestamp)"
+          }
+        },
+        "validation": [
+          "Keyed by the exact vaultDir string used elsewhere in secretsService/terragruntLocalsResolver — no new derivation/normalization logic",
+          "File is created lazily on first override write; does not need to pre-exist",
+          "A malformed or missing sidecar file causes loadVaultOverrides() to return an empty override set (not an error)",
+          "Repeat submission for an existing vaultDir key overwrites that entry",
+          "DELIBERATE DEVIATION from submitSecretViaGitOps' branch+PR GitOps pattern: writes commit directly to the service-catalog repo's default branch (defaultBranch = process.env.SERVICE_CATALOG_BRANCH || 'main', the same default githubService.getFileContent() already uses) via githubService.createOrUpdateFile(serviceRepo, defaultBranch, path, content, message, sha) - no feature branch is created and no PR is opened. Justification: (1) PRD Goal 1's success metric requires the override to be reflected in the next resolveKeyVaults() call within one 60s cache TTL window, which a PR-gated write cannot satisfy since the file only changes on merge; (2) this is a display-only correction to a new, dedicated sidecar path, not a Terraform/infrastructure change subject to the branch+PR/CODEOWNERS review gate that protects docs/metadata/* and Terraform modules; (3) write safety is still enforced via the same sha-based optimistic-concurrency check submitSecretViaGitOps() uses (409 on stale sha) - only the branch-creation/PR steps are omitted, not the concurrency guard.",
+          "docs/overrides/ requires no new CODEOWNERS entry in service-catalog: it is a new, dedicated path distinct from docs/metadata/* and Terraform modules, so no existing reviewer group's approval gate is bypassed by this direct-commit pattern; tracked as an assumption alongside the PRD's existing assumption that githubService.octokit already has write access to docs/ in the service-catalog repo (PRD Section 10)"
+        ]
+      },
+      "resolve_vault_name_with_fallback_result": {
+        "location": "in-memory return value of resolveVaultNameWithFallback(vaultEntry, overrides, metadata) in services/secretsService.js",
+        "schema": {
+          "name": "string | null",
+          "resourceGroup": "string | null",
+          "source": "'override' | 'metadata' | 'live' | 'unresolved'"
+        },
+        "validation": [
+          "Priority order: override > metadata > live",
+          "When overrides[vaultDir] exists, source is 'override' and the live resolver is not invoked",
+          "metadata is always undefined when called from resolveKeyVaults() in this PRD's scope; a missing metadata argument is a normal no-op, falling through to live resolution unchanged from pre-feature behavior",
+          "When neither override nor live resolution produce a name, source is 'unresolved' and name is null"
+        ]
+      }
+    },
+
+    "flows": [
+      {
+        "name": "Vault name resolution with override tier",
+        "steps": [
+          "resolveKeyVaults() enumerates candidate vaults for appName/environment/target/qualifier",
+          "For each vault, resolveVaultNameWithFallback(vaultEntry, overrides, metadata=undefined) is called",
+          "If overrides[vaultDir] exists, that value is returned with source='override' and the live resolver is skipped",
+          "Otherwise (metadata always undefined in this scope), terragruntLocalsResolver.resolveName()/resolveResourceGroup() are called as today",
+          "One correlationId-prefixed logger.debug line is emitted per vault naming vaultDir and source",
+          "resolveKeyVaults() returns vaults with vaultName/resourceGroup populated as before"
+        ],
+        "error_paths": [
+          {"at_step": 2, "error": "loadVaultOverrides() sidecar read fails or file missing", "handling": "returns empty override set; resolution falls through to live resolver unchanged"},
+          {"at_step": 4, "error": "live resolver throws or returns null", "handling": "source='unresolved', name=null, caller's existing 'Key Vault name unavailable' UI path preserved"}
+        ]
+      },
+      {
+        "name": "Override submission",
+        "steps": [
+          "User submits corrected name via SecretsPage.vue inline form",
+          "POST /api/secrets/vault-name-override validates request fields",
+          "Endpoint calls resolveKeyVaults()/matchVaultsFromEntries to confirm vaultDir is a real discovered vault",
+          "Endpoint reads docs/overrides/keyvault-overrides.json (current content + sha) via githubService.getFileContent(serviceRepo, path, defaultBranch), where defaultBranch = process.env.SERVICE_CATALOG_BRANCH || 'main'",
+          "Endpoint merges/overwrites the entry keyed by vaultDir and commits directly to defaultBranch via githubService.createOrUpdateFile(serviceRepo, defaultBranch, path, content, message, sha) - a deliberate deviation from submitSecretViaGitOps' branch+PR pattern (see data_contracts.keyvault_override_sidecar.validation for rationale); no branch is created and no PR is opened",
+          "Endpoint responds { success, data, correlationId }",
+          "Frontend refetches the vault list; corrected name appears without a full page reload"
+        ],
+        "error_paths": [
+          {"at_step": 2, "error": "field validation failure", "handling": "400 response with field errors and correlationId"},
+          {"at_step": 3, "error": "vaultDir not discovered", "handling": "422 response with correlationId; write is not attempted"},
+          {"at_step": 5, "error": "sha mismatch (concurrent edit)", "handling": "409 response with correlationId; client may retry with a fresh read"}
+        ]
+      }
+    ],
+
+    "error_scenarios": [
+      {
+        "scenario": "Sidecar file docs/overrides/keyvault-overrides.json does not exist yet",
+        "handling": "loadVaultOverrides() treats a 404 from getFileContent() as an empty override set; resolution falls through to live resolver",
+        "user_message": "No override exists for this vault; existing 'Key Vault name unavailable' behavior is unchanged",
+        "logging": "No error logged; treated as a normal, expected state on first use"
+      },
+      {
+        "scenario": "Sidecar file content is malformed JSON",
+        "handling": "loadVaultOverrides() catches the parse error and returns an empty override set rather than throwing",
+        "user_message": "Resolution silently falls through to the live resolver for all vaults",
+        "logging": "Warning logged with correlationId noting the parse failure, without failing the resolution call"
+      },
+      {
+        "scenario": "Client submits a vaultDir that resolveKeyVaults() does not discover for the given appName/environment/target/qualifier",
+        "handling": "Endpoint rejects the write with 422 before any GitHub call is made",
+        "user_message": "vaultDir does not match a discovered vault",
+        "logging": "Logged with correlationId, appName, environment, target, and the rejected vaultDir"
+      },
+      {
+        "scenario": "Concurrent override writes race on the same sidecar file",
+        "handling": "createOrUpdateFile() is called with the sha read moments earlier; GitHub rejects a stale sha with a 409-class error which the endpoint surfaces as a non-2xx response",
+        "user_message": "Override file was modified concurrently; retry the request",
+        "logging": "Logged with correlationId; zero data loss since the concurrent edit is preserved and the client's write is rejected, not merged blindly"
+      },
+      {
+        "scenario": "metadata argument (or future metadata.keyvaults field) is missing/undefined",
+        "handling": "resolveVaultNameWithFallback() treats this as a normal no-op and falls through to the next tier (live) — never throws, never logs as an error",
+        "user_message": "n/a — invisible to the user; resolution proceeds via override or live tier",
+        "logging": "No error or warning logged for this case; it is the expected, common path in this PRD's scope"
+      },
+      {
+        "scenario": "requireAuth rejects an unauthenticated request to POST /api/secrets/vault-name-override",
+        "handling": "Standard 401 handled by existing requireAuth middleware, unchanged from other /api/secrets/* routes",
+        "user_message": "Authentication required",
+        "logging": "Handled by existing auth middleware logging convention"
+      }
+    ]
+  },
+
+  "testing": {
+    "functional_test_scenarios": [
+      {
+        "scenario": "Override present short-circuits the live resolver",
+        "steps": [
+          "Seed overrides map with an entry for a known vaultDir",
+          "Call resolveVaultNameWithFallback() for that vaultDir with the seeded overrides and metadata=undefined"
+        ],
+        "assertions": [
+          "Returned name/resourceGroup match the override entry",
+          "source is 'override'",
+          "terragruntLocalsResolver mock is never called"
+        ]
+      },
+      {
+        "scenario": "Metadata entry present, override absent (helper called directly, Phase B path)",
+        "steps": [
+          "Call resolveVaultNameWithFallback(vaultEntry, overrides={}, metadata={ keyvaults: [{ vaultDir, name, resourceGroup }] })"
+        ],
+        "assertions": [
+          "Returned name/resourceGroup match the metadata entry",
+          "source is 'metadata'",
+          "terragruntLocalsResolver mock is never called"
+        ]
+      },
+      {
+        "scenario": "Both override and metadata absent — unchanged live-resolver behavior",
+        "steps": [
+          "Call resolveKeyVaults() for a vaultDir with no override entry (metadata is always undefined at this call site)"
+        ],
+        "assertions": [
+          "terragruntLocalsResolver.resolveName()/resolveResourceGroup() mocks are called exactly as before this feature",
+          "source is 'live' or 'unresolved' depending on the resolver's mocked return value"
+        ]
+      },
+      {
+        "scenario": "IDM-style nested-qualifier vaultDir resolved purely via override",
+        "steps": [
+          "Seed override for vaultDir 'infrastructure/idm/_idmapplications/notif/dev/keyvault'",
+          "Call resolveVaultNameWithFallback() for that vaultDir"
+        ],
+        "assertions": [
+          "Returned name matches the override with no dependency on live resolver success",
+          "source is 'override'"
+        ]
+      },
+      {
+        "scenario": "Override round-trips for a target='live' vault (sidecar always in serviceRepo)",
+        "steps": [
+          "Submit an override while resolving a target='live' vault (e.g. ayaApplications, discovered against config.github.infrastructureLiveRepo)",
+          "Call loadVaultOverrides() again"
+        ],
+        "assertions": [
+          "The override is found regardless of target, because loadVaultOverrides() always reads config.github.serviceRepo and never calls mapRepo(target)"
+        ]
+      },
+      {
+        "scenario": "POST /api/secrets/vault-name-override rejects a vaultDir not discovered by resolveKeyVaults()",
+        "steps": [
+          "Submit a request with a vaultDir that resolveKeyVaults() does not return for the given appName/environment/target/qualifier"
+        ],
+        "assertions": [
+          "Response status is 422",
+          "correlationId is present in the response",
+          "No GitHub write call is made"
+        ]
+      },
+      {
+        "scenario": "POST /api/secrets/vault-name-override handles a sha conflict",
+        "steps": [
+          "Mock getFileContent() to return a sha, then mock createOrUpdateFile() to reject with a stale-sha error"
+        ],
+        "assertions": [
+          "Response status is non-2xx",
+          "correlationId is present",
+          "The client can retry with a fresh read"
+        ]
+      },
+      {
+        "scenario": "SecretsPage.vue self-heal control appears only for unresolved vaults and refetches on success",
+        "steps": [
+          "Render SecretsPage with one vault having vaultName=null and one with a resolved name",
+          "Submit the inline form for the unresolved vault"
+        ],
+        "assertions": [
+          "The inline control is rendered only for the vault with vaultName=null",
+          "On successful submission, the vault list is refetched and the corrected name is displayed without a full page reload",
+          "On submission failure, an inline error is shown and the form remains editable"
+        ]
+      }
+    ],
+    "edge_cases": [
+      "Sidecar file missing entirely on first-ever override write (lazy creation)",
+      "Sidecar file present but contains malformed JSON",
+      "Concurrent loadVaultOverrides() calls during a cache miss share one in-flight GitHub request (stampede protection)",
+      "Repeat submission for an existing vaultDir overwrites rather than duplicates the entry",
+      "Override submitted with only resourceGroup omitted (optional field)",
+      "Qualifier omitted on override submission for a vault with no sub-app disambiguation needed"
+    ],
+    "unit_tests": [
+      {
+        "component": "secretsService.loadVaultOverrides",
+        "test_cases": [
+          "Happy path: valid sidecar JSON returns parsed override map",
+          "404 from getFileContent returns empty override map, not an error",
+          "Malformed JSON content returns empty override map without throwing",
+          "Cache TTL: a second call within 60s does not trigger a new GitHub read",
+          "Concurrent calls during a cache miss share one in-flight promise",
+          "Always calls getFileContent(config.github.serviceRepo, ...) and never calls mapRepo(target)"
+        ],
+        "mocks": ["githubService.getFileContent", "Date.now (for TTL boundary tests)"]
+      },
+      {
+        "component": "secretsService.resolveVaultNameWithFallback",
+        "test_cases": [
+          "Override present returns source='override' and skips the live resolver",
+          "Override absent, metadata entry present (direct call) returns source='metadata'",
+          "Both absent falls through to live resolver, source='live' or 'unresolved'",
+          "metadata=undefined is treated as a no-op, not an error"
+        ],
+        "mocks": ["terragruntLocalsResolver.resolveName", "terragruntLocalsResolver.resolveResourceGroup"]
+      },
+      {
+        "component": "secretsService.resolveKeyVaults",
+        "test_cases": [
+          "Emits exactly one correlationId-prefixed logger.debug line per vault with vaultDir and source",
+          "Logging failure does not interrupt or fail the resolution call",
+          "Vaults with no override resolve identically to pre-feature behavior"
+        ],
+        "mocks": ["logger.debug", "terragruntLocalsResolver", "loadVaultOverrides"]
+      }
+    ],
+    "integration_tests": [
+      {
+        "scenario": "POST /api/secrets/vault-name-override full read-modify-write lifecycle",
+        "steps": [
+          "Call the endpoint with a valid, discoverable vaultDir",
+          "Verify the sidecar file is read then written with the correct sha",
+          "Call the endpoint again for the same vaultDir with a corrected value"
+        ],
+        "assertions": [
+          "First call creates the entry; response includes correlationId and the persisted data",
+          "Second call overwrites the entry (no duplication)",
+          "resolveKeyVaults() called afterward reflects the override"
+        ]
+      },
+      {
+        "scenario": "requireAuth and express-validator gating on the new endpoint",
+        "steps": [
+          "Call the endpoint unauthenticated",
+          "Call the endpoint with missing/invalid required fields"
+        ],
+        "assertions": [
+          "Unauthenticated request is rejected before validation/business logic runs",
+          "Invalid fields produce a 400 with field-level errors and correlationId"
+        ]
+      }
+    ],
+    "e2e_tests": [
+      {
+        "scenario": "User corrects an unresolved vault name from the Secrets page",
+        "user_journey": [
+          "Navigate to Secrets page",
+          "Select an app/environment whose vault shows 'Key Vault name unavailable'",
+          "Open the 'Set name manually' inline form and submit a corrected name",
+          "Reload the page"
+        ],
+        "assertions": [
+          "Corrected name appears immediately after submission without a full page reload",
+          "Corrected name persists after a page reload",
+          "The override wins over any live-resolver result on subsequent loads"
+        ]
+      }
+    ]
+  },
+
+  "nfrs": {
+    "performance": {
+      "override_sidecar_fetch_frequency": "at most once per 60-second window per process (cache hit rate >= 99% of resolveKeyVaults() calls within a TTL window, no concurrent stampede)",
+      "api_response_time": "<500ms for POST /api/secrets/vault-name-override (95th percentile), consistent with existing /api/secrets/* endpoints"
+    },
+    "security": [
+      "POST /api/secrets/vault-name-override uses requireAuth — same policy as all other /api/secrets/* routes, zero new role/permission model",
+      "100% of endpoint inputs validated via express-validator before any GitHub write",
+      "No new Octokit client/credential introduced; reuses githubService.octokit (Infrastructure App) only"
+    ],
+    "reliability": [
+      "100% of write conflicts (stale sha) surfaced to the caller as a non-2xx response rather than silently overwriting a concurrent edit",
+      "Zero data-loss incidents in the override file across concurrent submissions",
+      "A malformed or missing sidecar file never causes resolveKeyVaults() to error; it falls through to the live resolver"
+    ],
+    "scale": {
+      "concurrent_override_writes": "sha-based optimistic concurrency handles concurrent submissions without data loss",
+      "github_api_calls": "override tier adds at most 1 GitHub read per 60s window per process, well within the existing <5000/hour budget"
+    }
+  },
+
+  "dependencies": {
+    "internal": [
+      "services/secretsService.js (resolveKeyVaults, matchVaultsFromEntries)",
+      "services/githubService.js (getFileContent, createOrUpdateFile, octokit)",
+      "services/terragruntLocalsResolver.js (resolveName, resolveResourceGroup)",
+      "routes/api.js (requireAuth middleware, express-validator conventions)",
+      "srcV2/pages/SecretsPage.vue (existing vault selector and 'Key Vault name unavailable' rendering)"
+    ],
+    "external": [
+      "GitHub API (Aya-DevOpsTeam/service-catalog repo, docs/overrides/keyvault-overrides.json)"
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "feature": "service-catalog-prefill",
+  "status": "pass",
+  "tests_passed": true,
+  "type_check_passed": true,
+  "coverage": {
+    "components": "97%",
+    "composables": "87%",
+    "AppSelector.vue": "94%",
+    "ProjectInfoForm.vue": "94%",
+    "infrastructure_folder": "97.61%"
+  },
+  "output_path": "srcV2/components/infrastructure/AppSelector.vue",
+  "deliverables": {
+    "FR-007_backend_fix": "services/infrastructureService.js - getApplicationDetails() fixed to use docs/metadata/{appName}-{environment}.json primary path + normalized return shape",
+    "FR-002_api_route": "routes/api.js - GET /api/app-metadata/:appName/:environment added with validation, requireAuth, 400/401/404/500 handling",
+    "FR-008_types": "srcV2/types/infrastructure.types.ts - InstalledApp extended with costCenter/commitSha, AppMetadata interface added",
+    "FR-006_api_method": "srcV2/services/api.ts - getAppMetadata(appName, environment) added",
+    "FR-005_app_selector": "srcV2/components/infrastructure/AppSelector.vue + AppSelector.spec.ts created",
+    "FR-003_prefill_wiring": "srcV2/pages/CustomInfrastructurePage.vue wired with AppSelector + handlePrefill/handleSelectorError; srcV2/components/infrastructure/ProjectInfoForm.vue has prefillData prop with watch"
+  },
+  "test_counts": {
+    "total": 350,
+    "new_tests": 46
+  },
+  "failures": [],
+  "timestamp": "2025-07-15T20:05:00Z"
+}

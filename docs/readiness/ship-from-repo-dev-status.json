@@ -1,0 +1,667 @@
+{
+  "feature": "ship-from-repo",
+  "slice": "backend+frontend",
+  "slices": {
+    "backend": {
+      "status": "complete",
+      "head": "c734ce4",
+      "output_path": "routes/ship.js"
+    },
+    "frontend": {
+      "status": "complete",
+      "head": "see commits.frontend",
+      "output_path": "srcV2/pages/ShipFromRepoPage.vue"
+    }
+  },
+  "status": "complete",
+  "owner": "Vue.js Developer (backend slice and frontend slice, dispatched by Orchestrator)",
+  "branch": "feature/ship-from-repo-prd",
+  "pr": 143,
+  "date": "2026-10-22",
+  "summary": "Both scoped slices are implemented. Backend: /api/ship endpoints 1-9, requireAuth + ownership on the legacy status route (B-5), status resolver, failure classifier, validators, redactor, caches, config.ship, flag (false). Frontend (spec Phase 3): PageId 'ship', flag-driven environments getters, ship Pinia store, useShipPolling (own file, own commit - H-8), recent-ships storage with logout clearing, ShipFromRepoPage S0-S7 + 8 components, ship API client, App.vue home card (hidden unless an environment has features.shipFromRepo) + page block + ?ship= deep link surviving the MSAL redirect via sessionStorage ship.pendingDeepLink, DocsPage Ship from Repo section. The backend flag is still false on devsand, so the card/page are hidden by default (tested against the real data/environments.json); the fail-closed API states (403 REPO_NOT_ACCESSIBLE / IDENTITY_NOT_LINKED, 503 SHIP_UNAVAILABLE, 429/503 PLATFORM_RATE_LIMITED, preview.state=not_configured) have specific UI. Everything real (identity, preview host, org allowlist, workflow ref, V-gates, aya-flux) remains gated on the human items below. AKSDeployPage.vue / AKSInstalledAppsPage.vue untouched.",
+  "tests_passed": true,
+  "type_check_passed": true,
+  "type_check_note": "`npm run type-check` (vue-tsc) exit 0 before (baseline) and after the frontend slice. No lint script exists in package.json. `vite build` (to a temp outDir) also compiles.",
+  "output_path": "srcV2/pages/ShipFromRepoPage.vue",
+  "failures": [],
+  "tests": {
+    "command": "npx vitest run --project node  &&  npx vitest run --project jsdom (npm test)",
+    "combined": {
+      "jsdom": {
+        "before": {
+          "files": 26,
+          "run": 553,
+          "passed": 553,
+          "failed": 0
+        },
+        "after": {
+          "files": 43,
+          "run": 788,
+          "passed": 788,
+          "failed": 0
+        },
+        "new_tests": 235
+      },
+      "node": {
+        "before": {
+          "run": 757,
+          "passed": 737,
+          "failed": 20
+        },
+        "after": {
+          "run": 757,
+          "passed": 737,
+          "failed": 20
+        },
+        "note": "unchanged by the frontend slice; the 20 failures are the pre-existing live-server tests tests/integration/api/health.spec.ts (11) and tests/smoke/health.spec.ts (9) (ECONNREFUSED http://localhost:3001)"
+      },
+      "type_check": "exit 0"
+    },
+    "frontend_files": [
+      "srcV2/stores/environments.ship.spec.ts",
+      "srcV2/stores/auth.ship.spec.ts",
+      "srcV2/stores/ship.spec.ts",
+      "srcV2/utils/shipHelpers.spec.ts",
+      "srcV2/utils/shipRecentStorage.spec.ts",
+      "srcV2/services/api.ship.spec.ts",
+      "srcV2/composables/useShipPolling.spec.ts",
+      "srcV2/components/ship/ShipCombobox.spec.ts",
+      "srcV2/components/ship/ShipConfigForm.spec.ts",
+      "srcV2/components/ship/ShipProgress.spec.ts",
+      "srcV2/components/ship/ShipResult.spec.ts",
+      "srcV2/components/ship/ShipFailurePanel.spec.ts",
+      "srcV2/components/ship/ShipLogViewer.spec.ts",
+      "srcV2/components/ship/ShipRecentList.spec.ts",
+      "srcV2/pages/ShipFromRepoPage.spec.ts",
+      "srcV2/pages/DocsPage.ship.spec.ts",
+      "srcV2/App.spec.ts"
+    ],
+    "frontend_helper": "srcV2/components/ship/ship.fixtures.ts",
+    "backend_slice_evidence": {
+      "baseline_before": {
+        "files": 23,
+        "run": 367,
+        "passed": 347,
+        "failed": 20
+      },
+      "after": {
+        "files": 30,
+        "run": 757,
+        "passed": 737,
+        "failed": 20
+      },
+      "new_tests": {
+        "run": 390,
+        "passed": 390,
+        "failed": 0
+      }
+    },
+    "baseline_before": {
+      "files": 23,
+      "run": 367,
+      "passed": 347,
+      "failed": 20
+    },
+    "after": {
+      "files": 30,
+      "run": 757,
+      "passed": 737,
+      "failed": 20
+    },
+    "new_tests": {
+      "run": 390,
+      "passed": 390,
+      "failed": 0
+    },
+    "run": 757,
+    "passed": 737,
+    "failed": 20,
+    "failed_note": "All 20 failures are pre-existing and unchanged: tests/integration/api/health.spec.ts (11) and tests/smoke/health.spec.ts (9) call a live server on http://localhost:3001 (ECONNREFUSED in this environment). No regression: every previously passing test still passes.",
+    "files": [
+      "tests/integration/service/shipUtils.spec.ts",
+      "tests/integration/service/shipValidators.spec.ts",
+      "tests/integration/service/shipClassifierIdentity.spec.ts",
+      "tests/integration/service/shipStatusService.spec.ts",
+      "tests/integration/service/shipService.spec.ts",
+      "tests/integration/service/shipCredentials.spec.ts",
+      "tests/integration/api/ship.spec.ts"
+    ],
+    "helpers": [
+      "tests/helpers/shipFixtures.js",
+      "tests/helpers/shipIdentityTestDouble.js"
+    ],
+    "jsdom_suite": "788/788 passed (backend slice had not run it)",
+    "gitleaks_note": "Secret-shaped fixtures (redaction tests) are assembled at runtime from fragments so no secret-shaped literal exists in the repo; pre-commit gitleaks passed on every commit without allow-list changes.",
+    "rework_round_1": {
+      "node": {
+        "files": 35,
+        "run": 982,
+        "passed": 962,
+        "failed": 20,
+        "note": "20 = pre-existing live-server health failures (tests/integration/api/health.spec.ts 11 + tests/smoke/health.spec.ts 9); the 7 QA it.fails regression tests were converted to plain it and pass; +1 download test in api/ship.spec.ts, +10 in the new shipRedactionLinear.spec.ts"
+      },
+      "jsdom": {
+        "files": 44,
+        "run": 794,
+        "passed": 794,
+        "failed": 0
+      },
+      "type_check": "exit 0"
+    },
+    "rework_round_2": {
+      "node": {
+        "files": 39,
+        "run": 1146,
+        "passed": 1126,
+        "failed": 20,
+        "note": "20 = pre-existing live-server health failures (tests/integration/api/health.spec.ts 11 + tests/smoke/health.spec.ts 9); no it.fails remain: the 5 QA round-2 it.fails (QA-008, QA-009 x2, QA-010, QA-011) were converted to plain it without weakening assertions; +10 new tests (6 O-2/O-3/O-5 in shipObservability.spec.ts, 4 O-1 in shipGithubApiCallMetric.spec.ts)"
+      },
+      "jsdom": {
+        "files": 44,
+        "run": 794,
+        "passed": 794,
+        "failed": 0
+      },
+      "type_check": "exit 0"
+    }
+  },
+  "ft_coverage": {
+    "FT-01": "App.spec.ts (card hidden by default incl. real data/environments.json devsand=false; shown on flag; reactive; click navigates; page auth gate) + environments.ship.spec.ts (PageId 'ship' + cleanup)",
+    "FT-02": "environments.ship.spec.ts (flag-driven, arbitrary env id, enabled+aks+flag, strict true, fail-closed on empty)",
+    "FT-03": "ShipCombobox.spec.ts (roles/aria-expanded/controls/activedescendant, Arrow/Home/End/Enter/Escape, wrap, free text commit, text-only options)",
+    "FT-04": "ShipConfigForm.spec.ts + ship.spec.ts (default branch, typed branch, pasted URL, generic not-accessible naming the org, empty list text naming the org, specific 503/identity states, 5-min cache, truncated hint)",
+    "FT-05": "ShipConfigForm.spec.ts + shipHelpers.spec.ts (DNS-1123, port 1024-65535, health path, defaults, Advanced collapsed, app-name prefill, $PORT text, single env read-only vs select, reserved-namespace server error on field)",
+    "FT-06": "Rendered-text assertions with the closed label set on form, progress, result and all 16 failure codes (no image/tag/digest/namespace/Flux/buildpack/correlation ID by default; correlation ID only in Details/copy payload)",
+    "FT-07": "ShipProgress.spec.ts (7->5 mapping incl. groups/skipped/failed, aria-live polite, Details, Cancel rules)",
+    "FT-08": "useShipPolling.spec.ts (15 s cadence, 30/60/60 s backoff + reset, fatal stop, stop on terminal, report-only non-terminal failure keeps polling, stale in-flight ignored, restart replaces, unmount, navigation cleanup + unregister, minAttempt retry guard)",
+    "FT-09": "ShipResult.spec.ts (version/duration/PR label, preview available/not_configured/pending/unavailable_chart, tampered URLs dropped, PR open/merged/closed, post-merge copy, Technical details collapsed, Ship new version text)",
+    "FT-10": "ShipFailurePanel.spec.ts (all 16 codes + unknown fallback, retry matrix, VERSION_COLLISION no retry, errorLine text-only, Details content, copy payload, cancelled, report-only runner) + page retry-config flow",
+    "FT-11": "ShipLogViewer.spec.ts (nothing fetched until open, 15 s refresh with offset append, stop on complete/close/unmount, stage switch, available:false, truncation notice, text-only, copy, download, errors)",
+    "FT-12": "shipRecentStorage.spec.ts (user-scoped key, 20 cap, tamper/corrupt dropped, https-only prUrl, length caps), ship.spec.ts (write on 202, only non-terminal refreshed, <=3 concurrent, 403/404/error, remove/clear), ShipRecentList.spec.ts (escaping), auth.ship.spec.ts (clear on logout), page spec",
+    "FT-13": "ship.spec.ts + page spec (prefill from settings, fallback to repo/branch/app+defaults, recent-entry branch fallback, post-merge read-only port/health, request omits them)",
+    "FT-14": "Page spec (S0 skeleton aria-busy, S0e + retry, S1 no env + Back to home with no API call, S2 not-linked copy/disabled form/recents shown) + ShipRecentList.spec.ts notices + noticeKindForError matrix",
+    "FT-15": "PARTIAL BY DESIGN - structural a11y audit helper in ShipFromRepoPage.spec.ts (labels, button/link names, unique ids, combobox/aria-describedby references, aria-expanded boolean, one h1, live region, alert roles) over form/Advanced/S1/S0e/S2/progress/result/failure. axe-core is not a dependency of this repo and none was added.",
+    "FT-16": "App.spec.ts (park validated ?ship= for unauthenticated users, invalid discarded, restore after redirect/sign-in, cleared after use, tampered value discarded) + shipHelpers.spec.ts + ship.spec.ts (advisory debounced 500 ms, de-duplicated per (env,app,repo) for 60 s, different key calls again)"
+  },
+  "frontend_uncovered": [
+    {
+      "id": "FT-15 (axe-core engine)",
+      "reason": "No accessibility engine dependency exists and none was added (product owner: no new dependencies); a hand-written structural audit stands in. A real axe/Playwright a11y pass belongs to E2E/UX-01."
+    },
+    {
+      "id": "E2E-01…08 (Playwright, spec 9.4)",
+      "reason": "Need the live devsand flow and features.shipFromRepo=true, which is a gated human action; not written or run in this slice."
+    },
+    {
+      "id": "UX-01 / REV-01 (spec 9.4)",
+      "reason": "Human/process activities; REV-01 evidence: git diff c734ce4..HEAD shows no change to srcV2/pages/AKSDeployPage.vue or AKSInstalledAppsPage.vue."
+    }
+  ],
+  "bt_coverage": {
+    "BT-01": "shipValidators.spec.ts (118 cases: every field, git-ref edge cases, fuzz set, DNS-1123, port/healthPath/bump, org allowlist + canonical case, reserved namespaces incl. configured extras, UUIDv7 rule)",
+    "BT-02": "api/ship.spec.ts",
+    "BT-03": "shipValidators.spec.ts + api/ship.spec.ts (config derivation, POST rejects non-flag env, /api/environments serves flag=false)",
+    "BT-04": "shipClassifierIdentity.spec.ts + shipService.spec.ts + api/ship.spec.ts",
+    "BT-05": "shipCredentials.spec.ts (recording fake Code-App vs Infrastructure-App clients, real githubService/aksService/shipService code)",
+    "BT-06": "shipService.spec.ts",
+    "BT-07": "PARTIAL - GitHub-only ownership matrix + app-state matrix covered; ACR on/off matrix, unclaimed/same_repo/other_repo and alias-file honouring NOT coverable (H-3 shipRegistryClient not implemented)",
+    "BT-08": "shipService.spec.ts",
+    "BT-09": "shipStatusService.spec.ts (incl. 30-day-old ship + 2 000 newer runs => 3 calls)",
+    "BT-10": "shipStatusService.spec.ts (stage/state combos, attempt fold, N-1 a-d, PR states, preview states); 'chart not preview-capable' only via buildPreviewUrl unit (no chart signal source in the status path)",
+    "BT-11": "shipStatusService.spec.ts (forgery matrix incl. N3-A4 exact step names, Emit steps, skipped-never-success)",
+    "BT-12": "shipClassifierIdentity.spec.ts",
+    "BT-13": "shipStatusService.spec.ts + api/ship.spec.ts (read vs mutate, e-mail collision, differing oid => 404)",
+    "BT-14": "shipUtils.spec.ts + shipStatusService.spec.ts",
+    "BT-15": "shipUtils.spec.ts",
+    "BT-16": "api/ship.spec.ts",
+    "BT-17": "api/ship.spec.ts",
+    "BT-18": "api/ship.spec.ts",
+    "BT-19": "shipStatusService.spec.ts (fixtures only; V-4 gate)",
+    "BT-20": "shipStatusService.spec.ts (fixtures only; V-4 gate)",
+    "BT-21": "shipStatusService.spec.ts + shipService.spec.ts",
+    "BT-22": "api/ship.spec.ts",
+    "BT-23": "shipStatusService.spec.ts",
+    "BT-24": "shipService.spec.ts (+ concurrency regression tests added after code review)",
+    "BT-25": "shipService.spec.ts + api/ship.spec.ts",
+    "BT-26": "shipUtils.spec.ts"
+  },
+  "uncovered_bts": [
+    {
+      "id": "BT-07 (part)",
+      "reason": "ACR-label ownership (unclaimed / same_repo / other_repo, 'ACR on/off', repo alias file) requires shipRegistryClient, which is blocked on H-3 and deliberately not implemented; SHIP_ACR_READ_ENABLED has no effect."
+    },
+    {
+      "id": "BT-03 (part)",
+      "reason": "'extend environmentsConfig.spec.ts' not done; the same assertions live in the new specs so no existing spec file was edited."
+    },
+    {
+      "id": "BT-10 (part)",
+      "reason": "'chart not preview-capable' has no signal source on the status path; only buildPreviewUrl(previewCapable=false) is unit-tested."
+    }
+  ],
+  "commits": [
+    {
+      "hash": "d6e0d8b",
+      "message": "feat(ship): shipId (UUIDv7), ttlSingleFlightCache, logRedactor utils (BT-14/15/26)"
+    },
+    {
+      "hash": "9205a26",
+      "message": "feat(ship): config.ship block, shipFromRepo flag (devsand=false), validators, platformTeam (BT-01/03)"
+    },
+    {
+      "hash": "bee78ad",
+      "message": "feat(ship): failure classifier + identity provider seam (none + test double) (BT-04/12)"
+    },
+    {
+      "hash": "8ccfdd0",
+      "message": "feat(ship): status resolver, attempt fold, annotation validation, authz, logs; additive github/aks helpers"
+    },
+    {
+      "hash": "bcad0f4",
+      "message": "feat(ship): /api/ship routes (endpoints 1-9), shipService, legacy status route auth+ownership"
+    },
+    {
+      "hash": "6f5e05d",
+      "message": "chore(ship): SHIP_* env vars in .env.example/.env.template (no secrets, fail-closed defaults)"
+    },
+    {
+      "hash": "2990910",
+      "message": "fix(ship): reserve start caps/dedupe synchronously, retry lock, sanitise untrusted buildHint"
+    },
+    {
+      "slice": "frontend",
+      "hash": "3ccce49",
+      "message": "feat(ship-ui): types, helpers, recent storage, ship API client, stores gating (FT-01/02/12)"
+    },
+    {
+      "slice": "frontend",
+      "hash": "3dc3acd",
+      "message": "feat(ship-ui): useShipPolling composable (FT-08) - isolated for H-8",
+      "note": "Own commit so it can be reverted/swapped for a useWorkflowPolling extension if H-8 is rejected. Gates merge of useShipPolling."
+    },
+    {
+      "slice": "frontend",
+      "hash": "b5ec516",
+      "message": "feat(ship-ui): ship Pinia store (FT-04/12/13/16 store parts)"
+    },
+    {
+      "slice": "frontend",
+      "hash": "c64dfc4",
+      "message": "feat(ship-ui): ship components - combobox, form, progress, result, failure, logs, recent, notices (FT-03/05-07/09-11)"
+    },
+    {
+      "slice": "frontend",
+      "hash": "0ccc03f",
+      "message": "feat(ship-ui): ShipFromRepoPage state machine S0-S7 (FT-04/12/13/14/15)"
+    },
+    {
+      "slice": "frontend",
+      "hash": "410fdfc",
+      "message": "feat(ship-ui): App home card (flag-gated), ship page block, ?ship= deep link across login, Docs section (FT-01/16)"
+    }
+  ],
+  "commits_note": "Backend commits first, then the six frontend commits (slice=frontend). A final docs commit adds this artifact and the project-state row; its hash is not self-referenced here (see `git log`). H-8 swap path: revert 3dc3acd and replace the useShipPolling import/usage in srcV2/pages/ShipFromRepoPage.vue (the only consumer; it depends on start/stop + fetchStatus/onStatus/onError/isFatal callbacks, and the `minAttempt` start option).",
+  "files_changed": [
+    "routes/ship.js",
+    "routes/api.js",
+    "services/shipService.js",
+    "services/shipStatusService.js",
+    "services/shipFailureClassifier.js",
+    "services/shipIdentityService.js",
+    "services/githubService.js",
+    "services/aksService.js",
+    "utils/shipId.js",
+    "utils/shipValidators.js",
+    "utils/shipErrors.js",
+    "utils/ttlSingleFlightCache.js",
+    "utils/logRedactor.js",
+    "utils/platformTeam.js",
+    "config.js",
+    "data/environments.json",
+    ".env.example",
+    ".env.template",
+    "tests/helpers/shipFixtures.js",
+    "tests/helpers/shipIdentityTestDouble.js",
+    "tests/integration/api/ship.spec.ts",
+    "tests/integration/service/shipUtils.spec.ts",
+    "tests/integration/service/shipValidators.spec.ts",
+    "tests/integration/service/shipClassifierIdentity.spec.ts",
+    "tests/integration/service/shipStatusService.spec.ts",
+    "tests/integration/service/shipService.spec.ts",
+    "tests/integration/service/shipCredentials.spec.ts",
+    "docs/readiness/ship-from-repo-dev-status.json",
+    ".agent/state/project-state.md",
+    "srcV2/types/ship.types.ts",
+    "srcV2/utils/shipHelpers.ts",
+    "srcV2/utils/shipRecentStorage.ts",
+    "srcV2/stores/ship.ts",
+    "srcV2/stores/navigation.ts",
+    "srcV2/stores/environments.ts",
+    "srcV2/stores/auth.ts",
+    "srcV2/services/api.ts",
+    "srcV2/composables/useShipPolling.ts",
+    "srcV2/pages/ShipFromRepoPage.vue",
+    "srcV2/pages/DocsPage.vue",
+    "srcV2/App.vue",
+    "srcV2/components/ship/ShipCombobox.vue",
+    "srcV2/components/ship/ShipConfigForm.vue",
+    "srcV2/components/ship/ShipProgress.vue",
+    "srcV2/components/ship/ShipResult.vue",
+    "srcV2/components/ship/ShipFailurePanel.vue",
+    "srcV2/components/ship/ShipLogViewer.vue",
+    "srcV2/components/ship/ShipRecentList.vue",
+    "srcV2/components/ship/ShipStateNotice.vue",
+    "srcV2/components/ship/ship.fixtures.ts (test helper)",
+    "srcV2/**/*.spec.ts (17 new spec files, see tests.frontend_files)"
+  ],
+  "flag_state": {
+    "data/environments.json": "devsand.features.shipFromRepo = false (Orchestrator decision; spec 5.1 says true but 2.4 G-FLAG and 11 forbid true before Phase 4 gates). Other environments: key not added. Flipping to true is a recorded human action.",
+    "config": "config.ship.supportedShipEnvironments is therefore empty; POST /api/ship answers 400 on `env` until the flag is flipped."
+  },
+  "deviations_from_spec": [
+    "features.shipFromRepo is false (not true) on devsand - Orchestrator decision resolving the spec 5.1 vs 2.4/11 contradiction.",
+    "New error code SHIP_UNAVAILABLE (503) for 'workflow ref not allowed' (DD-11): spec 4.1 row 5 gives no code for that 503 and the catalogue has none. Frontend slice should treat any 503 from POST /api/ship as the S2-style 'temporarily unavailable'.",
+    "Unknown-ship-ID miss cap (30/min/user, DD-14) answers 429 PLATFORM_RATE_LIMITED with details.limit='user_misses' (the spec's details.limit set is closed and has no value for it). Rework round 1 (QA-006): each distinct ship ID inside the 3-minute queued-placeholder window also counts once per user against the same 30/min cap, checked before the GitHub search (placeholders are answered for any fresh ID).",
+    "V-3 / V-4 gating mechanism added: config.ship.annotationsVerified (SHIP_GATE_V3_PASSED) and queueSignalsVerified (SHIP_GATE_V4_PASSED), both default false. While V-3 is false no annotation is read and no trusted payload (version, sha, digest, settings, scan/publish codes) is exposed - stages come from job/step conclusions and failures classify as UNKNOWN; retry-config-pr is then never applicable. While V-4 is false the watchdog report, SUPERSEDED and queuedBehind are not derived. SHIP_WATCHDOG_CANCEL_ENABLED additionally needs V-4. Both paths are exercised by fixtures only.",
+    "full-mode dispatch sends 14 inputs; config_only sends 17 (config_image_tag, origin_run_id, retry_by omitted in full mode: spec says 'only for config_only').",
+    "Annotation interpretation: a succeeded trusted job (prepare/scan/publish) with a missing or rejected trusted result is treated as failed UNKNOWN (never success). A rejected publish/config annotation together with a failed Publish:/Config PR: step group classifies as PUBLISH_FAILED / CONFIG_PR_FAILED (trusted step conclusion), per BT-10(c).",
+    "Log stage splitting (publish minus Config PR, config_pr only) assigns raw log lines to steps by timestamp against the jobs API step start/end (raw job logs do not carry step names); best effort, +/-1 s at step boundaries. Log cache is an entry-count LRU (<=10 entries) instead of a byte-budget LRU; since rework round 1 each entry holds only the <=5 MB capped view tail (plus the full length), so the bound is <=10 x 5 MB ~ 50 MB (the earlier text claimed this bound but the code cached the full redacted log - QA-007). Downloads of logs larger than the view cap are re-fetched uncached.",
+    "retry-config-pr requires the RETRYING user to have a linked GitHub identity (requester_github_login for prepare step 4); a platform member without a link cannot retry. Open question for H-2 / Orchestrator.",
+    "aksService.getAppState additionally returns imageName (feeds the bring-your-own-image ownership signal); searchWorkflowByCorrelationId additionally returns displayTitle/jobId (stripped by the legacy route before responding).",
+    "app names whose default namespace is reserved (e.g. app=kube-system with no explicit namespace) are rejected on `app` (A-8 interpretation).",
+    "mintShipId uses uuid v7 with explicit msecs (stateless) so an ID's embedded timestamp always follows the wall clock; same library as the spec, only the process-global monotonic state is avoided.",
+    "10 s dedupe returns the original 202 payload (idempotent) instead of an error; registered synchronously, as are the per-user/global start reservations (code-review fix). retry-config-pr has a 1-minute per-ship retry lock for the same reason. Rework round 1 (QA-005): the dedupe key is the user oid plus all nine validated input fields (repo, branch, app, env, namespace, teamLabel, port, healthPath, bump), i.e. 'identical POST' means identical input (spec DD-14 text lists only user/repo/branch/app).",
+    "Tests drive routers with router.handle and handler-level doubles (no sockets); BT-03 environments assertion lives in the new specs rather than extending environmentsConfig.spec.ts.",
+    "[frontend] Default-view failure copy is owned by the frontend (ShipFailurePanel) instead of rendering failure.message/nextStep: the backend catalogue wording contains terms AC-001-8 / FT-06 restrict to Details (PUBLISH_FAILED 'image', CONFIG_PR_FAILED 'image', VERSION_COLLISION 'image' + nextStep 'correlation ID', UNKNOWN nextStep 'correlation ID'). The API wording is shown only inside Details and in the copied payload. Backend untouched; aligning the catalogue wording is optional and would let the frontend table be dropped.",
+    "[frontend] S2 offers no 'Connect GitHub' action for any provider: only 'Ask the platform team to link it.' (the Option A action contract is deferred to the H-2 A-delta, spec 3.6.1; GET /api/ship/config does not expose the provider).",
+    "[frontend] FT-15 is a structural accessibility audit written in the spec (labels, names, ARIA references, unique ids, live regions, roles), not axe-core: no a11y engine is in the repo and no dependency was added.",
+    "[frontend] Repo list: when the server reports truncated=true the form shows 'Only the first N repositories are listed. Type or paste org/name to use any other.' instead of server-side q search (kept simple per product-owner direction; typing/pasting org/name already works and is authorised server-side).",
+    "[frontend] Handoff note said to treat any 503 from POST /api/ship as 'temporarily unavailable'. Implemented: SHIP_UNAVAILABLE => 'temporarily unavailable'; PLATFORM_RATE_LIMITED (429 or 503) => 'too many ships right now' with Retry-After seconds when sent; any other code => generic 'couldn't start your ship'.",
+    "[frontend] Addition not in spec: useShipPolling.start(cid, { minAttempt }) keeps polling (max 6 extra polls) when a terminal status still belongs to an older attempt, so Retry PR creation is not cancelled by the stale terminal status served right after dispatch (the new run may not be visible for a few seconds).",
+    "[frontend] Polling interval is the fixed spec value 15 s; config.limits.pollIntervalMs is read by the API client type but not used to drive the interval.",
+    "[frontend] Docs: the Ship from Repo section and sidebar link render only while an environment has the flag (hidden by default); the language list is static text matching the backend default SHIP_SUPPORTED_LANGUAGES. The UNSUPPORTED_LANGUAGE panel's docs link navigates to the Docs page (no automatic scroll to the section).",
+    "[frontend] Recent-ships rows offer Remove only for 'No longer available' rows (spec 3.10.4) plus the list-level Clear list; refresh of non-terminal rows happens on page load only.",
+    "[frontend] ship.fixtures.ts (test helper) lives under srcV2/components/ship and is therefore picked up by the coverage glob (all:true).",
+    "[frontend] The repo's pre-commit trailing-whitespace hook normalised pre-existing trailing whitespace in srcV2/stores/auth.ts, so that file's diff is ~84 lines although the functional change is 3 lines (import + clearShipRecent call + comment).",
+    "redaction widened beyond §7.3 text — Architect to ack in a future spec delta (non-blocking). Rework round 1 (QA-001/003/004): the generic secret pattern has no leading word boundary (GITHUB_TOKEN=, DB_PASSWORD=), allows a bounded _SUFFIX after the keyword (AWS_SECRET_ACCESS_KEY=), an optional quote before the separator (JSON \"password\":\"...\") and takes a quoted value as one token (spaces/escaped quotes). The JWT pattern now starts only at the beginning of a base64url run and the ANSI OSC body stops at ESC, so redaction is linear-time (QA-002); a JWT directly preceded by '-' inside a longer run is therefore matched from the run start rather than from the 'eyJ'.",
+    "Rework round 2 (QA-009): a single log line so large that a redaction regex overflows V8's backtrack stack (RangeError, ~6 MB+) is replaced whole by ***REDACTED*** (fail closed for that line only) instead of being chunked - chunking could split a secret across a chunk boundary. The rest of the log stays readable; nothing unredacted is returned. Rework round 2 (QA-010/011): the generic secret pattern additionally accepts a backslash-escaped quote around key and value (\\\"password\\\":\\\"v\\\") and takes characters glued to a quoted value's closing quote (up to whitespace or a , ; ) } ] delimiter, so JSON/list neighbours are kept). Rework round 2 (QA-008): the fresh-ID miss-cap markers live in their own bounded cache (freshMarks, max 2000) so they can no longer evict the cancel/watchdog/metric de-dup flags. Rework round 2 (O-5): ship_stage_completed.duration_ms is now the stage's own duration from GitHub job/step timestamps (completedAt - startedAt); the field is omitted for stages GitHub reports no timestamps for (queued, preview, steps without times). Rework round 2 (O-3): requestId is on ship_authz_denied, ship_watchdog_cancel, ship_rate_limited and the cancel/retry/watchdog log lines; metrics emitted while composing the cached, request-independent status (ship_annotation_rejected, ship_run_lookup_pages, ship_stage_completed/succeeded/failed) carry only the ship correlation id because one compose serves many requests."
+  ],
+  "not_implemented_with_reason": [
+    {
+      "item": "Real Entra->GitHub identity provider (Options A/B/C)",
+      "reason": "H-2 open; only `none` (fail closed) plus a test double in tests/helpers. Option A additionally needs a spec delta + delta Challenger pass."
+    },
+    {
+      "item": "services/shipRegistryClient.js (ACR tag/label read, @azure/identity)",
+      "reason": "H-3 open; SHIP_ACR_READ_ENABLED=false path = GitHub-only ownership signals. No @azure/identity code, no new dependency."
+    },
+    {
+      "item": "Preview host",
+      "reason": "H-1 open; config.ship.previewHosts empty => preview.state='not_configured'; no default domain."
+    },
+    {
+      "item": "Platform role / group values",
+      "reason": "H-4 open; empty config => isPlatformMember is false for everyone (fail closed)."
+    },
+    {
+      "item": "Org allowlist values",
+      "reason": "H-7 open; SHIP_ALLOWED_ORGS empty => no repo can be listed or shipped."
+    },
+    {
+      "item": "SHIP_WORKFLOW_REF value",
+      "reason": "H-5 open; unset => equals AKS_FLUX_BRANCH => POST /api/ship refuses to dispatch (DD-11)."
+    },
+    {
+      "item": "Annotation-reading path and watchdog/SUPERSEDED/queuedBehind in production",
+      "reason": "Code exists but is gated by SHIP_GATE_V3_PASSED / SHIP_GATE_V4_PASSED (default false) until V-3 / V-4 PASS; fixtures only (spec 11 Phase 2 row)."
+    },
+    {
+      "item": "docs/SHIP-FROM-REPO-RUNBOOK.md",
+      "reason": "Optional; skipped so nothing claims a V-gate PASS."
+    },
+    {
+      "item": "Anything in aya-flux (workflow, scripts, OIDC identities, App environment secrets)",
+      "reason": "Out of scope for this dispatch (H-6 ownership)."
+    },
+    {
+      "item": "Connect GitHub action in S2 (H-2 Option A)",
+      "reason": "H-2 open and the contract is deferred to the A-delta; S2 asks the user to contact the platform team."
+    },
+    {
+      "item": "Playwright E2E-01…08 (tests/e2e/ship-from-repo.spec.ts)",
+      "reason": "Needs the live devsand flow with features.shipFromRepo=true (gated human action) and the aya-flux workflow; not written or run."
+    },
+    {
+      "item": "Frontend data from real services",
+      "reason": "With provider `none` every user is S2 (identity unlinked) and the repo/branch pickers cannot be exercised against the live backend; all frontend behaviour is verified with jsdom tests against mocked API responses shaped like the implemented backend."
+    }
+  ],
+  "blocked_on_human": [
+    {
+      "id": "H-1",
+      "needs": "Preview host suffix + scheme (OQ-1)",
+      "gates": "SHIP_PREVIEW_HOSTS value; Phase 4 pilot/flag flip; until then preview.state='not_configured'"
+    },
+    {
+      "id": "H-2",
+      "needs": "Identity provider choice (OQ-13); Option A needs spec delta + Challenger delta",
+      "gates": "A real provider implementation; until then every ship fails closed with IDENTITY_NOT_LINKED; Phase 4 flag flip"
+    },
+    {
+      "id": "H-3",
+      "needs": "ACR read or signed waiver",
+      "gates": "shipRegistryClient + ACR ownership signal (BT-07 ACR matrix); Phase 4 flag flip"
+    },
+    {
+      "id": "H-4",
+      "needs": "Platform role / group values",
+      "gates": "SHIP_PLATFORM_ROLES / SHIP_PLATFORM_GROUP_IDS; platform read/mutate/legacy-route access; Phase 4 flag flip"
+    },
+    {
+      "id": "H-5",
+      "needs": "Dedicated protected workflow ref",
+      "gates": "SHIP_WORKFLOW_REF; without it POST /api/ship returns 503 SHIP_UNAVAILABLE; Phase 4 flag flip"
+    },
+    {
+      "id": "H-6",
+      "needs": "aya-flux ownership",
+      "gates": "Phase 1 start (workflow side); not needed to merge this backend slice"
+    },
+    {
+      "id": "H-7",
+      "needs": "Org allowlist values",
+      "gates": "SHIP_ALLOWED_ORGS; without it nothing is listable or shippable; Phase 4 flag flip"
+    },
+    {
+      "id": "V-3",
+      "needs": "Gate PASS: trusted ship.result annotations readable by the Infrastructure App",
+      "gates": "Setting SHIP_GATE_V3_PASSED=true (annotation path); merge of the annotation path per spec 11"
+    },
+    {
+      "id": "V-4",
+      "needs": "Gate PASS: queue/concurrency semantics (OQ-18)",
+      "gates": "Setting SHIP_GATE_V4_PASSED=true (watchdog report, SUPERSEDED, queuedBehind) and, after that, SHIP_WATCHDOG_CANCEL_ENABLED"
+    },
+    {
+      "id": "V-5",
+      "needs": "Recorded behaviour of in-progress job logs",
+      "gates": "Confirms the logs endpoint's available:false handling"
+    },
+    {
+      "id": "G-FLAG",
+      "needs": "All Phase 4 gates PASS (V-gates, H-1/H-2/H-3/H-4/H-5/H-7) then a recorded human action",
+      "gates": "Setting features.shipFromRepo=true on devsand (currently false); until then the home card, Docs section and page are hidden"
+    },
+    {
+      "id": "H-8",
+      "needs": "Decision: keep the standalone srcV2/composables/useShipPolling.ts or replace it with an extension of useWorkflowPolling (ASM / spec 3.10.3, AC-013-2 wording 'uses useWorkflowPolling')",
+      "gates": "gates merge of useShipPolling. Implemented standalone in its own file and its own commit (3dc3acd) behind a thin interface; ShipFromRepoPage.vue is the only consumer, so a swap is a revert of 3dc3acd plus one import/usage change."
+    }
+  ],
+  "frontend_handoff_notes": [
+    "Frontend slice is complete against the implemented backend contract; nothing in routes/, services/, utils/ or config.js was modified.",
+    "No backend/contract inconsistency blocked the frontend. Observed (not changed): (1) failure catalogue wording contains terms the closed label set restricts to Details (handled in the frontend, see deviations); (2) retry-config-pr needs the retrying user to have a linked GitHub identity (backend deviation) - the UI shows the generic 'only the person who started this ship, or the platform team' message for any 403 there.",
+    "To light the feature up on devsand after the human gates: set features.shipFromRepo=true in data/environments.json (recorded human action). No frontend change is needed; shipEnvironments/shipEnabled, the home card, Docs section and page react to the flag from GET /api/environments.",
+    "Backend handoff notes retained below.",
+    "All endpoints are under /api/ship and use the {success, data|error, correlationId} envelope; per-ship routes use the ship id as correlationId.",
+    "Treat 503 from POST /api/ship (code SHIP_UNAVAILABLE or PLATFORM_RATE_LIMITED) as 'temporarily unavailable'; 429 carries Retry-After and details.limit (user_active|user_hourly|global_active|global_hourly|github|user_misses).",
+    "With provider none, GET /api/ship/config returns identity {state:'unlinked', reason:'IDENTITY_MAPPING_NOT_CONFIGURED'} (UI state S2); POST returns 403 REPO_NOT_ACCESSIBLE with hint IDENTITY_NOT_LINKED.",
+    "GET /api/environments serves features.shipFromRepo=false for devsand; the page must stay hidden until a human flips it."
+  ],
+  "rework_round_1": {
+    "date": "2026-10-22",
+    "scope": "QA defects QA-001..QA-007 from tests/results/ship-from-repo-results.json (tests/results file untouched; QA re-verifies)",
+    "status": "all_seven_fixed_pending_qa_reverification",
+    "defects": {
+      "QA-001": {
+        "state": "fixed",
+        "commit": "a6fcdc8",
+        "fix": "utils/logRedactor.js generic pattern: no leading \\b, bounded _SUFFIX; it.fails -> it"
+      },
+      "QA-002": {
+        "state": "fixed",
+        "commit": "a6fcdc8",
+        "fix": "JWT lookbehind run-start anchor + OSC body excludes ESC; 1 MB hostile lines ~10 ms; both it.fails -> it; new tests/integration/service/shipRedactionLinear.spec.ts timing guard"
+      },
+      "QA-003": {
+        "state": "fixed",
+        "commit": "a6fcdc8",
+        "fix": "optional quote before separator; widening recorded in deviations_from_spec"
+      },
+      "QA-004": {
+        "state": "fixed",
+        "commit": "a6fcdc8",
+        "fix": "quoted value matched as one token"
+      },
+      "QA-005": {
+        "state": "fixed",
+        "commit": "afb3208",
+        "fix": "services/shipService.js dedupe key = oid + all nine validated fields"
+      },
+      "QA-006": {
+        "state": "fixed",
+        "commit": "afb3208",
+        "fix": "services/shipStatusService.js getShipContext: distinct fresh (<3 min) IDs count once per user against the 30/min cap before the GitHub search; 100 fresh IDs now -> 429 after 30 and <=31 searches"
+      },
+      "QA-007": {
+        "state": "fixed",
+        "commit": "afb3208",
+        "fix": "logs cache holds only the <=5 MB view tail + total length; >5 MB downloads refetch uncached; deviation text corrected; test added"
+      }
+    },
+    "not_changed": [
+      "Deviation about retry-config-pr requiring the retrying user to have a linked identity (open human/Architect item tied to H-2) - left as is"
+    ]
+  },
+  "rework_round_2": {
+    "date": "2026-10-22",
+    "scope": "QA-008..QA-011 from tests/results/ship-from-repo-results.json and SRE observability findings O-1..O-6 (tests/results and docs/security files untouched; QA re-verifies). Final human-authorized round.",
+    "status": "all_fixed_pending_qa_reverification",
+    "defects": {
+      "QA-008": {
+        "state": "fixed",
+        "commit": "5c0348f",
+        "fix": "fresh-ID miss markers moved to their own bounded TtlSingleFlightCache (freshMarks, max 2000) in services/shipStatusService.js; [DEFECT QA-008] it.fails -> it (2100 fresh lookups no longer re-emit ship_succeeded)"
+      },
+      "QA-009": {
+        "state": "fixed",
+        "commit": "6bb6b88",
+        "fix": "utils/logRedactor.js redactLine catches RangeError and returns ***REDACTED*** for that line only; both [DEFECT QA-009] tests (unit + http, 8 MB line -> 200 with the other lines readable) it.fails -> it"
+      },
+      "QA-010": {
+        "state": "fixed",
+        "commit": "6bb6b88",
+        "fix": "generic pattern accepts an optional backslash before the quote preceding the separator and an escaped-quote value alternative; it.fails -> it"
+      },
+      "QA-011": {
+        "state": "fixed",
+        "commit": "6bb6b88",
+        "fix": "characters glued to a quoted value's closing quote are redacted (stops at whitespace and , ; ) } ] so JSON neighbours survive); it.fails -> it"
+      }
+    },
+    "observability": {
+      "O-1": {
+        "state": "fixed",
+        "commit": "5c0348f",
+        "fix": "githubService._infraCall wraps listWorkflowRuns/listJobsForRun/listJobAnnotations/downloadJobLogs/cancelWorkflowRun and emits github_api_call (operation, repo, duration_ms, success, correlationId, status_code on failure; warn for 4xx, error for 5xx); the ship correlation id is threaded from shipStatusService/shipService; tests: shipGithubApiCallMetric.spec.ts"
+      },
+      "O-2": {
+        "state": "fixed",
+        "commit": "5c0348f",
+        "fix": "recordMiss emits ship_rate_limited{limit:'user_misses', actor_oid, requestId, correlation_id} before throwing the 429; test in shipObservability.spec.ts"
+      },
+      "O-3": {
+        "state": "fixed",
+        "commit": "5c0348f",
+        "fix": "routes pass req.correlationId as requestId to getStatus/getLogs/cancel/retryConfigPr; present on ship_authz_denied, ship_watchdog_cancel, ship_rate_limited and cancel/retry/watchdog log lines; compose-time cached metrics intentionally carry only the ship id (see deviations)"
+      },
+      "O-4": {
+        "state": "fixed",
+        "commit": "5c0348f",
+        "fix": "resolved by QA-008 (de-dup flags can no longer be evicted by lookup floods); verified by the converted QA-008 test"
+      },
+      "O-5": {
+        "state": "fixed",
+        "commit": "5c0348f",
+        "fix": "duration_ms = stage completedAt - startedAt from GitHub job/step timestamps; omitted when not reported; test asserts 5 min / 15 min on a 3-hour-old ship"
+      },
+      "O-6": {
+        "state": "fixed",
+        "commit": "6bb6b88",
+        "fix": "= QA-009/010/011"
+      }
+    },
+    "not_in_repo": [
+      "Datadog log-based metrics and monitors/alerts (SRE docs own them); Wiz scan credentials (gate not run)"
+    ]
+  },
+  "rework_round_3": {
+    "date": "2026-10-22",
+    "scope": "Narrow final human-authorized rework: QA-012, O-7, Wiz Git Credentials false-positive risk in shipUtils.spec.ts. tests/results and docs/security untouched.",
+    "status": "all_fixed_pending_qa_reverification",
+    "defects": {
+      "QA-012": {
+        "state": "fixed",
+        "commit": "0268ff6",
+        "fix": "utils/logRedactor.js generic pattern: (?:\\\\{0,7}[\"'])? before the separator (0-7 backslashes; JSON nested 1-4 levels + literal two-backslash form); [DEFECT QA-012] it.fails -> plain it (assertions unchanged); shipRedactionLinear.spec.ts and the 6/20 MB hostile-shape tests still pass"
+      }
+    },
+    "observability": {
+      "O-7": {
+        "state": "fixed",
+        "commit": "0268ff6",
+        "fix": "githubService.findPullRequestForBranch(repo, branch, state, correlationId) now goes through _infraCall and emits github_api_call (success, failure, status_code); correlationId optional 4th arg (existing callers unchanged); test added in shipGithubApiCallMetric.spec.ts"
+      }
+    },
+    "wiz_false_positive": {
+      "state": "fixed",
+      "commit": "0268ff6",
+      "fix": "tests/integration/service/shipUtils.spec.ts: URL-userinfo, Bearer and Basic fixtures assembled at runtime (concat/join); assertions identical; no Wiz ignore rules added",
+      "other_files_with_literal_credential_shapes": [
+        "tests/integration/service/shipQaRedaction.spec.ts (QA-owned, NOT modified): literal PEM headers (lines ~49-56, 68), Authorization/URL-userinfo fixtures (lines ~68-69), '*_SECRET=' style fixtures built with c() splits (lines 32, 34)"
+      ]
+    },
+    "tests": {
+      "node": { "run": 1179, "passed": 1159, "failed": 20, "note": "the 20 failures are the live-server health tests (api/health.spec.ts 11, smoke/health.spec.ts 9)" },
+      "jsdom": { "run": 794, "passed": 794, "failed": 0 },
+      "type_check": "exit 0"
+    }
+  },
+  "rework_round_4": {
+    "date": "2026-10-22",
+    "scope": "One-line human-authorized fix for QA-013 ONLY. L-1 (nesting >=5 / >=8 backslashes) is an accepted documented limit and was not attempted; O-7b and everything else untouched. tests/results and docs/security untouched.",
+    "status": "qa013_fixed_pending_qa_reverification",
+    "defects": {
+      "QA-013": {
+        "state": "fixed",
+        "commit": "d14279e",
+        "fix": "utils/logRedactor.js generic pattern (line 30): escaped-value alternative \\\\\"(?:(?!\\\\\")[^])*\\\\\" replaced by (\\\\{1,7})\"(?:(?!\\1\")[^])*\\1\" (1-7 backslashes before the quote, same run must close it; one added capture group, replace callback is a plain string so no numbering impact). tests/integration/service/shipQaRound4.spec.ts: [DEFECT QA-013] it.fails -> plain it, assertions unchanged; header comment updated. Redaction suites (QA-001..012, linear-time/hostile guards) green."
+      }
+    },
+    "tests": {
+      "node": { "run": 1249, "passed": 1249, "failed": 0, "note": "all 41 files passed in this run" },
+      "jsdom": { "run": 794, "passed": 794, "failed": 0 },
+      "type_check": "exit 0"
+    }
+  }
+}

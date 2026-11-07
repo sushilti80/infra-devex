@@ -1,0 +1,49 @@
+# Version control
+.git
+.gitignore
+.github
+
+# Node.js dependencies
+node_modules
+npm-debug.log
+npm-error.log
+
+# Environment files and secrets (never include in image)
+.env
+.env.*
+*.pem
+github-private-key.pem
+*.key
+*.crt
+*.cert
+
+# Development and local files
+*.md
+.DS_Store
+.vscode
+.idea
+.editorconfig
+
+# Testing
+test
+tests
+coverage
+
+# Docker related
+Dockerfile
+.dockerignore
+docker-compose*
+
+# Kubernetes
+kubernetes/
+
+# Documentation
+docs/
+
+# Logs
+logs
+*.log
+
+# Temporary files
+tmp
+temp

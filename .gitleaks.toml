@@ -1,0 +1,26 @@
+# Gitleaks configuration file
+# See https://github.com/gitleaks/gitleaks#configuration for options
+
+title = "Gitleaks Configuration for Self-Service Infrastructure"
+
+[extend]
+# Use the default gitleaks config as a base
+useDefault = true
+
+[allowlist]
+description = "Global allow patterns"
+paths = [
+    '''node_modules/''',
+    '''package-lock.json''',
+    '''yarn.lock''',
+    '''.gitleaksignore''',
+]
+
+# Allow specific patterns that are not real secrets
+regexes = [
+    '''cid-\d+-[a-z0-9]+''',  # Correlation IDs
+    '''\$\{\{\s*secrets\.''',  # GitHub Actions workflow syntax
+]
+
+# Example: Ignore specific commits (if needed)
+# commits = [ "commit-hash-here" ]

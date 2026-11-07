@@ -1,0 +1,11 @@
+{
+  "feature": "edit-existing-infra-ui-path",
+  "status": "pass",
+  "total": 389,
+  "passed": 389,
+  "failed": 0,
+  "skipped": 0,
+  "coverage_percent": 88,
+  "failing_tests": [],
+  "correlation_ids_for_failures": []
+}

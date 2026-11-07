@@ -1,0 +1,87 @@
+{
+  "feature": "bug-feature-request-form",
+  "scan_date": "2026-03-31",
+  "mode": "code",
+  "environment": "sand",
+  "target": "/home/runner/work/self-service-infra/self-service-infra",
+  "severity_gate": "critical",
+  "wiz_cli": {
+    "available": false,
+    "reason": "Wiz CLI not installed in this environment and WIZ_CLIENT_ID/WIZ_CLIENT_SECRET not set",
+    "install_guidance": "Install Wiz CLI per https://docs.wiz.io/wiz-docs/docs/cli-overview and set WIZ_CLIENT_ID + WIZ_CLIENT_SECRET environment variables",
+    "status": "SKIPPED"
+  },
+  "fallback_scan": {
+    "tool": "npm audit",
+    "criticals": 0,
+    "highs": 5,
+    "moderates": 1,
+    "lows": 0,
+    "production_vulnerabilities": 0,
+    "dev_only_vulnerabilities": 6,
+    "note": "All 6 vulnerabilities (5 high, 1 moderate) are in dev-only dependencies (picomatch, rollup) used by Vite/Vitest. Zero production vulnerabilities found.",
+    "packages_affected": [
+      {
+        "name": "picomatch",
+        "severity": "high",
+        "type": "dev",
+        "advisories": ["GHSA-3v7f-55p6-f55p", "GHSA-c2c7-rcm5-vvqj"],
+        "fix": "npm audit fix"
+      },
+      {
+        "name": "rollup",
+        "severity": "high",
+        "type": "dev",
+        "advisories": ["GHSA-mw96-cpmx-2vgc"],
+        "fix": "npm audit fix"
+      }
+    ]
+  },
+  "new_code_security_review": {
+    "sanitisation": {
+      "status": "PASS",
+      "detail": "POST /api/feedback sanitises all free-text fields: HTML entities encoded (<, > → &lt;, &gt;), inputs capped at 10,000 chars before inclusion in GitHub Issue body"
+    },
+    "authentication": {
+      "status": "PASS",
+      "detail": "POST /api/feedback uses requireAuth middleware — unauthenticated requests receive HTTP 401"
+    },
+    "input_validation": {
+      "status": "PASS",
+      "detail": "express-validator validates type (enum), title (max 120), description (required); 400 returned on failure"
+    },
+    "rate_limit_handling": {
+      "status": "PASS",
+      "detail": "GitHub 429 responses propagated to caller as HTTP 429 with retryAfter header"
+    },
+    "timeout_handling": {
+      "status": "PASS",
+      "detail": "createIssue() wraps GitHub API call in 10s Promise.race timeout; GITHUB_TIMEOUT → HTTP 503"
+    },
+    "correlation_id": {
+      "status": "PASS",
+      "detail": "All log statements in createIssue() and POST /api/feedback route include [correlationId] prefix"
+    },
+    "no_secrets_in_code": {
+      "status": "PASS",
+      "detail": "No hardcoded credentials; repository config comes from config.github.selfServiceRepo (environment-driven)"
+    }
+  },
+  "sli_slo_mapping": [
+    {"nfr": "NFR-001", "sli": "p95 latency POST /api/feedback", "slo": "≤5000ms"},
+    {"nfr": "NFR-002", "sli": "GitHub API timeout → HTTP 503 rate", "slo": "100% within 10s"},
+    {"nfr": "NFR-003", "sli": "Unauthenticated request rejection", "slo": "100% return HTTP 401"},
+    {"nfr": "NFR-004", "sli": "Free-text fields sanitised before issue creation", "slo": "100% — no raw HTML in issue body"},
+    {"nfr": "NFR-005", "sli": "Log statements with correlationId in new code", "slo": "100%"},
+    {"nfr": "NFR-007", "sli": "GitHub 429 forwarded with retryAfter", "slo": "100% of rate-limit errors"}
+  ],
+  "gate": {
+    "result": "CONDITIONAL_PASS",
+    "reason": "Zero critical/high vulnerabilities in production code. All new code security controls verified (sanitisation, auth, validation, rate-limit, timeout). Wiz CLI scan skipped due to missing CLI/credentials — must be re-run in CI/CD pipeline before production deployment. Dev-only dependency vulnerabilities (picomatch, rollup) pre-exist and are fixed with npm audit fix.",
+    "blockers": [],
+    "warnings": [
+      "Wiz CLI scan not completed — re-run with wiz scan code --path . before production deployment",
+      "Dev dependency vulnerabilities can be remediated with: npm audit fix"
+    ]
+  }
+}

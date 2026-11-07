@@ -1,0 +1,250 @@
+{
+  "roles": [
+    {
+      "id": "contributor",
+      "name": "Contributor",
+      "description": "Grants full access to manage all resources",
+      "scope": "global"
+    },
+    {
+      "id": "reader",
+      "name": "Reader",
+      "description": "View all resources but cannot make changes",
+      "scope": "global"
+    },
+    {
+      "id": "eventgrid-reader",
+      "name": "EventGrid EventSubscription Reader",
+      "description": "Read EventGrid event subscriptions",
+      "scope": "eventgrid"
+    },
+    {
+      "id": "eventgrid-contributor",
+      "name": "EventGrid EventSubscription Contributor",
+      "description": "Manage EventGrid event subscription operations",
+      "scope": "eventgrid"
+    },
+    {
+      "id": "eventhubs-data-owner",
+      "name": "Azure Event Hubs Data Owner",
+      "description": "Full access to Azure Event Hubs resources",
+      "scope": "eventhubs"
+    },
+    {
+      "id": "eventhubs-data-sender",
+      "name": "Azure Event Hubs Data Sender",
+      "description": "Send messages to Azure Event Hubs entities",
+      "scope": "eventhubs"
+    },
+    {
+      "id": "eventhubs-data-receiver",
+      "name": "Azure Event Hubs Data Receiver",
+      "description": "Receive messages from Azure Event Hubs entities",
+      "scope": "eventhubs"
+    },
+    {
+      "id": "servicebus-sender",
+      "name": "Azure Service Bus Data Sender",
+      "description": "Send access to Azure Service Bus resources",
+      "scope": "servicebus"
+    },
+    {
+      "id": "servicebus-receiver",
+      "name": "Azure Service Bus Data Receiver",
+      "description": "Receive access to Azure Service Bus resources",
+      "scope": "servicebus"
+    },
+    {
+      "id": "vm-contributor",
+      "name": "Virtual Machine Contributor",
+      "description": "Manage virtual machines but not access to them",
+      "scope": "compute"
+    },
+    {
+      "id": "vm-user-login",
+      "name": "Virtual Machine User Login",
+      "description": "View VMs in portal and login as regular user",
+      "scope": "compute"
+    },
+    {
+      "id": "storage-blob-contributor",
+      "name": "Storage Blob Data Contributor",
+      "description": "Read, write, and delete Azure Storage containers and blobs",
+      "scope": "storage"
+    },
+    {
+      "id": "storage-blob-reader",
+      "name": "Storage Blob Data Reader",
+      "description": "Read and list Azure Storage containers and blobs",
+      "scope": "storage"
+    },
+    {
+      "id": "storage-queue-contributor",
+      "name": "Storage Queue Data Contributor",
+      "description": "Read, write, and delete Azure Storage queues and queue messages",
+      "scope": "storage"
+    },
+    {
+      "id": "storage-account-contributor",
+      "name": "Storage Account Contributor",
+      "description": "Manage storage accounts but not access to them",
+      "scope": "storage"
+    },
+    {
+      "id": "sql-contributor",
+      "name": "SQL DB Contributor",
+      "description": "Manage SQL databases but not access to them",
+      "scope": "database"
+    },
+    {
+      "id": "keyvault-secrets-user",
+      "name": "Key Vault Secrets User",
+      "description": "Read secret contents",
+      "scope": "security"
+    },
+    {
+      "id": "keyvault-certificates-officer",
+      "name": "Key Vault Certificates Officer",
+      "description": "Perform any action on certificates except manage permissions",
+      "scope": "security"
+    },
+    {
+      "id": "keyvault-crypto-user",
+      "name": "Key Vault Crypto User",
+      "description": "Perform cryptographic operations such as sign, verify, wrap, and unwrap using keys",
+      "scope": "security"
+    },
+    {
+      "id": "website-contributor",
+      "name": "Website Contributor",
+      "description": "Manage websites but not access to them",
+      "scope": "web"
+    },
+    {
+      "id": "function-contributor",
+      "name": "Function App Contributor",
+      "description": "Manage function apps but not access to them",
+      "scope": "web"
+    },
+    {
+      "id": "durable-task-data-contributor",
+      "name": "Durable Task Data Contributor",
+      "description": "Perform all data access operations for Durable Task Scheduler",
+      "scope": "durabletask"
+    },
+    {
+      "id": "durable-task-worker",
+      "name": "Durable Task Worker",
+      "description": "Process orchestrations, activities, and entities in Durable Task Scheduler",
+      "scope": "durabletask"
+    },
+    {
+      "id": "durable-task-data-reader",
+      "name": "Durable Task Data Reader",
+      "description": "Read Durable Task Scheduler data, including orchestrations and entity payloads",
+      "scope": "durabletask"
+    },
+    {
+      "id": "app-service-contributor",
+      "name": "App Service Contributor",
+      "description": "Manage app services but not access to them",
+      "scope": "web"
+    },
+    {
+      "id": "ai-developer",
+      "name": "Azure AI Developer",
+      "description": "Perform common development actions within Azure AI Foundry project or Machine Learning workspace",
+      "scope": "ai"
+    },
+    {
+      "id": "ai-user",
+      "name": "Azure AI User",
+      "description": "Reader access to AI projects and accounts with data actions for AI project development",
+      "scope": "ai"
+    },
+    {
+      "id": "openai-contributor",
+      "name": "Cognitive Services OpenAI Contributor",
+      "description": "Full access to Azure OpenAI including fine-tune, deploy, and generate text",
+      "scope": "ai"
+    },
+    {
+      "id": "openai-user",
+      "name": "Cognitive Services OpenAI User",
+      "description": "Read access to OpenAI models and deployments with ability to create completions and embeddings",
+      "scope": "ai"
+    },
+    {
+      "id": "cognitive-services-contributor",
+      "name": "Cognitive Services Contributor",
+      "description": "Create, read, update, delete and manage keys of Cognitive Services",
+      "scope": "ai"
+    },
+    {
+      "id": "app-config-data-reader",
+      "name": "App Configuration Data Reader",
+      "description": "Read access to App Configuration data",
+      "scope": "appconfiguration"
+    },
+    {
+      "id": "redis-cache-contributor",
+      "name": "Redis Cache Contributor",
+      "description": "Manage Azure Cache for Redis instances but not access to their data",
+      "scope": "redis"
+    }
+  ],
+  "scopes": [
+    {
+      "name": "Global Roles",
+      "value": "global"
+    },
+    {
+      "name": "Event Grid",
+      "value": "eventgrid"
+    },
+    {
+      "name": "Event Hubs",
+      "value": "eventhubs"
+    },
+    {
+      "name": "Service Bus",
+      "value": "servicebus"
+    },
+    {
+      "name": "Compute",
+      "value": "compute"
+    },
+    {
+      "name": "Storage",
+      "value": "storage"
+    },
+    {
+      "name": "Database",
+      "value": "database"
+    },
+    {
+      "name": "Security",
+      "value": "security"
+    },
+    {
+      "name": "Web",
+      "value": "web"
+    },
+    {
+      "name": "Durable Task Scheduler",
+      "value": "durabletask"
+    },
+    {
+      "name": "AI & Machine Learning",
+      "value": "ai"
+    },
+    {
+      "name": "App Configuration",
+      "value": "appconfiguration"
+    },
+    {
+      "name": "Redis Cache",
+      "value": "redis"
+    }
+  ]
+}

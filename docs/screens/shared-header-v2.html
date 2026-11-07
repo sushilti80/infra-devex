@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Self Service Catalog - Navigation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6324eb",
+                        "brand-blue": "#2563eb",
+                        "brand-dark": "#1e293b",
+                        "brand-gray": "#64748b",
+                        "brand-border": "#e2e8f0",
+                        "brand-bg-tint": "#eff6ff",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#161121",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .nav-link-active {
+            color: #2563eb;
+            background-color: #eff6ff;
+            border-bottom: 2px solid #2563eb;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display min-h-screen">
+<!-- Sticky Header Container -->
+<header class="sticky top-0 z-50 w-full bg-white dark:bg-background-dark border-b border-brand-border dark:border-white/10 h-16 flex items-center shadow-sm">
+<div class="max-w-[2560px] w-full mx-auto px-10 flex items-center justify-between">
+<!-- Left: Logo Group -->
+<div class="flex items-center gap-3 shrink-0">
+<div class="text-brand-blue flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">view_in_ar</span>
+</div>
+<h1 class="text-brand-dark dark:text-white text-[18px] font-semibold tracking-tight">
+                    Self Service Catalog
+                </h1>
+</div>
+<!-- Center: Navigation Menu -->
+<nav class="flex items-center gap-10 h-16">
+<a class="nav-link-active flex items-center h-full px-4 text-sm font-medium transition-colors" href="#">
+                    Home
+                </a>
+<a class="text-brand-gray dark:text-gray-400 hover:text-brand-dark dark:hover:text-white flex items-center h-full px-2 text-sm font-medium transition-colors border-b-2 border-transparent" href="#">
+                    Custom Infrastructure
+                </a>
+<a class="text-brand-gray dark:text-gray-400 hover:text-brand-dark dark:hover:text-white flex items-center h-full px-2 text-sm font-medium transition-colors border-b-2 border-transparent" href="#">
+                    Template Deploy
+                </a>
+<a class="text-brand-gray dark:text-gray-400 hover:text-brand-dark dark:hover:text-white flex items-center h-full px-2 text-sm font-medium transition-colors border-b-2 border-transparent" href="#">
+                    Deploy to AKS
+                </a>
+<a class="text-brand-gray dark:text-gray-400 hover:text-brand-dark dark:hover:text-white flex items-center h-full px-2 text-sm font-medium transition-colors border-b-2 border-transparent" href="#">
+                    Installed Apps
+                </a>
+</nav>
+<!-- Right: User Profile Section -->
+<div class="flex items-center gap-4 shrink-0 cursor-pointer group hover:bg-gray-50 dark:hover:bg-white/5 py-1.5 px-3 rounded-lg transition-all">
+<div class="flex flex-col items-end">
+<span class="text-brand-dark dark:text-white text-sm font-medium">Sushil Tiwari</span>
+</div>
+<div class="size-8 rounded-full bg-brand-blue flex items-center justify-center text-white text-xs font-bold ring-2 ring-white dark:ring-background-dark">
+                    ST
+                </div>
+<span class="material-symbols-outlined text-brand-gray dark:text-gray-400 text-lg group-hover:text-brand-dark dark:group-hover:text-white">
+                    keyboard_arrow_down
+                </span>
+</div>
+</div>
+</header>
+<!-- Content Placeholder to demonstrate scroll -->
+<main class="max-w-[2560px] mx-auto p-10 space-y-8">
+<div class="bg-white dark:bg-background-dark/50 border border-brand-border dark:border-white/10 rounded-xl p-8 h-[400px] flex flex-col gap-6">
+<div class="flex items-center justify-between">
+<h2 class="text-2xl font-bold text-brand-dark dark:text-white">Welcome back, Sushil</h2>
+<button class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">add</span>
+                    New Request
+                </button>
+</div>
+<div class="grid grid-cols-4 gap-6">
+<!-- Sample Card -->
+<div class="p-6 rounded-xl border border-brand-border dark:border-white/10 bg-white dark:bg-background-dark hover:shadow-lg transition-all flex flex-col gap-4">
+<div class="size-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">dns</span>
+</div>
+<div>
+<h3 class="font-semibold text-brand-dark dark:text-white">Virtual Machines</h3>
+<p class="text-xs text-brand-gray dark:text-gray-400 mt-1">Deploy standardized Azure VMs</p>
+</div>
+</div>
+<div class="p-6 rounded-xl border border-brand-border dark:border-white/10 bg-white dark:bg-background-dark hover:shadow-lg transition-all flex flex-col gap-4">
+<div class="size-12 rounded-lg bg-green-500/10 flex items-center justify-center text-green-600">
+<span class="material-symbols-outlined">storage</span>
+</div>
+<div>
+<h3 class="font-semibold text-brand-dark dark:text-white">SQL Database</h3>
+<p class="text-xs text-brand-gray dark:text-gray-400 mt-1">Managed Azure SQL instances</p>
+</div>
+</div>
+<div class="p-6 rounded-xl border border-brand-border dark:border-white/10 bg-white dark:bg-background-dark hover:shadow-lg transition-all flex flex-col gap-4">
+<div class="size-12 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600">
+<span class="material-symbols-outlined">hub</span>
+</div>
+<div>
+<h3 class="font-semibold text-brand-dark dark:text-white">AKS Cluster</h3>
+<p class="text-xs text-brand-gray dark:text-gray-400 mt-1">Production-ready Kubernetes</p>
+</div>
+</div>
+<div class="p-6 rounded-xl border border-brand-border dark:border-white/10 bg-white dark:bg-background-dark hover:shadow-lg transition-all flex flex-col gap-4">
+<div class="size-12 rounded-lg bg-brand-blue/10 flex items-center justify-center text-brand-blue">
+<span class="material-symbols-outlined">cloud_sync</span>
+</div>
+<div>
+<h3 class="font-semibold text-brand-dark dark:text-white">VPN Gateway</h3>
+<p class="text-xs text-brand-gray dark:text-gray-400 mt-1">Secure network connectivity</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Spacer for scrolling simulation -->
+<div class="h-[2000px] bg-gradient-to-b from-transparent to-white/50 dark:to-background-dark/50 rounded-xl flex items-start justify-center pt-20">
+<p class="text-brand-gray italic">Scroll down to see the sticky header behavior</p>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,45 @@
+{
+  "feature": "installed-apps-date-edit",
+  "status": "pass",
+  "summary": { "total": 18, "passed": 18, "failed": 0, "skipped": 0 },
+  "coverage": { "unit": "InstalledAppsPage.vue covered via component mount", "integration": "n/a", "e2e": "n/a" },
+  "command": "npx vitest run --project jsdom srcV2/pages/InstalledAppsPage.spec.ts",
+  "bugs": [
+    {
+      "id": "bug-1-invalid-date",
+      "description": "formatDate(deployedAt) rendered 'Invalid Date' when deployedAt was an empty string",
+      "repro_steps": [
+        "Mount InstalledAppsPage with an app fixture where deployedAt: ''",
+        "Assert rendered text contains 'Unknown' and not 'Invalid Date'"
+      ],
+      "verification": "formatDate('') returns 'Unknown'; valid deployedAt still renders a formatted date, no regression",
+      "test": "InstalledAppsPage.spec.ts > Bug 1: formatDate fallback for invalid dates",
+      "result": "pass"
+    },
+    {
+      "id": "bug-2-edit-icon-race",
+      "description": "Edit icon not visible until environment is selected due to selectedEnvironment race with envStore.enabledEnvironments loading",
+      "repro_steps": [
+        "Mount page before envStore.environments is populated",
+        "Populate envStore.environments asynchronously (simulating late API response) and flush promises",
+        "Assert environment-filter select value remains 'all' and Edit icon renders for apps across different environments"
+      ],
+      "verification": "watch on envStore.enabledEnvironments.length resets selectedEnvironment to 'all' once environments load; Edit icon visible for non-production apps regardless of environment selection",
+      "test": "InstalledAppsPage.spec.ts > Bug 2: selectedEnvironment stays 'all' regardless of environment store loading state",
+      "result": "pass"
+    },
+    {
+      "id": "bug-3-template-literal-newline",
+      "description": "Literal \\n text node present in template markup causing corruption",
+      "repro_steps": [
+        "Read InstalledAppsPage.vue source",
+        "Extract <template> block and assert it does not match the literal sequence '>\\\\n'"
+      ],
+      "verification": "No literal backslash-n text node remains in rendered template markup",
+      "test": "InstalledAppsPage.spec.ts > Bug 3: template markup hygiene",
+      "result": "pass"
+    }
+  ],
+  "failures": [],
+  "correlation_ids": []
+}

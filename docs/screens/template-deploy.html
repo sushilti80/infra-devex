@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Template Deployment Configuration</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2463eb",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#111621",
+                        "border-color": "#e2e8f0",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>.form-select-custom {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuAmVzeCmviDLZfYHD1ZZ6QX_OQxR-ts7ImSdu7aRBEY5zQbpY73a2e9PcbFIuSUfLR4Wjw0ATh9ZHdZeaKRDxGULEs9L2TeHOoVwSlgumh-fznA31hArS-spGbMNYeXgMSeLAHcH3pwYwj0TtCSf5uDFbPRw0Ub_IEb5YoduX-0XBZJ4jwHwKsNgmMIXdUoU0FtV_8P4y4X1eiLJvTxiys-RNILCTd91f1MpT0x8K5jaj-V4KW3Mt3s1MqReKLzx0S3HEKKLy-LsCu7);
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none
+    }</style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#111318] dark:text-slate-200 min-h-screen">
+<div class="relative flex h-auto w-full flex-col group/design-root overflow-x-hidden">
+<!-- Top Navigation -->
+<header class="w-full bg-white dark:bg-slate-900 border-b border-border-color dark:border-slate-800">
+<div class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="bg-primary p-1.5 rounded-lg text-white">
+<span class="material-symbols-outlined block text-2xl">layers</span>
+</div>
+<h2 class="text-lg font-bold tracking-tight">InfraProvision</h2>
+</div>
+<nav class="flex items-center gap-8">
+<div class="hidden md:flex items-center gap-8">
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-sm font-medium text-primary" href="#">Templates</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Deployments</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Settings</a>
+</div>
+<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden ring-2 ring-white dark:ring-slate-800">
+<img class="w-full h-full object-cover" data-alt="User avatar profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD94Lp-uhSECmFKRs2ewsWd1uS0-Ksuf7rQswtzVB6aOfxURTEk4sBNjYsXY1XSULWBfXBiJHwrRm2kzzlGbx_PQQvJXfLq5GFZM5i_5l9-e61U4LVd_JnP3uS6CDOWxur1uz0JxIbukf6xFWpJJDYn1BjaHzZXLtLjxzT4yid0xUzNLXMNowVKLYMHqGIM665u1CQaUNeAFh5Ljq13eRAF0IaFaiZEmTXL4BpYJKpCx3nhZr_foivCAKyWGtfcu3IFfMRhC1hAhW8j"/>
+</div>
+</nav>
+</div>
+</header>
+<main class="max-w-[1200px] mx-auto w-full px-6 py-10">
+<!-- Page Heading -->
+<div class="mb-10">
+<h1 class="text-3xl font-black tracking-tight text-[#111318] dark:text-white">Deploy from Template</h1>
+<p class="text-[#64748b] dark:text-slate-400 mt-2 text-lg">Use pre-defined templates for common scenarios to accelerate your environment setup.</p>
+</div>
+<div class="flex flex-col gap-8">
+<!-- Card 1: Template Selection -->
+<section class="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-border-color dark:border-slate-800 p-8">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary">description</span>
+<h2 class="text-xl font-bold tracking-tight">Select Template</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-[#111318] dark:text-slate-300">Infra Template</label>
+<select class="form-select-custom w-full h-12 px-4 rounded-lg border border-border-color dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all">
+<option disabled="" selected="" value="">Select existing Infra Template</option>
+<option value="aya1">Aya starter 1 - Web App Basic</option>
+<option value="aya2">Aya starter 2 - Enterprise Microservices</option>
+<option value="custom">Custom Corporate Baseline</option>
+</select>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-5 border border-dashed border-border-color dark:border-slate-700">
+<h3 class="text-sm font-semibold text-[#111318] dark:text-slate-300 mb-2">Template Description</h3>
+<p class="text-sm text-[#64748b] dark:text-slate-400 leading-relaxed">
+                                This starter template provides a baseline configuration for a standard web application architecture including security and networking defaults, ideal for dev/test environments.
+                            </p>
+</div>
+</div>
+</section>
+<!-- Card 2: Project Details -->
+<section class="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-border-color dark:border-slate-800 p-8">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary">settings_applications</span>
+<h2 class="text-xl font-bold tracking-tight">Project Details</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+<!-- Project Name -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<label class="text-sm font-semibold text-[#111318] dark:text-slate-300">Project Name</label>
+<span class="text-[11px] font-medium text-slate-400">max 8 chars</span>
+</div>
+<input class="w-full h-12 px-4 rounded-lg border border-border-color dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" maxlength="8" placeholder="e.g. PROJ-01" type="text"/>
+</div>
+<!-- Descriptive Name -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-[#111318] dark:text-slate-300">Descriptive Name</label>
+<input class="w-full h-12 px-4 rounded-lg border border-border-color dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="Customer Portal API" type="text"/>
+</div>
+<!-- Environment -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-[#111318] dark:text-slate-300">Environment</label>
+<select class="form-select-custom w-full h-12 px-4 rounded-lg border border-border-color dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
+<option value="">Select environment</option>
+<option value="sand">sand</option>
+<option selected="" value="devsand">devsand</option>
+<option value="prod">production</option>
+</select>
+</div>
+<!-- Owner -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-[#111318] dark:text-slate-300">Owner</label>
+<input class="w-full h-12 px-4 rounded-lg border border-border-color dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="owner@company.com" type="email"/>
+</div>
+<!-- Jira/CR Number -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-[#111318] dark:text-slate-300">Jira/CR Number (optional)</label>
+<input class="w-full h-12 px-4 rounded-lg border border-border-color dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="INFRA-12345" type="text"/>
+</div>
+<!-- Project Life -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-[#111318] dark:text-slate-300">Project Life</label>
+<div class="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg h-12">
+<button class="flex-1 text-sm font-medium rounded-md transition-all bg-white dark:bg-slate-700 shadow-sm text-primary">3 days</button>
+<button class="flex-1 text-sm font-medium rounded-md transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">1 month</button>
+<button class="flex-1 text-sm font-medium rounded-md transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">3 months</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Card 3: Summary -->
+<section class="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-border-color dark:border-slate-800 p-8">
+<h2 class="text-sm font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-6">This template includes:</h2>
+<div class="flex flex-wrap gap-3">
+<div class="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 text-primary rounded-full text-sm font-semibold">
+<span class="material-symbols-outlined text-[18px]">cloud</span>
+                            App Service
+                        </div>
+<div class="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 text-primary rounded-full text-sm font-semibold">
+<span class="material-symbols-outlined text-[18px]">database</span>
+                            Storage Account
+                        </div>
+<div class="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 text-primary rounded-full text-sm font-semibold">
+<span class="material-symbols-outlined text-[18px]">key</span>
+                            MSI (Managed Identity)
+                        </div>
+<div class="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-full text-sm font-semibold">
+<span class="material-symbols-outlined text-[18px]">hub</span>
+                            VNet Integration
+                        </div>
+<div class="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-full text-sm font-semibold">
+<span class="material-symbols-outlined text-[18px]">security</span>
+                            Private Endpoint
+                        </div>
+</div>
+</section>
+<!-- Bottom Actions -->
+<div class="flex items-center justify-end gap-4 pt-4 mb-20">
+<button class="px-6 h-12 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                        Cancel
+                    </button>
+<button class="px-8 h-12 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-lg shadow-lg shadow-primary/20 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">code</span>
+                        Generate Template Code
+                    </button>
+</div>
+</div>
+</main>
+<!-- Background Decorations -->
+<div class="fixed top-0 right-0 -z-10 w-1/3 h-screen bg-gradient-to-l from-primary/5 to-transparent pointer-events-none"></div>
+<div class="fixed bottom-0 left-0 -z-10 w-1/4 h-1/2 bg-gradient-to-tr from-slate-200/20 to-transparent dark:from-slate-800/20 pointer-events-none"></div>
+</div>
+</body></html>

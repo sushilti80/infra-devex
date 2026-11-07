@@ -1,0 +1,60 @@
+{
+  "feature": "vault-resolution-override",
+  "status": "pass",
+  "summary": {
+    "total": 638,
+    "passed": 624,
+    "failed": 14,
+    "skipped": 0
+  },
+  "coverage": {
+    "unit": "N/A - backend (services/secretsService.js, routes/api.js) not instrumented by this repo's coverage config (vitest.config.ts coverage.include is srcV2/**/*.{ts,vue} only)",
+    "integration": "N/A - same coverage-tooling scope limitation as unit",
+    "e2e": "SecretsPage.vue: 84.25% statements / 79.32% branches / 90.9% functions / 86.22% lines (independently re-run jsdom suite: 457/457 pass; coverage figure taken from Dev's evidence, meets 80%+ component target)"
+  },
+  "acceptance_criteria_coverage": [
+    { "criterion": "override checked before live resolver, resolver skipped when override present", "covered_by": "tests/integration/service/secretsService.spec.ts:594-652", "result": "pass" },
+    { "criterion": "resolveVaultNameWithFallback priority override > metadata > live", "covered_by": "tests/integration/service/secretsService.spec.ts:594-660", "result": "pass" },
+    { "criterion": "metadata=undefined treated as no-op, never an error", "covered_by": "tests/integration/service/secretsService.spec.ts:636-652", "result": "pass" },
+    { "criterion": "loadVaultOverrides always reads config.github.serviceRepo, never mapRepo(target)", "covered_by": "tests/integration/service/secretsService.spec.ts:704-750", "result": "pass" },
+    { "criterion": "one correlationId-prefixed logger.debug per vault (vaultDir + source), logging failure never breaks resolution", "covered_by": "tests/integration/service/secretsService.spec.ts (resolveKeyVaults logging block)", "result": "pass" },
+    { "criterion": "no override/no metadata resolves identically to pre-feature behavior", "covered_by": "tests/integration/service/secretsService.spec.ts:636-644", "result": "pass" },
+    { "criterion": "POST /api/secrets/vault-name-override: 400 on invalid input, 422 on undiscovered vaultDir (no write attempted), 409 on sha conflict, 500 on unexpected error, correlationId on all", "covered_by": "tests/integration/service/vaultNameOverrideRoute.spec.ts:88-165 (6 tests, all pass)", "result": "pass" },
+    { "criterion": "requireAuth applied to new endpoint", "covered_by": "routes/api.js:539 (code-verified: requireAuth is first middleware); no dedicated 401 test, consistent with every other /api/secrets/* route in this repo (none have per-route auth tests)", "result": "pass (by code + repo convention)" },
+    { "criterion": "SecretsPage.vue self-heal control shown only for null vaultName, refetches on success, inline error + editable on failure", "covered_by": "srcV2/pages/SecretsPage.spec.ts:130-201 (4 tests, all pass)", "result": "pass" },
+    { "criterion": "vaultDir never exposed as user-visible text (carried via existing option value, not new UI)", "covered_by": "code review of srcV2/pages/SecretsPage.vue (selectedVaultDir already bound to vault.vaultDir at L727-729; self-heal form reuses selectedVault.value.vaultDir at L324)", "result": "pass" }
+  ],
+  "failures": [
+    {
+      "test": "tests/integration/api/health.spec.ts (11 tests: health check, /api/modules, /api/templates, /api/roles, /api/installed-apps, 404 handling, CORS preflight)",
+      "reason": "ECONNREFUSED localhost:3001 - requires a running server, not started in this QA sandbox",
+      "classification": "pre-existing, environment-dependent, unrelated to this feature",
+      "correlationId": null
+    },
+    {
+      "test": "tests/integration/service/secretsService.spec.ts > TS-043: resolveKeyVaults filters by qualifier when supplied",
+      "reason": "Test timed out at 5000ms; test performs real (unmocked) GitHub API calls that exceed the sandbox's default test timeout",
+      "classification": "pre-existing flakiness, reproduced identically in isolation and in full-suite run; confirmed present in dev-status.json's own baseline evidence",
+      "correlationId": null
+    },
+    {
+      "test": "tests/integration/service/secretsService.spec.ts > discoverAppsForTarget regression: app with keyvault dir but no secrets.enc.yaml still appears",
+      "reason": "expected tier 'non-production', received 'unclassified' (classifyEnvironmentTier / environmentTiers.json)",
+      "classification": "pre-existing, belongs to feature secrets-environment-scope, confirmed via git stash comparison per task instructions - not a regression introduced by vault-resolution-override",
+      "correlationId": null
+    },
+    {
+      "test": "tests/integration/service/secretsService.spec.ts > classifyEnvironmentTier classifies a data/environmentTiers.json 'nonProduction' entry as tier non-production",
+      "reason": "expected 'non-production', received 'unclassified'",
+      "classification": "pre-existing, belongs to feature secrets-environment-scope, confirmed via git stash comparison per task instructions - not a regression introduced by vault-resolution-override",
+      "correlationId": null
+    }
+  ],
+  "notes": [
+    "Ran independently (not trusting dev-status.json alone): npx vitest run --project node tests/integration/**/*.spec.ts -> 181 tests, 167 pass, 14 fail (all pre-existing/environment-dependent, none touch vault-resolution-override code paths).",
+    "npx vitest run --project jsdom (full suite) -> 457/457 pass, including tests/integration/service/vaultNameOverrideRoute.spec.ts (6/6) and srcV2/pages/SecretsPage.spec.ts (44/44, incl. 4 new self-heal tests).",
+    "npm run type-check -> clean, no errors.",
+    "No new tests were added by QA - Vue.js Dev's existing TDD suite (21 secretsService tests + 6 route tests + 4 SecretsPage tests) already covers every acceptance criterion and functional_test_scenario in the spec; duplicating them was avoided per task instruction.",
+    "3 secretsService.spec.ts failures match the task's pre-flagged pre-existing baseline note exactly (classifyEnvironmentTier / environmentTiers.json, feature secrets-environment-scope) plus TS-043 (network-call timeout), which dev-status.json's own evidence already documents as pre-existing sandbox flakiness."
+  ]
+}

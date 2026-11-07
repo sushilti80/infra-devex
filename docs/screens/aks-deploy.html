@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Deploy to Azure Kubernetes Service</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2463eb",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#111621",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.375rem", // Close to 6px requested
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .form-input-focus:focus {
+            border-color: #2463eb;
+            ring-color: #2463eb;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen text-[#111318] dark:text-white font-display">
+<!-- Navbar Component -->
+<header class="bg-white dark:bg-background-dark border-b border-[#e2e8f0] dark:border-[#2d3748] sticky top-0 z-50">
+<div class="max-w-[1200px] mx-auto flex items-center justify-between px-6 py-3">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3">
+<div class="text-primary">
+<svg class="size-8" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M24 0.757355L47.2426 24L24 47.2426L0.757355 24L24 0.757355ZM21 35.7574V12.2426L9.24264 24L21 35.7574Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h1 class="text-lg font-bold tracking-tight">Azure Kubernetes Service</h1>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary" href="#">Dashboard</a>
+<a class="text-sm font-medium text-slate-900 dark:text-white border-b-2 border-primary pb-0.5" href="#">Deployments</a>
+<a class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary" href="#">Clusters</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-1.5 border border-transparent focus-within:border-primary">
+<span class="material-symbols-outlined text-slate-400 text-xl">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-48 placeholder:text-slate-500" placeholder="Search documentation..." type="text"/>
+</div>
+<div class="size-8 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="Abstract circular user profile placeholder" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbSkD0iiEzb-6s3q_T1lzwev_YjO-Vi9M_SIu_E2f8WB3fHd8K5PNEPu7X3YTf4Iw0sc25QvJ3gMAW9ekIYH_iK9Wkq3O2Qsn4BZZeDE6bSwhYpVb__MrTZjMhDQbQk2kygDaR8l3djzYA9jHZfy7Sc_tAfztOmHYtCuxSWa7_80J28tszfRKC-Ts1UqlVzJhPUIIrREQ-ylb3WUKu5AbchWI7f2B_wNh1ye3irKRBr9dA_7Ts_AVmOkJc0KjAT4cZeoXvWubgku8M"/>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-[1200px] mx-auto px-6 py-10">
+<!-- Page Heading -->
+<div class="mb-10">
+<h2 class="text-3xl font-black text-[#111318] dark:text-white leading-tight">Deploy to Azure Kubernetes Service</h2>
+<p class="text-slate-500 dark:text-slate-400 text-base mt-2">Deploy containerized applications to AKS sand cluster</p>
+</div>
+<div class="grid grid-cols-1 gap-8">
+<!-- Card 1: Environment -->
+<section class="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-[#e2e8f0] dark:border-[#2d3748] p-6">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg">hub</span>
+<h3 class="text-lg font-bold">Environment</h3>
+</div>
+<div class="max-w-md">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Target Cluster Environment</label>
+<div class="relative">
+<select class="w-full h-12 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 cursor-not-allowed appearance-none px-4" disabled="">
+<option>Sand</option>
+</select>
+<div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400">lock</span>
+</div>
+</div>
+<div class="flex items-center gap-2 mt-3 text-sm text-primary">
+<span class="material-symbols-outlined text-[18px]">info</span>
+<p>Currently only Sand environment is supported</p>
+</div>
+</div>
+</section>
+<!-- Card 2: Application Details -->
+<section class="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-[#e2e8f0] dark:border-[#2d3748] p-6">
+<h3 class="text-lg font-bold mb-6">Application Details</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+<div>
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Application Name</label>
+<input class="w-full h-12 rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:border-primary focus:ring-1 focus:ring-primary outline-none px-4" placeholder="e.g., my-web-app" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Namespace</label>
+<input class="w-full h-12 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 cursor-default px-4" readonly="" type="text" value="default-sand"/>
+</div>
+</div>
+<div class="mb-2">
+<p class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4">Application Type</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Option 1: Web App -->
+<label class="relative flex flex-col p-5 border-2 border-primary rounded-xl bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors">
+<input checked="" class="absolute top-4 right-4 text-primary focus:ring-primary h-4 w-4" name="app_type" type="radio" value="web"/>
+<span class="material-symbols-outlined text-primary text-3xl mb-3">language</span>
+<span class="font-bold text-slate-900 dark:text-white">Web Application</span>
+<span class="text-xs text-slate-500 dark:text-slate-400 mt-1">HTTP-based service with public or private endpoints. Supports ingress configuration.</span>
+</label>
+<!-- Option 2: Background Service -->
+<label class="relative flex flex-col p-5 border-2 border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
+<input class="absolute top-4 right-4 text-primary focus:ring-primary h-4 w-4" name="app_type" type="radio" value="worker"/>
+<span class="material-symbols-outlined text-slate-400 text-3xl mb-3">settings_suggest</span>
+<span class="font-bold text-slate-900 dark:text-white">Background Service</span>
+<span class="text-xs text-slate-500 dark:text-slate-400 mt-1">Worker processes, queue listeners, or scheduled tasks without external exposure.</span>
+</label>
+</div>
+</div>
+</section>
+<!-- Card 3: Container Configuration -->
+<section class="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-[#e2e8f0] dark:border-[#2d3748] p-6">
+<h3 class="text-lg font-bold mb-6">Container Configuration</h3>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+<div class="md:col-span-3">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Container Image</label>
+<div class="flex">
+<span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 text-sm">
+<span class="material-symbols-outlined text-[18px]">dock</span>
+</span>
+<input class="w-full h-12 rounded-r-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:border-primary focus:ring-1 focus:ring-primary outline-none px-4" placeholder="e.g., sharedwus3acr2.azurecr.io/my-app" type="text"/>
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Image Tag</label>
+<input class="w-full h-12 rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:border-primary focus:ring-1 focus:ring-primary outline-none px-4" type="text" value="latest"/>
+</div>
+</div>
+</section>
+<!-- Footer Actions -->
+<footer class="flex items-center justify-end gap-4 pt-4 pb-20">
+<button class="px-6 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" type="button">
+                    Cancel
+                </button>
+<button class="px-8 py-2.5 bg-primary hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow-md transition-all" type="submit">
+                    Deploy to AKS
+                </button>
+</footer>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Deployment Status Modal - Success</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2463eb",
+                        "success": "#10b981",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "mono": ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display min-h-screen flex items-center justify-center p-4">
+<!-- Modal Backdrop -->
+<div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"></div>
+<!-- Modal Container -->
+<div class="relative z-50 w-full max-w-[600px] bg-white dark:bg-[#1a1f2e] rounded-lg shadow-2xl overflow-hidden">
+<!-- Header -->
+<header class="flex items-center justify-between px-8 pt-8 pb-4 border-b border-gray-100 dark:border-gray-800">
+<div class="flex items-center gap-3">
+<div class="text-primary size-6">
+<svg fill="currentColor" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-[#111318] dark:text-white text-2xl font-semibold tracking-tight">Operation Status</h2>
+</div>
+<button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</header>
+<!-- Content -->
+<div class="p-8 space-y-8">
+<!-- Success Hero Section -->
+<div class="flex flex-col items-center text-center">
+<div class="bg-success/10 text-success p-3 rounded-full mb-4">
+<span class="material-symbols-outlined text-[48px] leading-none">check_circle</span>
+</div>
+<h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Infrastructure deployed successfully!</h3>
+<p class="text-gray-500 dark:text-gray-400 max-w-[400px]">Your resources are ready in the sand environment.</p>
+</div>
+<!-- Progress Bar -->
+<div class="space-y-2">
+<div class="flex justify-between items-center text-sm font-medium">
+<span class="text-gray-900 dark:text-white">Deployment Complete</span>
+<span class="text-success">100%</span>
+</div>
+<div class="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+<div class="h-full bg-success rounded-full w-full"></div>
+</div>
+</div>
+<!-- Workflow Details & Correlation ID -->
+<div class="grid grid-cols-1 gap-6">
+<!-- Correlation ID Box -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg group">
+<div class="flex flex-col gap-0.5">
+<span class="text-xs uppercase tracking-wider text-gray-400 font-semibold">Correlation ID</span>
+<code class="text-sm font-mono text-gray-700 dark:text-gray-300">cid-1737994800000-a1b2</code>
+</div>
+<button class="mt-3 sm:mt-0 flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 transition-colors">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+                        Copy
+                    </button>
+</div>
+<!-- Detail Grid -->
+<div class="grid grid-cols-3 gap-4 border-t border-gray-100 dark:border-gray-800 pt-6">
+<div class="flex flex-col gap-1">
+<span class="text-xs text-gray-500 dark:text-gray-400">Status</span>
+<div>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success/15 text-success">
+<span class="size-1.5 rounded-full bg-success mr-1.5"></span>
+                                Success
+                            </span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-xs text-gray-500 dark:text-gray-400">Started</span>
+<span class="text-sm font-medium text-gray-900 dark:text-white">5 minutes ago</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-xs text-gray-500 dark:text-gray-400">Duration</span>
+<span class="text-sm font-medium text-gray-900 dark:text-white">4m 32s</span>
+</div>
+</div>
+</div>
+<!-- Link Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<a class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-all group" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">merge</span>
+<span class="text-sm font-medium text-gray-700 dark:text-gray-300">View Pull Request</span>
+</div>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary text-lg">open_in_new</span>
+</a>
+<a class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-all group" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">analytics</span>
+<span class="text-sm font-medium text-gray-700 dark:text-gray-300">View Workflow Run</span>
+</div>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary text-lg">open_in_new</span>
+</a>
+</div>
+</div>
+<!-- Footer -->
+<footer class="flex items-center justify-end gap-3 p-6 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-800">
+<button class="px-5 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                Close
+            </button>
+<button class="px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm">
+                View Pull Request
+            </button>
+</footer>
+</div>
+<!-- Branding Label Context -->
+<div class="fixed bottom-6 text-gray-400 text-xs font-medium uppercase tracking-widest pointer-events-none">
+        Self Service Catalog • Variant 2 of 3
+    </div>
+</body></html>

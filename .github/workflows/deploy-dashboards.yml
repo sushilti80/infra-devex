@@ -1,0 +1,190 @@
+name: Deploy Datadog Dashboards
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/dashboards/**'
+  workflow_dispatch:
+    inputs:
+      force_recreate:
+        description: 'Delete and recreate all dashboards (use if titles changed)'
+        required: false
+        default: false
+        type: boolean
+      environment:
+        description: 'Target environment'
+        required: false
+        default: 'sand'
+        type: choice
+        options:
+          - sand
+          - prod
+
+env:
+  DD_SITE: ${{ vars.DD_SITE || 'us3.datadoghq.com' }}
+
+jobs:
+  deploy-dashboards:
+    name: Upsert Datadog Dashboards
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'sand' }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Validate dashboard JSON files
+        run: |
+          echo "Validating dashboard JSON syntax..."
+          for f in docs/dashboards/*.json; do
+            if ! jq empty "$f" 2>/dev/null; then
+              echo "ERROR: Invalid JSON in $f"
+              exit 1
+            fi
+            title=$(jq -r '.title' "$f")
+            if [ -z "$title" ] || [ "$title" = "null" ]; then
+              echo "ERROR: Missing 'title' field in $f"
+              exit 1
+            fi
+            echo "  OK: $f — \"$title\""
+          done
+
+      - name: Deploy dashboards to Datadog
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+          FORCE_RECREATE: ${{ github.event.inputs.force_recreate || 'false' }}
+        run: |
+          set -euo pipefail
+
+          BASE_URL="https://api.${DD_SITE}/api/v1/dashboard"
+          CREATED=0
+          UPDATED=0
+          FAILED=0
+          SUMMARY_FILE=$(mktemp)
+          echo "DASHBOARD_SUMMARY_FILE=${SUMMARY_FILE}" >> "$GITHUB_ENV"
+
+          # Fetch all existing dashboards once to avoid N+1 API calls
+          echo "Fetching existing dashboards from Datadog..."
+          LIST_BODY=$(mktemp)
+          LIST_STATUS=$(curl --silent --output "$LIST_BODY" --write-out "%{http_code}" \
+            -H "DD-API-KEY: ${DD_API_KEY}" \
+            -H "DD-APPLICATION-KEY: ${DD_APP_KEY}" \
+            "${BASE_URL}")
+          if [ "$LIST_STATUS" != "200" ]; then
+            echo "ERROR: Failed to list dashboards (HTTP ${LIST_STATUS})."
+            echo "  Site: ${DD_SITE}"
+            echo "  URL:  ${BASE_URL}"
+            echo "  Hint: Check DD_API_KEY and DD_APP_KEY have dashboards_read scope."
+            echo "  Response body:"
+            cat "$LIST_BODY"
+            exit 1
+          fi
+          EXISTING=$(cat "$LIST_BODY")
+
+          for dashboard_file in docs/dashboards/*.json; do
+            title=$(jq -r '.title' "$dashboard_file")
+            echo ""
+            echo "Processing: \"$title\" ($dashboard_file)"
+
+            # Find existing dashboard ID by exact title match
+            existing_id=$(echo "$EXISTING" | jq -r \
+              --arg t "$title" \
+              '.dashboards[] | select(.title == $t) | .id' | head -1)
+
+            if [ "$FORCE_RECREATE" = "true" ] && [ -n "$existing_id" ]; then
+              echo "  Force recreate: deleting existing dashboard $existing_id"
+              DEL_STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" -X DELETE \
+                -H "DD-API-KEY: ${DD_API_KEY}" \
+                -H "DD-APPLICATION-KEY: ${DD_APP_KEY}" \
+                "${BASE_URL}/${existing_id}")
+              echo "  DELETE HTTP ${DEL_STATUS}"
+              existing_id=""
+            fi
+
+            if [ -n "$existing_id" ]; then
+              echo "  Updating existing dashboard (id: $existing_id)..."
+              PUT_BODY=$(mktemp)
+              PUT_STATUS=$(curl --silent --output "$PUT_BODY" --write-out "%{http_code}" -X PUT \
+                -H "DD-API-KEY: ${DD_API_KEY}" \
+                -H "DD-APPLICATION-KEY: ${DD_APP_KEY}" \
+                -H "Content-Type: application/json" \
+                -d @"$dashboard_file" \
+                "${BASE_URL}/${existing_id}")
+              if [ "$PUT_STATUS" != "200" ]; then
+                echo "  ERROR: PUT failed (HTTP ${PUT_STATUS}) for $dashboard_file"
+                echo "  Response body:"
+                cat "$PUT_BODY"
+                echo "| $title | — | failed (HTTP ${PUT_STATUS}) |" >> "$SUMMARY_FILE"
+                FAILED=$((FAILED + 1)); continue
+              fi
+              url=$(jq -r '.url // empty' "$PUT_BODY")
+              echo "  Updated: https://app.${DD_SITE}${url}"
+              echo "| $title | [Open](https://app.${DD_SITE}${url}) | updated |" >> "$SUMMARY_FILE"
+              UPDATED=$((UPDATED + 1))
+            else
+              echo "  Creating new dashboard..."
+              POST_BODY=$(mktemp)
+              POST_STATUS=$(curl --silent --output "$POST_BODY" --write-out "%{http_code}" -X POST \
+                -H "DD-API-KEY: ${DD_API_KEY}" \
+                -H "DD-APPLICATION-KEY: ${DD_APP_KEY}" \
+                -H "Content-Type: application/json" \
+                -d @"$dashboard_file" \
+                "${BASE_URL}")
+              if [ "$POST_STATUS" != "200" ] && [ "$POST_STATUS" != "201" ]; then
+                echo "  ERROR: POST failed (HTTP ${POST_STATUS}) for $dashboard_file"
+                echo "  Response body:"
+                cat "$POST_BODY"
+                echo "| $title | — | failed (HTTP ${POST_STATUS}) |" >> "$SUMMARY_FILE"
+                FAILED=$((FAILED + 1)); continue
+              fi
+              new_id=$(jq -r '.id // empty' "$POST_BODY")
+              url=$(jq -r '.url // empty' "$POST_BODY")
+              if [ -z "$new_id" ]; then
+                echo "  ERROR: POST succeeded (HTTP ${POST_STATUS}) but response missing id:"
+                cat "$POST_BODY"
+                echo "| $title | — | failed (no id) |" >> "$SUMMARY_FILE"
+                FAILED=$((FAILED + 1))
+              else
+                echo "  Created (id: $new_id): https://app.${DD_SITE}${url}"
+                echo "| $title | [Open](https://app.${DD_SITE}${url}) | created |" >> "$SUMMARY_FILE"
+                CREATED=$((CREATED + 1))
+              fi
+            fi
+          done
+
+          echo ""
+          echo "========================================"
+          echo "Summary: created=${CREATED} updated=${UPDATED} failed=${FAILED}"
+          echo "========================================"
+
+          if [ "$FAILED" -gt 0 ]; then
+            echo "One or more dashboards failed to deploy."
+            exit 1
+          fi
+
+      - name: Post deployment summary
+        if: always()
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+        run: |
+          echo "### Datadog Dashboard Deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Dashboard | Link | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          SUMMARY_FILE="$DASHBOARD_SUMMARY_FILE"
+          if [ -n "$SUMMARY_FILE" ] && [ -f "$SUMMARY_FILE" ]; then
+            cat "$SUMMARY_FILE" >> "$GITHUB_STEP_SUMMARY"
+          else
+            for f in docs/dashboards/*.json; do
+              t=$(jq -r '.title' "$f")
+              echo "| $t | [Dashboard List](https://app.${DD_SITE}/dashboard/lists) | unknown |" >> "$GITHUB_STEP_SUMMARY"
+            done
+          fi
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Site: \`${DD_SITE}\` | Env: \`${{ github.event.inputs.environment || 'sand' }}\`" >> "$GITHUB_STEP_SUMMARY"

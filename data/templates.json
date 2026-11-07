@@ -1,0 +1,27 @@
+[
+  {
+    "name": "rulesEng",
+    "description": "Aya starter 1 [window app service+ storage+ app config + msi + RBAC]",
+    "version": "1.0.0",
+    "category": "starter",
+    "modules": [
+      "appServiceWindows",
+      "storageV2",
+      "appConfiguration",
+      "UserAssignMSI",
+      "RBAC"
+    ]
+  },
+  {
+    "name": "leadscoring",
+    "description": "Aya starter 2 [window app service + app config + msi + rbac]",
+    "version": "1.0.0",
+    "category": "starter",
+    "modules": [
+      "appServiceWindows",
+      "appConfiguration",
+      "UserAssignMSI",
+      "RBAC"
+    ]
+  }
+]

@@ -1,0 +1,280 @@
+name: QA Pipeline - Test Pyramid
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feat/**'
+      - 'fix/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '24'
+  COVERAGE_THRESHOLD: 80
+
+jobs:
+  # ====================================
+  # LAYER 1: Smoke Tests (30s, Fail Fast)
+  # ====================================
+  smoke-tests:
+    name: 🔥 Smoke Tests (P0)
+    runs-on: aya-devops-rs
+    needs: dependency-audit
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Start backend server
+        run: |
+          npm start &
+          echo $! > server.pid
+          sleep 5
+        env:
+          NODE_ENV: test
+          PORT: 3001
+
+      - name: Wait for server
+        run: |
+          timeout 30 bash -c 'until curl -f http://localhost:3001/health; do sleep 1; done'
+
+      - name: Run smoke tests
+        run: npm run test:smoke
+        env:
+          API_URL: http://localhost:3001
+          CI: true
+        timeout-minutes: 1
+
+      - name: Stop backend server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+          fi
+
+      - name: Build check (fast validation)
+        run: npm run build:client
+        timeout-minutes: 1
+
+  # ====================================
+  # LAYER 2: Unit Tests (70% of tests)
+  # ====================================
+  unit-tests:
+    name: '🧪 Unit Tests (Components, Composables, Services)'
+    runs-on: aya-devops-rs
+    needs: smoke-tests
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Run unit tests with coverage
+        run: npm run test:coverage
+        env:
+          CI: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/coverage-final.json
+          flags: unit
+          name: codecov-unit
+          fail_ci_if_error: false
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+      - name: Check coverage thresholds
+        run: |
+          COVERAGE=$(jq '.total.lines.pct' coverage/coverage-summary.json)
+          echo "Total coverage: ${COVERAGE}%"
+          if (( $(echo "$COVERAGE < $COVERAGE_THRESHOLD" | bc -l) )); then
+            echo "❌ Coverage ${COVERAGE}% is below threshold ${COVERAGE_THRESHOLD}%"
+            exit 1
+          else
+            echo "✅ Coverage ${COVERAGE}% meets threshold ${COVERAGE_THRESHOLD}%"
+          fi
+
+  # ====================================
+  # LAYER 3: Integration Tests (20% of tests)
+  # ====================================
+  integration-tests:
+    name: '🔗 Integration Tests (API Contracts)'
+    runs-on: aya-devops-rs
+    needs: unit-tests
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Start backend server
+        run: |
+          npm start &
+          echo $! > server.pid
+          sleep 5
+        env:
+          NODE_ENV: test
+          PORT: 3001
+
+      - name: Wait for server
+        run: |
+          timeout 30 bash -c 'until curl -f http://localhost:3001/health; do sleep 1; done'
+
+      - name: Run integration tests
+        run: npm run test:integration
+        env:
+          API_URL: http://localhost:3001
+          CI: true
+        continue-on-error: true
+
+      - name: Stop backend server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: integration-test-results
+          path: test-results/
+          retention-days: 30
+
+  # ====================================
+  # NOTE: E2E Tests moved to separate workflow
+  # E2E tests run against deployed sand environment:
+  # https://self-service.sand.k8s.com/
+  # See: .github/workflows/e2e-sand-tests.yml
+  # ====================================
+
+  # ====================================
+  # SUMMARY & QUALITY GATES
+  # ====================================
+  # ====================================
+  # DEPENDENCY HYGIENE GATE
+  # Runs BEFORE any tests to fail fast on
+  # lock file desync, vulnerabilities, or
+  # deprecated packages
+  # ====================================
+  dependency-audit:
+    name: '🔍 Dependency Hygiene Gate'
+    runs-on: aya-devops-rs
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies (dry-run)
+        run: npm ci --dry-run --legacy-peer-deps
+
+      - name: Run dependency hygiene check
+        run: npm run deps:check:json | tee dependency-hygiene-report.json
+        id: deps-check
+        env:
+          ALLOW_NETWORK: "1"
+
+      - name: Upload dependency hygiene report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: dependency-hygiene-report
+          path: dependency-hygiene-report.json
+          retention-days: 7
+
+      - name: Fail if dependency hygiene issues found
+        if: steps.deps-check.outcome != 'success'
+        run: exit 1
+
+  # ====================================
+  # SUMMARY & QUALITY GATES
+  # ====================================
+  test-summary:
+    name: '📊 Test Summary'
+    runs-on: aya-devops-rs
+    needs: [dependency-audit, smoke-tests, unit-tests, integration-tests]
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+
+      - name: Generate test summary
+        run: |
+          echo "# 🎯 Test Pyramid Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Layer | Status | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔥 Smoke Tests | ${{ needs.smoke-tests.result }} | ~30s |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Unit Tests | ${{ needs.unit-tests.result }} | ~5min |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔗 Integration Tests | ${{ needs.integration-tests.result }} | ~10min |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎭 E2E Tests | See separate workflow | Post-deployment |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📈 Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "See artifacts for  detailed coverage reports" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** E2E tests run against deployed sand environment at https://self-service.sand.k8s.com/" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check all tests passed
+        if: |
+          needs.dependency-audit.result != 'success' ||
+          needs.smoke-tests.result != 'success' ||
+          needs.unit-tests.result != 'success' ||
+          needs.integration-tests.result != 'success'
+        run: |
+          echo "❌ Some tests failed."
+          exit 1
+
+  # ====================================
+  # NOTE: Docker image build & push is owned by the Azure DevOps
+  # pipeline at .pipeline/self-service.yaml (shared docker-build.yaml
+  # template, docker-vg + azdevopsterraform variable groups).
+  # Do not re-add build/push here — it would duplicate the ADO
+  # pipeline and push an unscanned image. This workflow is test-only.
+  # ====================================

@@ -1,0 +1,23 @@
+# Gitleaks Ignore File
+# Add patterns or specific findings to ignore false positives
+
+# GitHub webhook secret patterns (if in documentation)
+# example: gitleaks:allow
+
+# Test fixtures and examples
+tests/**
+example/**
+
+# Package lock files (may contain registry URLs that look like secrets)
+package-lock.json
+yarn.lock
+
+# Correlation IDs or UUIDs that look like secrets
+# Format: cid-<timestamp>-<random>
+
+# GitHub Actions workflow syntax that looks like secrets
+# Example: ${{ secrets.* }}
+
+# Common false positives (uncomment as needed)
+# *.md  # Markdown files with example secrets
+# docs/**  # Documentation

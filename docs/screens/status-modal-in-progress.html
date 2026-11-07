@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Deployment Status Modal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2463eb",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "mono": ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spin 2s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display min-h-screen">
+<!-- Top Navigation Bar (Context) -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-[#dbdee6] dark:border-[#2d3748] bg-white dark:bg-background-dark px-10 py-3">
+<div class="flex items-center gap-4 text-[#111318] dark:text-white">
+<div class="size-6 text-primary">
+<svg fill="currentColor" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-[#111318] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">Self Service Catalog</h2>
+</div>
+<div class="flex flex-1 justify-end gap-8">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border border-[#dbdee6] dark:border-[#2d3748]" data-alt="User profile avatar placeholder" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD6sTx2RCCpp-lcCnQ2IPMH4g-brPUC-7ZZtpvFtU0C6R9t0lDEAIHYl48m-SnF2_gvYhOI9NtNyJ7iA1nAZTLqJ1xllt0EJAWi0cppGfDwKFxd0S-SrDZ9m350LAnHmgnu65JScJi3dNidxt0L7YHTgZYhu8ke9cxXmLmWIzMSj6Saals1E24EGueYmWGyJAPbBzgmln1ZadLYu9GWxXJccjb2EeyADpR5o8VHGkek0AoHxe7vxSGIKNdyxJwzPsr8-BNzcoRGgo6I");'></div>
+</div>
+</header>
+<!-- Main Content Area (Background for Modal) -->
+<main class="p-10 flex flex-col items-center justify-center">
+<p class="text-slate-500 dark:text-slate-400">Main dashboard content is obscured by the deployment status modal.</p>
+</main>
+<!-- Modal Backdrop -->
+<div class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+<!-- Modal Container -->
+<div class="bg-white dark:bg-[#1a1f2e] w-full max-w-[600px] rounded-lg shadow-2xl flex flex-col overflow-hidden">
+<!-- Header -->
+<div class="px-8 pt-8 pb-4 flex justify-between items-center">
+<h3 class="text-[#111318] dark:text-white text-2xl font-semibold leading-tight">Operation Status</h3>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Modal Body -->
+<div class="px-8 pb-8 flex flex-col gap-6">
+<!-- Central Status Section -->
+<div class="flex flex-col items-center justify-center py-6 gap-4">
+<div class="relative flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[48px] animate-spin-slow">progress_activity</span>
+</div>
+<div class="text-center">
+<p class="text-[#111318] dark:text-white text-base font-medium leading-normal">Workflow in progress...</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Provisioning Azure resources for <span class="font-mono text-primary bg-primary/10 px-1 rounded">myapp-sand</span></p>
+</div>
+</div>
+<!-- Progress Bar Section -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<span class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Progress</span>
+<span class="text-sm font-bold text-primary">45%</span>
+</div>
+<div class="h-2 w-full bg-[#dbdee6] dark:bg-[#2d3748] rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 45%;"></div>
+</div>
+</div>
+<!-- Correlation Section -->
+<div class="flex items-center justify-between gap-4 rounded-lg border border-[#dbdee6] dark:border-[#2d3748] bg-slate-50 dark:bg-[#111621] p-4">
+<div class="flex flex-col gap-1 overflow-hidden">
+<p class="text-[#111318] dark:text-white text-[13px] font-mono truncate">Correlation ID: cid-1737994800000-c3d4</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs">Copy this ID for support requests</p>
+</div>
+<button class="flex items-center justify-center p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors">
+<span class="material-symbols-outlined text-[20px]">content_copy</span>
+</button>
+</div>
+<!-- Workflow Details -->
+<div class="grid grid-cols-1 gap-0 border-t border-b border-[#dbdee6] dark:border-[#2d3748]">
+<div class="grid grid-cols-[120px_1fr] py-4 items-center">
+<p class="text-slate-500 dark:text-slate-400 text-sm">Status</p>
+<div>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+<span class="size-1.5 rounded-full bg-primary"></span>
+                                Running
+                            </span>
+</div>
+</div>
+<div class="grid grid-cols-[120px_1fr] py-4 border-t border-[#dbdee6] dark:border-[#2d3748] items-center">
+<p class="text-slate-500 dark:text-slate-400 text-sm">Started</p>
+<p class="text-[#111318] dark:text-white text-sm">2 minutes ago</p>
+</div>
+<div class="grid grid-cols-[120px_1fr] py-4 border-t border-[#dbdee6] dark:border-[#2d3748] items-center">
+<p class="text-slate-500 dark:text-slate-400 text-sm">Duration</p>
+<p class="text-[#111318] dark:text-white text-sm">2m 15s</p>
+</div>
+</div>
+<!-- Link Card -->
+<a class="group flex items-center justify-between p-4 rounded-lg border border-[#dbdee6] dark:border-[#2d3748] hover:border-primary/50 hover:bg-primary/5 transition-all" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary">terminal</span>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-primary">View Workflow Run</span>
+</div>
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary text-[20px]">open_in_new</span>
+</a>
+</div>
+<!-- Footer -->
+<div class="px-8 py-6 bg-slate-50 dark:bg-[#111621] border-t border-[#dbdee6] dark:border-[#2d3748] flex justify-end gap-3">
+<button class="px-5 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                    Close
+                </button>
+<button class="flex items-center gap-2 px-5 py-2 bg-primary/60 text-white text-sm font-medium rounded-lg cursor-not-allowed" disabled="">
+<span class="material-symbols-outlined text-[18px] animate-spin">sync</span>
+                    Please Wait...
+                </button>
+</div>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,658 @@
+{
+  "specVersion": "1.0",
+  "feature": {
+    "name": "service-catalog-prefill",
+    "summary": "Adds an optional 'Load from Existing App' selector to the Custom Infrastructure form (CustomInfrastructurePage.vue) that pre-populates Step 0 (Project Information) and Step 1 (Module Selection) with data sourced from docs/metadata/{appName}-{environment}.json in the Aya-DevOpsTeam/service-catalog repository. Includes a new authenticated GET /api/app-metadata/:appName/:environment endpoint, a bug fix to getApplicationDetails() file-naming in infrastructureService.js, a new AppSelector.vue reusable component, a new apiService.getAppMetadata() frontend method, and TypeScript type enrichment. Template Deploy pre-fill (TemplateDeployPage.vue) is explicitly out of scope for this release."
+  },
+  "sourceDocument": "service-catalog-prefill-spec.md",
+  "status": "approved",
+  "lastModified": "2025-07-15",
+
+  "acceptance": {
+    "user_stories": [
+      {
+        "as": "application developer (returning user)",
+        "i_want": "to select an existing app from a dropdown on the Custom Infrastructure form and have it pre-populated",
+        "so_that": "I can re-provision or modify infrastructure in under 30 seconds without manually retyping all metadata",
+        "acceptance_criteria": [
+          "An optional 'Load from Existing App' section appears at the top of Step 0 on CustomInfrastructurePage.vue, labelled and collapsible",
+          "The app dropdown is populated from GET /api/installed-apps within 3 000 ms of component mount",
+          "Selecting an app name reveals a second dropdown scoped to that app's available environments with no additional API call",
+          "Clicking Load fetches metadata from GET /api/app-metadata/:appName/:environment and shows a spinner until complete",
+          "After successful load: projectName, descriptiveName, environment, owner are pre-filled in ProjectInfoForm.vue",
+          "After successful load: selectedModules in Step 1 reflects metadata.modules",
+          "projectAge and approvalNumber remain blank after pre-fill (must be entered fresh per request)",
+          "lifecycle is NOT pre-filled (always forced to 'experimental' by ProjectInfoForm.vue)",
+          "A dismissible banner '📋 Pre-filled from {appName} / {environment}' appears after successful load",
+          "All pre-filled fields remain fully editable before submission",
+          "If form already has data, a confirmation dialog warns before overwriting"
+        ]
+      },
+      {
+        "as": "platform engineer",
+        "i_want": "a clean, authenticated API endpoint that returns normalized metadata for a single app/environment pair",
+        "so_that": "the frontend can reliably consume service-catalog data without dealing with raw GitHub JSON or incorrect file naming",
+        "acceptance_criteria": [
+          "GET /api/app-metadata/:appName/:environment is protected by requireAuth middleware",
+          "The endpoint reads docs/metadata/{appName}-{environment}.json directly as primary strategy (no full directory scan)",
+          "The response shape includes: name, environment, description, owner, lifecycle, modules, costCenter, commitSha, deployedAt, correlationId",
+          "HTTP 400 for appName outside /^[a-zA-Z0-9]{1,8}$/ or environment not in data/environments.json",
+          "HTTP 401 for unauthenticated requests",
+          "HTTP 404 when the metadata file does not exist",
+          "correlationId is present in every response and every log line for the request"
+        ]
+      },
+      {
+        "as": "platform engineer",
+        "i_want": "the getApplicationDetails() method to use the correct {appName}-{environment}.json file naming",
+        "so_that": "apps deployed to multiple environments are not mixed up and unnecessary GitHub API calls are avoided",
+        "acceptance_criteria": [
+          "Primary lookup path is docs/metadata/{projectName}-{environment}.json",
+          "Full directory scan fallback is retained only if primary lookup returns 404",
+          "Return value is normalized: name, environment, description, owner, lifecycle, modules, costCenter, commitSha, deployedAt",
+          "Existing GET /api/deployed-apps/:projectName/:environment route continues to work without modification"
+        ]
+      }
+    ],
+    "acceptance_criteria": [
+      "FR-001: 'Load from Existing App' section visible at top of Step 0 on CustomInfrastructurePage.vue, labelled, collapsible, does not affect form state when dismissed",
+      "FR-001: App dropdown supports keyboard navigation and text search/filter",
+      "FR-001: Environment dropdown scoped to selected app with no additional API call",
+      "FR-001: Load button shows spinner and is disabled while metadata fetch is in progress",
+      "FR-001: If form already has data, confirmation dialog warns before overwriting",
+      "FR-002: GET /api/app-metadata/:appName/:environment returns HTTP 200 with shape {success, data:{name,environment,description,owner,lifecycle,modules,costCenter,commitSha,deployedAt}, correlationId}",
+      "FR-002: Returns HTTP 400 for appName outside /^[a-zA-Z0-9]{1,8}$/ or environment not in allowlist",
+      "FR-002: Returns HTTP 401 for unauthenticated requests",
+      "FR-002: Returns HTTP 404 when docs/metadata/{appName}-{environment}.json does not exist",
+      "FR-002: Endpoint targets docs/metadata/{appName}-{environment}.json directly; no directory scan on primary path",
+      "FR-002: correlationId present in every response and every log line",
+      "FR-003: projectName, descriptiveName, environment, owner in ProjectInfoForm.vue reflect API response after successful load",
+      "FR-003: selectedModules in CustomInfrastructurePage.vue Step 1 set to metadata.modules",
+      "FR-003: projectAge and approvalNumber left blank after pre-fill",
+      "FR-003: lifecycle NOT pre-filled",
+      "FR-003: All pre-filled fields remain editable",
+      "FR-003: Dismissible confirmation banner shown after load",
+      "FR-003: If API call fails, form is not modified and inline error shown",
+      "FR-005: AppSelector.vue emits @prefill(AppMetadata) on success and @error(string) on failure",
+      "FR-005: App list loaded on mount via apiService.getInstalledApps() and cached for page lifetime",
+      "FR-005: Load button disabled unless both app name and environment selected",
+      "FR-005: 'No apps found' empty state rendered when list is empty or load fails",
+      "FR-005: aria-busy set during loading; aria-describedby links error messages to controls",
+      "FR-006: apiService.getAppMetadata(appName: string, environment: string): Promise<ApiResponse> exists in srcV2/services/api.ts",
+      "FR-006: Method uses shared Axios instance so auth interceptor and telemetry apply automatically",
+      "FR-007: getApplicationDetails() primary lookup path is docs/metadata/{projectName}-{environment}.json",
+      "FR-007: Fallback directory scan retained and used only if primary returns 404",
+      "FR-007: Return shape normalized: name, environment, description, owner, lifecycle, modules, costCenter, commitSha, deployedAt",
+      "FR-007: GET /api/deployed-apps/:projectName/:environment continues to work",
+      "FR-008: InstalledApp interface gains costCenter?: string and commitSha?: string",
+      "FR-008: New AppMetadata interface added matching GET /api/app-metadata response data shape",
+      "FR-008: tsc --noEmit passes with no errors after type changes"
+    ]
+  },
+
+  "technical": {
+    "api_endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/app-metadata/:appName/:environment",
+        "auth": "requireAuth",
+        "status": "new",
+        "description": "Returns normalized metadata for a single app/environment pair from docs/metadata/{appName}-{environment}.json in Aya-DevOpsTeam/service-catalog",
+        "request_schema": {
+          "appName": "string (path param) — /^[a-zA-Z0-9]{1,8}$/",
+          "environment": "string (path param) — value from data/environments.json allowlist"
+        },
+        "response_schema": {
+          "success": "boolean",
+          "data": {
+            "name": "string",
+            "environment": "string",
+            "description": "string",
+            "owner": "string",
+            "lifecycle": "string",
+            "modules": "string[]",
+            "costCenter": "string",
+            "commitSha": "string",
+            "deployedAt": "string (ISO 8601)"
+          },
+          "correlationId": "string"
+        },
+        "validation": [
+          "appName must match /^[a-zA-Z0-9]{1,8}$/ — return HTTP 400 if not (before GitHub call)",
+          "environment must be in data/environments.json — return HTTP 400 if not (before GitHub call)"
+        ],
+        "errors": [
+          { "code": 400, "condition": "appName fails regex or environment not in allowlist", "message": "{ success: false, error: 'Invalid appName or environment', correlationId }" },
+          { "code": 401, "condition": "missing or invalid JWT bearer token", "message": "{ success: false, error: 'Unauthorized', correlationId }" },
+          { "code": 404, "condition": "docs/metadata/{appName}-{environment}.json not found in service-catalog", "message": "{ success: false, error: 'App not found', correlationId }" },
+          { "code": 500, "condition": "GitHub API failure after retries", "message": "{ success: false, error: 'Failed to fetch metadata', correlationId }" }
+        ]
+      },
+      {
+        "method": "GET",
+        "path": "/api/installed-apps",
+        "auth": "requireAuth",
+        "status": "existing-unchanged",
+        "description": "Reused as-is to populate AppSelector app list. No route or response changes."
+      },
+      {
+        "method": "GET",
+        "path": "/api/deployed-apps/:projectName/:environment",
+        "auth": "requireAuth",
+        "status": "existing-behavior-corrected",
+        "description": "Route signature unchanged. Underlying getApplicationDetails() is fixed by FR-007, so response shape changes from raw GitHub JSON to normalized shape. Audit existing consumers before deploying."
+      }
+    ],
+
+    "data_contracts": {
+      "AppMetadata": {
+        "location": "srcV2/types/infrastructure.types.ts — new interface",
+        "description": "Matches the data object shape returned by GET /api/app-metadata. Used by AppSelector.vue and CustomInfrastructurePage.vue prefill wiring.",
+        "schema": {
+          "name": "string — project abbreviation (≤8 chars)",
+          "environment": "string — environment identifier",
+          "description": "string — human-readable description",
+          "owner": "string — owner name or email",
+          "lifecycle": "string — 'experimental' | 'production' | 'deprecated'",
+          "modules": "string[] — Terraform module IDs",
+          "costCenter": "string — cost center tag",
+          "commitSha": "string — most recent commit SHA",
+          "deployedAt": "string — ISO 8601 deployment timestamp"
+        },
+        "validation": [
+          "name: /^[a-zA-Z0-9]{1,8}$/ enforced server-side before GitHub call",
+          "environment: must match a value from data/environments.json"
+        ]
+      },
+      "InstalledApp_enrichment": {
+        "location": "srcV2/types/infrastructure.types.ts — existing interface extended",
+        "description": "Two optional fields added. Fields already returned by getInstalledApps() but previously untyped.",
+        "added_fields": {
+          "costCenter": "string? — from meta.cost_center in metadata file",
+          "commitSha": "string? — from meta.commit_sha in metadata file"
+        },
+        "backward_compatible": true
+      },
+      "service_catalog_source_file": {
+        "location": "Aya-DevOpsTeam/service-catalog — docs/metadata/{appName}-{environment}.json",
+        "description": "Canonical metadata written by infrastructure workflows. Read-only from self-service-infra's perspective.",
+        "key_fields": {
+          "project": "app name (also projectName in legacy files)",
+          "environment": "environment identifier",
+          "modules": "string[]",
+          "meta.name": "string",
+          "meta.description": "string",
+          "meta.owner": "string",
+          "meta.commit_sha": "string",
+          "meta.deployed_at": "ISO 8601",
+          "meta.cost_center": "string",
+          "meta.lifecycle": "string"
+        }
+      }
+    },
+
+    "components": {
+      "backend": [
+        {
+          "path": "routes/api.js",
+          "change_type": "modify",
+          "description": "Add GET /api/app-metadata/:appName/:environment route with requireAuth, express-validator input validation, and call to infrastructureService.getApplicationDetails(). Existing routes unchanged.",
+          "dependencies": ["services/infrastructureService.js", "middleware/auth.js", "data/environments.json"]
+        },
+        {
+          "path": "services/infrastructureService.js",
+          "change_type": "modify",
+          "description": "FR-007: Fix getApplicationDetails() — change primary lookup from docs/metadata/{projectName}.json to docs/metadata/{projectName}-{environment}.json. Normalize return shape.",
+          "method": "getApplicationDetails(projectName, environment)",
+          "fixed_strategy": [
+            "Primary: getContent('docs/metadata/{projectName}-{environment}.json')",
+            "Fallback (only if primary 404): list docs/metadata/ and scan for matching project+environment",
+            "Return null if neither finds a match",
+            "Return shape: { name, environment, description, owner, lifecycle, modules, costCenter, commitSha, deployedAt }"
+          ]
+        }
+      ],
+      "frontend": [
+        {
+          "path": "srcV2/components/infrastructure/AppSelector.vue",
+          "change_type": "create",
+          "description": "New reusable Vue 3 component. Encapsulates app list loading, two-level selection (app → env), metadata fetch, and event emission.",
+          "props": [],
+          "emits": [
+            "@prefill(metadata: AppMetadata)",
+            "@error(message: string)"
+          ],
+          "behavior": [
+            "Mount: call apiService.getInstalledApps(); cache InstalledApp[] for page lifetime",
+            "Derive unique app name list from cached data",
+            "App name selection: reset env dropdown; repopulate from cached list for that app (no API call)",
+            "Load button: enabled only when both app name and environment selected",
+            "Load click: call apiService.getAppMetadata(appName, env); show spinner; disable button",
+            "Success: emit @prefill(metadata); show dismissible banner '📋 Pre-filled from {appName} / {environment}'",
+            "Second load: show confirmation dialog before overwriting",
+            "Error: emit @error(message); show inline error",
+            "Empty list: render 'No apps found' with retry button",
+            "Section collapsible; collapse does not affect parent form state"
+          ],
+          "accessibility": [
+            "All dropdowns and button keyboard-navigable (Tab/Arrow/Enter)",
+            "Loading: aria-busy='true' or aria-live region",
+            "Errors: aria-describedby linking error text to control"
+          ]
+        },
+        {
+          "path": "srcV2/components/infrastructure/ProjectInfoForm.vue",
+          "change_type": "modify",
+          "changes": [
+            "Add prop: prefillData?: AppMetadata",
+            "Add watch on prefillData: set formData.projectName=metadata.name, formData.descriptiveName=metadata.description, formData.environment=metadata.environment, formData.owner=metadata.owner",
+            "lifecycle NOT pre-filled (stays 'experimental')",
+            "projectAge and approvalNumber NOT pre-filled"
+          ]
+        },
+        {
+          "path": "srcV2/pages/CustomInfrastructurePage.vue",
+          "change_type": "modify",
+          "changes": [
+            "Import and render <AppSelector> above <ProjectInfoForm> in Step 0 panel",
+            "Handle @prefill: store metadata in local ref; pass as :prefillData to ProjectInfoForm; set selectedModules = metadata.modules",
+            "Handle @error: display error message in Step 0 banner area"
+          ],
+          "field_mapping": {
+            "metadata.name": "projectName (ProjectInfoForm)",
+            "metadata.description": "descriptiveName (ProjectInfoForm)",
+            "metadata.environment": "environment (ProjectInfoForm)",
+            "metadata.owner": "owner (ProjectInfoForm)",
+            "metadata.modules": "selectedModules (drives ModuleSelector Step 1)",
+            "metadata.lifecycle": "NOT pre-filled",
+            "projectAge": "NOT pre-filled",
+            "approvalNumber": "NOT pre-filled"
+          }
+        },
+        {
+          "path": "srcV2/services/api.ts",
+          "change_type": "modify",
+          "changes": [
+            "Add to apiService: getAppMetadata: (appName: string, environment: string): Promise<ApiResponse> => api.get(`/api/app-metadata/${appName}/${environment}`)"
+          ]
+        },
+        {
+          "path": "srcV2/types/infrastructure.types.ts",
+          "change_type": "modify",
+          "changes": [
+            "Add to InstalledApp: costCenter?: string",
+            "Add to InstalledApp: commitSha?: string",
+            "Add new interface AppMetadata: { name: string; environment: string; description: string; owner: string; lifecycle: string; modules: string[]; costCenter: string; commitSha: string; deployedAt: string }"
+          ]
+        }
+      ]
+    },
+
+    "flows": [
+      {
+        "name": "Pre-fill Happy Path — Custom Infrastructure",
+        "steps": [
+          "User navigates to CustomInfrastructurePage.vue",
+          "AppSelector.vue mounts → apiService.getInstalledApps() called → InstalledApp[] cached",
+          "User expands 'Load from Existing App' section, selects app name from searchable dropdown",
+          "Environment dropdown auto-populates from cached list (no API call)",
+          "User selects environment, clicks Load → spinner shown, button disabled",
+          "apiService.getAppMetadata(appName, env) → GET /api/app-metadata/:appName/:environment",
+          "Route: validate inputs (400 if invalid) → call infrastructureService.getApplicationDetails()",
+          "getApplicationDetails(): primary GitHub getContent(docs/metadata/{appName}-{environment}.json)",
+          "Normalized AppMetadata returned → route wraps in {success:true, data, correlationId} → HTTP 200",
+          "AppSelector emits @prefill(metadata) → CustomInfrastructurePage sets prefillData + selectedModules",
+          "ProjectInfoForm watcher fires → projectName, descriptiveName, environment, owner set",
+          "Pre-fill banner '📋 Pre-filled from {appName} / {environment}' rendered",
+          "User fills in projectAge and approvalNumber, proceeds through wizard normally"
+        ],
+        "error_paths": [
+          { "at_step": 2, "error": "GET /api/installed-apps 5xx", "handling": "AppSelector shows 'Unable to load apps. Retry?' — form fully usable without pre-fill" },
+          { "at_step": 6, "error": "GET /api/app-metadata 404", "handling": "AppSelector shows 'App not found in service-catalog' — form not modified" },
+          { "at_step": 6, "error": "GET /api/app-metadata 500", "handling": "AppSelector shows 'Could not load metadata. Please fill in manually.' — form not modified" },
+          { "at_step": 6, "error": "Client timeout >5s", "handling": "Axios aborts; timeout error banner shown — form not modified" }
+        ]
+      }
+    ],
+
+    "error_scenarios": [
+      {
+        "scenario": "App list load fails on AppSelector mount",
+        "trigger": "GET /api/installed-apps returns 5xx or network error",
+        "handling": "AppSelector renders 'Unable to load apps. Retry?' with retry button; @error event emitted; form remains fully usable",
+        "user_message": "Unable to load apps. Retry?",
+        "logging": "Server-side error logged with correlationId; client console.error"
+      },
+      {
+        "scenario": "Metadata fetch: app not found (404)",
+        "trigger": "docs/metadata/{appName}-{environment}.json does not exist in service-catalog",
+        "handling": "Route returns HTTP 404; AppSelector shows inline error; @error emitted; form not modified",
+        "user_message": "App '{appName} / {environment}' not found in service-catalog.",
+        "logging": "logger.info with correlationId"
+      },
+      {
+        "scenario": "Metadata fetch: GitHub API server error",
+        "trigger": "GitHub API returns 5xx during getApplicationDetails()",
+        "handling": "Retried 3x with exponential backoff per platform convention; if all fail, route returns HTTP 500",
+        "user_message": "Could not load metadata. Please fill in manually.",
+        "logging": "logger.error with correlationId and full error message"
+      },
+      {
+        "scenario": "Metadata fetch: client-side timeout",
+        "trigger": "GET /api/app-metadata takes >5s (component-level timeout)",
+        "handling": "Axios request aborted; AppSelector shows timeout error; form not modified",
+        "user_message": "Request timed out. Please try again or fill in manually.",
+        "logging": "Client console.error; no server log (request never completed)"
+      },
+      {
+        "scenario": "Invalid appName path parameter",
+        "trigger": "appName fails /^[a-zA-Z0-9]{1,8}$/ (path traversal, too long, special chars)",
+        "handling": "HTTP 400 immediately; no GitHub API call",
+        "user_message": "N/A — validated client-side by AppSelector before Load click",
+        "logging": "logger.warn with correlationId and sanitised invalid value"
+      },
+      {
+        "scenario": "Invalid environment path parameter",
+        "trigger": "environment not in data/environments.json allowlist",
+        "handling": "HTTP 400 immediately; no GitHub API call",
+        "user_message": "N/A — validated client-side by AppSelector dropdown",
+        "logging": "logger.warn with correlationId and invalid value"
+      },
+      {
+        "scenario": "Unauthenticated request",
+        "trigger": "Missing or invalid JWT bearer token",
+        "handling": "requireAuth middleware returns HTTP 401; no metadata in response body",
+        "user_message": "N/A — SPA requires auth before page loads",
+        "logging": "Handled by existing requireAuth middleware"
+      },
+      {
+        "scenario": "Second load attempt — form already has pre-filled data",
+        "trigger": "User clicks Load again after pre-fill already applied",
+        "handling": "Confirmation dialog shown: 'This will replace the current pre-filled data. Continue?' — no API call until confirmed",
+        "user_message": "This will replace the current pre-filled data. Continue?",
+        "logging": "No server-side log required"
+      }
+    ]
+  },
+
+  "testing": {
+    "functional_test_scenarios": [
+      {
+        "id": "BE-001",
+        "layer": "backend-unit",
+        "component": "GET /api/app-metadata",
+        "scenario": "Happy path — app and environment exist",
+        "steps": ["Call GET /api/app-metadata/jobplc/devsand with valid JWT"],
+        "assertions": ["HTTP 200", "data.name === 'jobplc'", "data.environment === 'devsand'", "data.modules is array", "correlationId present in body"]
+      },
+      {
+        "id": "BE-002",
+        "layer": "backend-unit",
+        "component": "GET /api/app-metadata",
+        "scenario": "App not found — 404",
+        "steps": ["Call GET /api/app-metadata/notexist/devsand with valid JWT"],
+        "assertions": ["HTTP 404", "success: false", "error: 'App not found'", "correlationId present"]
+      },
+      {
+        "id": "BE-003",
+        "layer": "backend-unit",
+        "component": "GET /api/app-metadata",
+        "scenario": "Path traversal attempt — 400",
+        "steps": ["Call GET /api/app-metadata/../../etc%2Fpasswd/devsand"],
+        "assertions": ["HTTP 400", "no GitHub API call made (mock asserts 0 calls)"]
+      },
+      {
+        "id": "BE-004",
+        "layer": "backend-unit",
+        "component": "GET /api/app-metadata",
+        "scenario": "appName too long — 400",
+        "steps": ["Call GET /api/app-metadata/toolongname/devsand (9 chars)"],
+        "assertions": ["HTTP 400"]
+      },
+      {
+        "id": "BE-005",
+        "layer": "backend-unit",
+        "component": "GET /api/app-metadata",
+        "scenario": "Invalid environment — 400",
+        "steps": ["Call GET /api/app-metadata/jobplc/invalid-env"],
+        "assertions": ["HTTP 400", "no GitHub API call made"]
+      },
+      {
+        "id": "BE-006",
+        "layer": "backend-unit",
+        "component": "GET /api/app-metadata",
+        "scenario": "Unauthenticated — 401",
+        "steps": ["Call GET /api/app-metadata/jobplc/devsand with no Authorization header"],
+        "assertions": ["HTTP 401", "no metadata in response body"]
+      },
+      {
+        "id": "BE-007",
+        "layer": "backend-unit",
+        "component": "infrastructureService.getApplicationDetails",
+        "scenario": "Primary lookup uses correct path after FR-007 fix",
+        "steps": ["Call getApplicationDetails('jobplc', 'devsand')", "Mock githubService.octokit.rest.repos.getContent"],
+        "assertions": ["getContent called with path 'docs/metadata/jobplc-devsand.json'", "Return shape contains name, environment, costCenter, commitSha, deployedAt"]
+      },
+      {
+        "id": "BE-008",
+        "layer": "backend-unit",
+        "component": "infrastructureService.getApplicationDetails",
+        "scenario": "Fallback to directory scan when primary returns 404",
+        "steps": ["Mock getContent to throw 404 on primary path", "Mock directory listing to include matching file"],
+        "assertions": ["getContent called at least twice (primary + directory scan)", "Correct app data returned from fallback"]
+      },
+      {
+        "id": "BE-009",
+        "layer": "backend-unit",
+        "component": "infrastructureService.getApplicationDetails",
+        "scenario": "Both primary and fallback miss — returns null",
+        "steps": ["Mock getContent to 404 on primary", "Mock directory listing with no matching project+environment"],
+        "assertions": ["Method returns null", "Route returns HTTP 404"]
+      },
+      {
+        "id": "BE-010",
+        "layer": "backend-unit",
+        "component": "GET /api/app-metadata (NFR-008 N+1 guard)",
+        "scenario": "Exactly 1 GitHub API call when primary path succeeds",
+        "steps": ["Mock getContent to succeed on primary path", "Call getApplicationDetails('jobplc', 'devsand')"],
+        "assertions": ["getContent called exactly once"]
+      },
+      {
+        "id": "FE-001",
+        "layer": "frontend-unit",
+        "component": "AppSelector.vue",
+        "scenario": "App list loaded on mount",
+        "steps": ["Mount AppSelector", "Mock apiService.getInstalledApps to return list"],
+        "assertions": ["apiService.getInstalledApps called exactly once on mount", "App name dropdown renders correct options"]
+      },
+      {
+        "id": "FE-002",
+        "layer": "frontend-unit",
+        "component": "AppSelector.vue",
+        "scenario": "Environment dropdown scoped to selected app",
+        "steps": ["Mount with mocked app list containing 'jobplc/devsand' and 'commhub/sand'", "Select 'jobplc'"],
+        "assertions": ["Environment dropdown shows 'devsand' only", "No additional API call made"]
+      },
+      {
+        "id": "FE-003",
+        "layer": "frontend-unit",
+        "component": "AppSelector.vue",
+        "scenario": "Load button state management",
+        "steps": ["Mount", "Select app only", "Then select environment"],
+        "assertions": ["Button disabled when only app selected", "Button enabled when both app and env selected"]
+      },
+      {
+        "id": "FE-004",
+        "layer": "frontend-unit",
+        "component": "AppSelector.vue",
+        "scenario": "Successful metadata fetch emits @prefill",
+        "steps": ["Select app + env", "Mock apiService.getAppMetadata to return AppMetadata", "Click Load"],
+        "assertions": ["apiService.getAppMetadata called with ('jobplc', 'devsand')", "@prefill event emitted with metadata", "Pre-fill banner visible"]
+      },
+      {
+        "id": "FE-005",
+        "layer": "frontend-unit",
+        "component": "AppSelector.vue",
+        "scenario": "Metadata fetch 404 emits @error",
+        "steps": ["Select app + env", "Mock apiService.getAppMetadata to reject with HTTP 404", "Click Load"],
+        "assertions": ["@error event emitted with message", "Inline error message rendered in selector section", "Form not modified"]
+      },
+      {
+        "id": "FE-006",
+        "layer": "frontend-unit",
+        "component": "AppSelector.vue",
+        "scenario": "Second load shows confirmation dialog",
+        "steps": ["Load successfully once", "Select different app + env", "Click Load again"],
+        "assertions": ["Confirmation dialog appears before any API call", "No API call until user confirms"]
+      },
+      {
+        "id": "FE-007",
+        "layer": "frontend-unit",
+        "component": "AppSelector.vue",
+        "scenario": "Empty app list renders empty state",
+        "steps": ["Mock apiService.getInstalledApps to return empty array"],
+        "assertions": ["'No apps found' empty state rendered", "Load button never shown/enabled"]
+      },
+      {
+        "id": "FE-008",
+        "layer": "frontend-unit",
+        "component": "ProjectInfoForm.vue",
+        "scenario": "prefillData prop populates correct fields only",
+        "steps": ["Mount ProjectInfoForm with prefillData prop set to AppMetadata object"],
+        "assertions": [
+          "formData.projectName === metadata.name",
+          "formData.descriptiveName === metadata.description",
+          "formData.environment === metadata.environment",
+          "formData.owner === metadata.owner",
+          "formData.lifecycle === 'experimental' (not pre-filled from metadata)",
+          "formData.projectAge is blank/zero",
+          "formData.approvalNumber is empty string"
+        ]
+      },
+      {
+        "id": "FE-009",
+        "layer": "frontend-unit",
+        "component": "CustomInfrastructurePage.vue",
+        "scenario": "Pre-fill wiring sets selectedModules correctly",
+        "steps": ["Mount page", "Emit @prefill from AppSelector with metadata.modules=['functionAppSvcWindows']"],
+        "assertions": ["selectedModules === ['functionAppSvcWindows']", "ModuleSelector in Step 1 renders the module as checked"]
+      },
+      {
+        "id": "FE-010",
+        "layer": "frontend-unit",
+        "component": "apiService / TypeScript",
+        "scenario": "getAppMetadata method typed correctly",
+        "steps": ["Import apiService", "Run tsc --noEmit"],
+        "assertions": ["typeof apiService.getAppMetadata === 'function'", "tsc --noEmit exits 0"]
+      },
+      {
+        "id": "E2E-001",
+        "layer": "e2e",
+        "component": "CustomInfrastructurePage.vue — full pre-fill happy path",
+        "scenario": "User selects existing app and form is pre-populated end-to-end",
+        "steps": [
+          "Navigate to Custom Infrastructure page",
+          "Expand 'Load from Existing App' section",
+          "Select 'jobplc' from app dropdown",
+          "Select 'devsand' from environment dropdown",
+          "Click Load button",
+          "Wait for spinner to disappear"
+        ],
+        "assertions": [
+          "projectName field shows 'jobplc'",
+          "owner field shows 'Vijay Batham'",
+          "environment dropdown shows 'devsand'",
+          "Pre-fill banner '📋 Pre-filled from jobplc / devsand' is visible",
+          "Navigate to Step 1: 'functionAppSvcWindows' module is checked",
+          "projectAge field is blank",
+          "approvalNumber field is blank"
+        ]
+      },
+      {
+        "id": "E2E-002",
+        "layer": "e2e",
+        "component": "CustomInfrastructurePage.vue — graceful degradation",
+        "scenario": "Form remains fully usable when app list fails to load",
+        "steps": [
+          "Mock GET /api/installed-apps to return HTTP 500",
+          "Navigate to Custom Infrastructure page"
+        ],
+        "assertions": [
+          "AppSelector shows 'Unable to load apps. Retry?' message",
+          "All Step 0 form fields are enabled and editable",
+          "Wizard can be completed without pre-fill without errors"
+        ]
+      }
+    ]
+  },
+
+  "nfr": {
+    "performance": {
+      "metadata_fetch_latency": "GET /api/app-metadata/:appName/:environment ≤ 2 000 ms at p95 (GitHub API available, ≤50 concurrent users)",
+      "app_list_load_time": "AppSelector.vue populated within 3 000 ms of mount at p95 from GET /api/installed-apps",
+      "validation_overhead": "HTTP 400 responses for invalid inputs returned before any GitHub API call (<10 ms)",
+      "measurement": "api_request_completed telemetry event (duration_ms field) emitted automatically by Axios interceptors in srcV2/services/api.ts"
+    },
+    "reliability": {
+      "graceful_degradation": "If GET /api/app-metadata or GET /api/installed-apps returns 4xx/5xx: (1) form remains fully functional for manual entry; (2) human-readable error message appears within 500 ms; (3) error logged server-side with correlationId",
+      "github_retries": "GitHub 5xx errors retried 3x with exponential backoff per platform convention before returning 500",
+      "no_n_plus_1_calls": "A single pre-fill action must result in exactly 1 GitHub getContent API call when primary lookup path succeeds"
+    },
+    "security": {
+      "auth_enforcement": "GET /api/app-metadata protected by requireAuth middleware — HTTP 401 for unauthenticated requests, no metadata payload returned",
+      "input_validation": "appName validated against /^[a-zA-Z0-9]{1,8}$/ server-side; environment validated against data/environments.json allowlist; HTTP 400 before any GitHub call",
+      "no_sensitive_logging": "correlationId, appName, environment may be logged; JWT tokens, GitHub tokens, and secret values must never be logged"
+    },
+    "observability": {
+      "correlation_ids": "Every backend log line for the new route and service method must include req.correlationId; correlationId must appear in all response JSON objects"
+    },
+    "accessibility": {
+      "wcag_21_aa": "AppSelector.vue must meet WCAG 2.1 AA: keyboard-navigable (Tab/Arrow/Enter), loading state announced via aria-busy or aria-live, error messages linked via aria-describedby"
+    },
+    "usability": {
+      "prefill_banner_visibility": "Pre-fill confirmation banner visible without scrolling at 375 px, 768 px, and 1 280 px viewport widths; persists until dismissed or user navigates to a new step"
+    }
+  },
+
+  "dependencies": {
+    "external_repos": [
+      {
+        "repo": "Aya-DevOpsTeam/service-catalog",
+        "purpose": "Source of truth for app metadata files at docs/metadata/{appName}-{environment}.json",
+        "access": "Read-only via Infrastructure GitHub App (GITHUB_APP_ID + GITHUB_INSTALLATION_ID) — no new credentials required"
+      }
+    ],
+    "internal_services": [
+      {
+        "service": "services/infrastructureService.js — getApplicationDetails()",
+        "purpose": "Fixed (FR-007) and called by the new GET /api/app-metadata route"
+      },
+      {
+        "service": "services/githubService.js — octokit.rest.repos.getContent()",
+        "purpose": "Used by getApplicationDetails() to read metadata file from service-catalog"
+      },
+      {
+        "service": "middleware/auth.js — requireAuth",
+        "purpose": "Applied to GET /api/app-metadata to enforce Entra ID JWT authentication"
+      }
+    ],
+    "existing_endpoints": [
+      {
+        "endpoint": "GET /api/installed-apps",
+        "purpose": "Reused as-is to populate AppSelector app name and environment dropdowns"
+      }
+    ],
+    "config_files": [
+      {
+        "file": "data/environments.json",
+        "purpose": "Dynamic allowlist for validating the environment path parameter on GET /api/app-metadata"
+      }
+    ],
+    "feature_flag": {
+      "name": "VITE_ENABLE_CATALOG_PREFILL",
+      "type": "Vite environment variable (boolean string)",
+      "purpose": "Gates AppSelector.vue rendering in CustomInfrastructurePage.vue during initial rollout",
+      "rollback": "Set to 'false' or remove — AppSelector is removed from the page with zero effect on existing routes or other functionality"
+    }
+  }
+}

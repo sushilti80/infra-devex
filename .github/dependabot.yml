@@ -1,0 +1,91 @@
+# Dependabot — Automated Dependency Updates
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Strategy:
+#   - npm ecosystems (root + srcV2 if separate) → grouped PRs
+#   - Agent Governance reusable workflow → dedicated PRs
+#   - Other GitHub Actions versions → grouped PRs
+#   - Docker base image versions → grouped PRs
+#   - Weekly cadence (Monday) to batch updates and reduce PR noise
+#   - Auto-rebase + auto-assign reviewers
+#   - Labeling for triage and pipeline integration
+
+version: 2
+updates:
+  # ── npm dependencies (production + dev) ──
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Amsterdam"
+    open-pull-requests-limit: 10
+    groups:
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "patch"
+          - "minor"
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "patch"
+          - "minor"
+      major-versions:
+        update-types:
+          - "major"
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-patch"]
+    labels:
+      - "dependencies"
+      - "automated"
+    assignees:
+      - "Sushil-Tiwari"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    rebase-strategy: "auto"
+
+  # ── GitHub Actions versions ──
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Amsterdam"
+    open-pull-requests-limit: 5
+    groups:
+      agent-governance:
+        patterns:
+          - "Aya-DevOpsTeam/agent-governance*"
+      actions-updates:
+        patterns: ["*"]
+        exclude-patterns:
+          - "Aya-DevOpsTeam/agent-governance*"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "automated"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+
+  # ── Docker base image versions ──
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Amsterdam"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "docker"
+      - "automated"
+    commit-message:
+      prefix: "docker"
+      include: "scope"

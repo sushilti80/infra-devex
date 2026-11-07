@@ -1,0 +1,30 @@
+# Universal Pre-commit Security Hooks
+# Focused on secret detection and security - reusable across all repositories
+# See https://pre-commit.com for more information
+
+repos:
+  # Gitleaks - Secret scanning
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.29.0
+    hooks:
+      - id: gitleaks
+        name: Detect hardcoded secrets
+        description: Detect hardcoded secrets using Gitleaks
+        entry: gitleaks protect --verbose --redact --staged
+        language: system
+        pass_filenames: false
+
+  # Security-focused checks only
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ['--maxkb=1500']
+      - id: check-merge-conflict
+      - id: detect-private-key
+        exclude: ^(tests/|example/)  # Exclude test fixtures
+      - id: check-json
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: ['--markdown-linebreak-ext=md']

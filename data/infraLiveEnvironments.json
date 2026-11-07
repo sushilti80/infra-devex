@@ -1,0 +1,4 @@
+{
+  "_comment": "Target environment folders offered (and allowlisted) by 'Move to Infrastructure-Live' on the Installed Apps page. The source environment (e.g. devsand) is already generated in service-catalog and is never a target. Hand-maintained by Platform Engineering.",
+  "targets": ["prod", "stage", "dev", "int", "sint", "cint", "hot", "demo"]
+}

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>InfraProvision Navigation Header</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2463eb",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                        "slate-800": "#1e293b",
+                        "slate-500": "#64748b",
+                        "slate-200": "#e2e8f0",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "Segoe UI", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-size: 20px;
+        }
+        .active-nav-border {
+            border-bottom: 3px solid #2463eb;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display min-h-screen">
+<!-- Header Container -->
+<header class="h-[64px] w-full bg-white dark:bg-[#1e293b] border-b border-slate-200 dark:border-slate-700 fixed top-0 left-0 z-50 px-6 flex items-center justify-between">
+<!-- Left: Logo Section -->
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-primary">
+<span class="material-symbols-outlined !text-[28px]">token</span>
+</div>
+<h1 class="text-[18px] font-semibold text-slate-800 dark:text-white leading-tight">InfraProvision</h1>
+</div>
+<!-- Center: Navigation Links -->
+<nav class="hidden lg:flex items-center h-full gap-8">
+<a class="flex items-center gap-2 h-full px-1 text-slate-500 hover:text-primary transition-colors border-b-[3px] border-transparent" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[15px] font-medium">Home</span>
+</a>
+<!-- Active State: Custom Infra -->
+<a class="flex items-center gap-2 h-full px-1 text-primary active-nav-border" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">build</span>
+<span class="text-[15px] font-medium">Custom Infra</span>
+</a>
+<a class="flex items-center gap-2 h-full px-1 text-slate-500 hover:text-primary transition-colors border-b-[3px] border-transparent" href="#">
+<span class="material-symbols-outlined">content_copy</span>
+<span class="text-[15px] font-medium">Templates</span>
+</a>
+<a class="flex items-center gap-2 h-full px-1 text-slate-500 hover:text-primary transition-colors border-b-[3px] border-transparent" href="#">
+<span class="material-symbols-outlined">hub</span>
+<span class="text-[15px] font-medium">AKS Deploy</span>
+</a>
+<a class="flex items-center gap-2 h-full px-1 text-slate-500 hover:text-primary transition-colors border-b-[3px] border-transparent" href="#">
+<span class="material-symbols-outlined">dns</span>
+<span class="text-[15px] font-medium">Installed Apps</span>
+</a>
+</nav>
+<!-- Right: User Profile Trigger -->
+<div class="relative flex items-center gap-3 cursor-pointer group">
+<div class="flex items-center gap-3 p-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-800 dark:text-white font-semibold text-sm">
+                    ST
+                </div>
+<div class="hidden sm:flex flex-col items-start">
+<span class="text-[14px] font-semibold text-slate-800 dark:text-white">Sushil Tiwari</span>
+</div>
+<span class="material-symbols-outlined text-slate-500">expand_more</span>
+</div>
+<!-- Profile Dropdown (Open State Emulated) -->
+<div class="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-50">
+<!-- Dropdown Item: Profile -->
+<a class="flex items-center gap-3 px-4 py-2.5 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500">person</span>
+<span class="text-sm font-medium">Profile</span>
+</a>
+<!-- Dropdown Item: Settings -->
+<a class="flex items-center gap-3 px-4 py-2.5 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+<!-- Divider -->
+<div class="my-1 border-t border-slate-200 dark:border-slate-700"></div>
+<!-- Dropdown Item: Logout -->
+<a class="flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="text-sm font-medium">Logout</span>
+</a>
+</div>
+</div>
+</header>
+<!-- Content Placeholder to show context -->
+<main class="pt-24 px-10">
+<div class="max-w-7xl mx-auto">
+<div class="bg-white dark:bg-[#1e293b] rounded-xl p-8 border border-slate-200 dark:border-slate-700 shadow-sm">
+<h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-4">Custom Infrastructure</h2>
+<p class="text-slate-500 dark:text-slate-400">Welcome back, Sushil. Configure your Azure environment here.</p>
+<div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="aspect-video rounded-lg bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center gap-2">
+<span class="material-symbols-outlined text-slate-400 !text-4xl">add_circle</span>
+<span class="text-slate-500 font-medium">Create New Provision</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

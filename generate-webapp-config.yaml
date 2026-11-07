@@ -1,0 +1,146 @@
+name: Generate Web App Configuration
+
+on:
+  workflow_dispatch:
+    inputs:
+      envname:
+        description: 'Environment name'
+        required: true
+        default: 'sand'
+        type: choice
+        options:
+          - sand
+          # - int
+          # - shared
+      appname:
+        description: 'App name'
+        required: true
+        default: 'auto-generated-app'
+      namespace:
+        description: 'Kubernetes namespace'
+        required: true
+        default: 'auto-generated-app'
+      # chart_name:
+      #   description: 'Chart name'
+      #   required: true
+      #   default: 'helm/app-workload-deployment'
+      # chart_version:
+      #   description: 'Chart version'
+      #   required: true
+      #   default: '0.1.18'
+      # chart_repository_name:
+      #   description: 'Chart repository name'
+      #   required: true
+      #   default: 'shared'
+      is_web_app:
+        description: 'Is this a web application'
+        required: true
+        default: 'true'
+      image_name:
+        description: 'Image name'
+        required: true
+        default: 'sharedwus3acr2.azurecr.io/self-service-infra'
+      image_tag:
+        description: 'Image tag'
+        required: true
+        default: 'latest'
+      correlation_id:
+        description: 'Correlation ID for tracking'
+        required: false
+        default: ''
+      triggered_by:
+        description: 'User who triggered this workflow'
+        required: false
+        default: 'system'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate:
+    runs-on: aya-devops-rs
+    name: "Deploy ${{ github.event.inputs.appname }} [CID: ${{ github.event.inputs.correlation_id }}]"
+    steps:
+      - name: Print Correlation ID
+        run: |
+          echo "============================================"
+          echo "🔗 Correlation ID: ${{ github.event.inputs.correlation_id }}"
+          echo "Triggered by: ${{ github.event.inputs.triggered_by }}"
+          echo "App Name: ${{ github.event.inputs.appname }}"
+          echo "Environment: ${{ github.event.inputs.envname }}"
+          echo "============================================"
+          echo "::notice::Correlation ID: ${{ github.event.inputs.correlation_id }}"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - run: |
+          python -m pip install --upgrade pip
+          pip install "jinja2-cli[yaml]"
+
+      - name: Validate template source exists
+        run: |
+          src=".template/${{ github.event.inputs.envname }}-cluster"
+          [ -d "$src" ] || { echo "::error::Template directory not found: $src"; exit 1; }
+
+      - name: Create app directory
+        run: |
+          mkdir -p "clusters/${{ github.event.inputs.envname }}/${{ github.event.inputs.envname }}-wus3-aks-1/apps/${{ github.event.inputs.appname }}"
+
+      - name: Render templates
+        run: |
+          src=".template/${{ github.event.inputs.envname }}-cluster/webapp"
+          dest="clusters/${{ github.event.inputs.envname }}/${{ github.event.inputs.envname }}-wus3-aks-1/apps/${{ github.event.inputs.appname }}"
+          for f in "$src"/*; do
+            [ -f "$f" ] || continue
+            jinja2 "$f" \
+              -D appname="${{ github.event.inputs.appname }}" \
+              -D namespace="${{ github.event.inputs.namespace }}" \
+              -D is_web_app="${{ github.event.inputs.is_web_app }}" \
+              -D image_name="${{ github.event.inputs.image_name }}" \
+              -D image_tag="${{ github.event.inputs.image_tag }}" \
+              > "$dest/$(basename "$f")"
+          done
+
+      - name: Update kustomization.yaml
+        run: |
+          kustom_dir="clusters/${{ github.event.inputs.envname }}/${{ github.event.inputs.envname }}-wus3-aks-1/apps"
+          kustom_file="$kustom_dir/kustomization.yaml"
+          mkdir -p "$kustom_dir"; touch "$kustom_file"
+          app_entry="  - ${{ github.event.inputs.appname }}"
+          # Ensure kustomization.yaml starts with 'resources:'
+          if ! grep -q '^resources:' "$kustom_file"; then
+            echo 'resources:' > "$kustom_file.tmp"
+            cat "$kustom_file" >> "$kustom_file.tmp"
+            mv "$kustom_file.tmp" "$kustom_file"
+          fi
+          # Add the app entry if not present, with correct indentation
+          grep -qxF "$app_entry" "$kustom_file" || echo "$app_entry" >> "$kustom_file"
+
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "Generate app ${{ github.event.inputs.appname }} for ${{ github.event.inputs.envname }}"
+          title: "Generate app '${{ github.event.inputs.appname }}' for '${{ github.event.inputs.envname }}' [CID: ${{ github.event.inputs.correlation_id }}]"
+          body: |
+            Auto-generated via workflow_dispatch.
+            
+            **Deployment Details:**
+            - Environment: ${{ github.event.inputs.envname }}
+            - App Name: ${{ github.event.inputs.appname }}
+            - Namespace: ${{ github.event.inputs.namespace }}
+            - Is Web App: ${{ github.event.inputs.is_web_app }}
+            - Image: ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
+            - Triggered by: ${{ github.event.inputs.triggered_by }}
+            - Correlation ID: ${{ github.event.inputs.correlation_id }}
+          branch: "auto/gen-${{ github.event.inputs.envname }}-${{ github.event.inputs.appname }}"
+          base: "main"
+          labels: "automation"
+          delete-branch: true

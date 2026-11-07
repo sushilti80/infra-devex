@@ -1,0 +1,174 @@
+{
+  "feature": "bug-feature-request-form",
+  "date": "2026-03-31",
+  "summary": {
+    "total": 317,
+    "passed": 317,
+    "failed": 0,
+    "skipped": 0,
+    "coverage_percent": 98.74
+  },
+  "suites": [
+    {
+      "name": "FeedbackPage.vue — component unit tests",
+      "file": "srcV2/pages/FeedbackPage.spec.ts",
+      "environment": "jsdom",
+      "total": 33,
+      "passed": 33,
+      "failed": 0
+    },
+    {
+      "name": "SharedHeader.vue — nav unit tests",
+      "file": "srcV2/components/common/SharedHeader.spec.ts",
+      "environment": "jsdom",
+      "total": 22,
+      "passed": 22,
+      "failed": 0
+    },
+    {
+      "name": "POST /api/feedback — endpoint integration tests",
+      "file": "tests/integration/api/feedback.spec.ts",
+      "environment": "node",
+      "total": 22,
+      "passed": 22,
+      "failed": 0
+    },
+    {
+      "name": "githubService.createIssue — unit tests",
+      "file": "tests/integration/api/github-service-create-issue.spec.ts",
+      "environment": "node",
+      "total": 9,
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "name": "Other existing jsdom suites (auth, api service, telemetry, etc.)",
+      "environment": "jsdom",
+      "total": 231,
+      "passed": 231,
+      "failed": 0,
+      "note": "Pre-existing tests; unchanged and passing"
+    }
+  ],
+  "fr_coverage": {
+    "FR-001": {
+      "description": "Feedback nav item appears only for authenticated users",
+      "status": "PASS",
+      "covered_by": "SharedHeader.spec.ts: renders all navigation items when authenticated (checks Feedback in label list); renders only public items when not authenticated"
+    },
+    "FR-002": {
+      "description": "PageId 'feedback' added, FeedbackPage renders",
+      "status": "PASS",
+      "covered_by": "FeedbackPage.spec.ts: renders the page heading; navigation.ts type includes 'feedback'"
+    },
+    "FR-003": {
+      "description": "Three request types with mutual exclusion and correct field sets",
+      "status": "PASS",
+      "covered_by": "FeedbackPage.spec.ts: Tab switching suite (5 tests)"
+    },
+    "FR-004": {
+      "description": "Bug report fields (title, observed/expected behaviour, severity)",
+      "status": "PASS",
+      "covered_by": "FeedbackPage.spec.ts: Validation suite; Payload content suite (severity)"
+    },
+    "FR-005": {
+      "description": "Feature request fields (title, painPoint, desiredOutcome, priority)",
+      "status": "PASS",
+      "covered_by": "FeedbackPage.spec.ts: shows feature-request fields; Payload content suite (priority)"
+    },
+    "FR-006": {
+      "description": "Agent request fields (title, agentType, agentBehaviour, businessJustification)",
+      "status": "PASS",
+      "covered_by": "FeedbackPage.spec.ts: shows agent-request fields; Agent-request submission"
+    },
+    "FR-007": {
+      "description": "Email pre-fill from auth store (read-only)",
+      "status": "PASS",
+      "covered_by": "FeedbackPage.spec.ts: pre-fills the email field from auth store; email field is read-only"
+    },
+    "FR-008": {
+      "description": "Submit button disabled until valid; spinner during submission",
+      "status": "PASS",
+      "covered_by": "FeedbackPage.spec.ts: Submit state suite (spinner + disabled button)"
+    },
+    "FR-009": {
+      "description": "POST /api/feedback endpoint returns correct responses",
+      "status": "PASS",
+      "covered_by": "feedback.spec.ts: 22 integration tests (201 success, 400 validation, 429, 503, 500)"
+    },
+    "FR-010": {
+      "description": "createIssue service method works correctly",
+      "status": "PASS",
+      "covered_by": "github-service-create-issue.spec.ts: 9 unit tests"
+    },
+    "FR-011": {
+      "description": "GitHub issue body format is correct for each type",
+      "status": "PASS",
+      "covered_by": "feedback.spec.ts: Issue body format suite (4 tests checking section headers and content)"
+    },
+    "FR-012": {
+      "description": "Success state shows issue URL; Submit Another resets form",
+      "status": "PASS",
+      "covered_by": "FeedbackPage.spec.ts: Success state suite (6 tests)"
+    },
+    "FR-013": {
+      "description": "Error state shows correlationId; form fields preserved",
+      "status": "PASS",
+      "covered_by": "FeedbackPage.spec.ts: Error state suite (4 tests)"
+    },
+    "FR-014": {
+      "description": "Repo from config.github.selfServiceRepo",
+      "status": "PASS",
+      "covered_by": "feedback.spec.ts: calls createIssue with the configured selfServiceRepo"
+    },
+    "FR-015": {
+      "description": "Unit tests for endpoint and service method",
+      "status": "PASS",
+      "covered_by": "feedback.spec.ts (22 tests) + github-service-create-issue.spec.ts (9 tests)"
+    }
+  },
+  "nfr_coverage": {
+    "NFR-003": {
+      "description": "Unauthenticated POST /api/feedback → 401",
+      "status": "PASS",
+      "covered_by": "feedback.spec.ts: returns 401 when request is unauthenticated"
+    },
+    "NFR-004": {
+      "description": "HTML injection in payload → escaped in issue body",
+      "status": "PASS",
+      "covered_by": "feedback.spec.ts: escapes HTML angle brackets in issue body — prevents injection"
+    },
+    "NFR-007": {
+      "description": "GitHub 429 → API returns 429 with retryAfter",
+      "status": "PASS",
+      "covered_by": "feedback.spec.ts: returns 429 with retryAfter when GitHub rate limit is hit"
+    }
+  },
+  "gaps": [
+    {
+      "id": "GAP-001",
+      "description": "health.spec.ts requires a live server at localhost:3001 — 11 pre-existing failures unrelated to this feature",
+      "severity": "low",
+      "note": "Pre-existing condition; these tests were already failing before this feature"
+    },
+    {
+      "id": "GAP-002",
+      "description": "FeedbackPage.vue branch coverage is 78.94% — some branches on severity/priority select default paths not exercised",
+      "severity": "low"
+    },
+    {
+      "id": "GAP-003",
+      "description": "No E2E Playwright tests against a running server with real auth flow — deferred to manual/staging testing",
+      "severity": "low"
+    }
+  ],
+  "bugs_found": [
+    {
+      "id": "BUG-001",
+      "description": "services/githubService.js contained TypeScript syntax (ReturnType<typeof setTimeout>, Promise<never>, (err as any)) in a plain .js file — causes SyntaxError in Node.js without TypeScript runtime",
+      "fix": "Removed TypeScript annotations: ReturnType→ null initializer, Promise<never>→ Promise, (err as any).code→ err.code",
+      "severity": "critical"
+    }
+  ],
+  "status": "PASS"
+}

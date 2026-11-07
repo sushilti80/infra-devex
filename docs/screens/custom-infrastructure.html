@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Enterprise Infrastructure Configuration Page</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style type="text/tailwindcss">
+        :root {
+            --primary-blue: #2563eb;
+            --bg-gray: #f8fafc;
+        }
+        body {
+            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-gray);
+        }
+        .card-shadow {
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+        }
+        .module-card-selected {
+            border: 2px solid var(--primary-blue) !important;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#2563eb",
+                        background: "#f8fafc",
+                    },
+                    borderRadius: {
+                        'custom': '6px',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-slate-900 antialiased min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<aside class="w-64 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col py-6">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3">
+<div class="bg-primary size-10 rounded-custom flex items-center justify-center text-white">
+<span class="material-symbols-outlined">settings_input_component</span>
+</div>
+<div>
+<h1 class="text-slate-900 text-base font-bold leading-tight">InfraSaaS</h1>
+<p class="text-slate-500 text-xs uppercase tracking-wider font-semibold">Enterprise Platform</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-custom text-slate-600 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-xl">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-custom bg-blue-50 text-primary" href="#">
+<span class="material-symbols-outlined text-xl">account_tree</span>
+<span class="text-sm font-bold">Infrastructure</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-custom text-slate-600 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-xl">history</span>
+<span class="text-sm font-medium">Deployments</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-custom text-slate-600 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-xl">settings</span>
+<span class="text-sm font-medium">Admin Settings</span>
+</a>
+</nav>
+<div class="px-6 pt-6 border-t border-slate-100">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-200 overflow-hidden">
+<img alt="User Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuChMawJhwe9rbKMvWe5tiI6qiyQog83D65h_4MZZHzAD7A9jj6uJDsnRqyv8SxoYS3L5WhfcVLUtfJgVo98yFReclptYJ5ZUAjE2EAXlk15qef_RX_BF4OzXYOvkyWdXWEN1Qen_miSYwigWkD_cRDYomDzuRcO6cNaOP6UBZ2xb-8kH0IppQObqtx_aPfreBFZ-hQ8neLlPA01Y-ZLTKZgA0H7zpZEiwpiJwbGMghfG5mi96hvtRlVpSZF5Fn45pGhPYT_Uflp9WGr"/>
+</div>
+<div class="overflow-hidden">
+<p class="text-xs font-bold text-slate-900 truncate">admin@enterprise.io</p>
+<p class="text-[10px] text-slate-500">Super Admin</p>
+</div>
+</div>
+</div>
+</aside>
+<main class="flex-1 overflow-y-auto">
+<div class="max-w-[1200px] mx-auto px-8 py-10 space-y-8">
+<div>
+<h2 class="text-2xl font-bold text-slate-900">Custom Infrastructure Creation</h2>
+<p class="text-slate-500 text-sm mt-1">Configure your self-service enterprise stack with RBAC and multi-instance support.</p>
+</div>
+<section class="bg-white rounded-custom border border-slate-200 card-shadow p-6">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Project Name</label>
+<input class="w-full border-slate-200 rounded-custom text-sm focus:border-primary focus:ring-primary h-10" maxlength="7" placeholder="PROJ-01" type="text"/>
+<span class="text-[10px] text-slate-400">Max 7 characters allowed.</span>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Description</label>
+<input class="w-full border-slate-200 rounded-custom text-sm focus:border-primary focus:ring-primary h-10" placeholder="Enterprise core services pipeline" type="text"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Environment</label>
+<select class="w-full border-slate-200 rounded-custom text-sm focus:border-primary focus:ring-primary h-10">
+<option value="">Select Environment</option>
+<option value="sand">Sand</option>
+<option value="devsand">Devsand</option>
+</select>
+</div>
+</div>
+</section>
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="text-lg font-bold text-slate-900">Modules</h3>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+<input class="pl-10 pr-4 py-2 border-slate-200 rounded-custom text-sm w-64 focus:border-primary focus:ring-primary h-10" placeholder="Search modules..." type="text"/>
+</div>
+<div class="flex bg-white border border-slate-200 rounded-custom p-1">
+<button class="px-4 py-1 text-xs font-bold bg-primary text-white rounded-[4px]">All</button>
+<button class="px-4 py-1 text-xs font-medium text-slate-600 hover:text-primary">Compute</button>
+<button class="px-4 py-1 text-xs font-medium text-slate-600 hover:text-primary">Storage</button>
+<button class="px-4 py-1 text-xs font-medium text-slate-600 hover:text-primary">Network</button>
+</div>
+<button class="flex items-center gap-2 bg-white border border-slate-200 px-4 h-10 rounded-custom text-sm font-bold text-slate-700 hover:bg-slate-50">
+<span class="material-symbols-outlined text-lg">account_tree</span>
+                                RBAC
+                            </button>
+</div>
+</div>
+<div class="flex items-center gap-2 text-xs">
+<span class="font-bold text-slate-900">2 selected</span>
+<button class="text-primary hover:underline font-medium">Clear</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+<div class="bg-white rounded-custom border border-slate-200 card-shadow p-5 module-card-selected flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div class="size-10 bg-blue-50 text-primary flex items-center justify-center rounded-custom">
+<span class="material-symbols-outlined">dns</span>
+</div>
+<input checked="" class="rounded-sm text-primary focus:ring-primary size-5" type="checkbox"/>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-slate-900 text-sm">Elastic Compute (EC2)</h4>
+<span class="inline-block px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold uppercase mt-1">Compute</span>
+</div>
+<div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+<div class="flex flex-col gap-1">
+<label class="text-[10px] text-slate-500 font-bold uppercase">Instances</label>
+<input class="w-16 h-8 text-xs border-slate-200 rounded-custom" type="number" value="3"/>
+</div>
+<button class="text-slate-400 hover:text-primary">
+<span class="material-symbols-outlined">expand_more</span>
+</button>
+</div>
+</div>
+<div class="bg-white rounded-custom border border-slate-200 card-shadow p-5 module-card-selected flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div class="size-10 bg-blue-50 text-primary flex items-center justify-center rounded-custom">
+<span class="material-symbols-outlined">inventory_2</span>
+</div>
+<input checked="" class="rounded-sm text-primary focus:ring-primary size-5" type="checkbox"/>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-slate-900 text-sm">Object Storage (S3)</h4>
+<span class="inline-block px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold uppercase mt-1">Storage</span>
+</div>
+<div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+<div class="flex flex-col gap-1">
+<label class="text-[10px] text-slate-500 font-bold uppercase">Instances</label>
+<input class="w-16 h-8 text-xs border-slate-200 rounded-custom" type="number" value="1"/>
+</div>
+<button class="text-slate-400 hover:text-primary">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="bg-white rounded-custom border border-slate-200 card-shadow p-5 flex flex-col opacity-70 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer">
+<div class="flex justify-between items-start mb-4">
+<div class="size-10 bg-slate-100 text-slate-500 flex items-center justify-center rounded-custom">
+<span class="material-symbols-outlined">database</span>
+</div>
+<input class="rounded-sm text-primary focus:ring-primary size-5" type="checkbox"/>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-slate-900 text-sm">Managed Database (RDS)</h4>
+<span class="inline-block px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold uppercase mt-1">Database</span>
+</div>
+</div>
+<div class="bg-white rounded-custom border border-slate-200 card-shadow p-5 flex flex-col opacity-70 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer">
+<div class="flex justify-between items-start mb-4">
+<div class="size-10 bg-slate-100 text-slate-500 flex items-center justify-center rounded-custom">
+<span class="material-symbols-outlined">bolt</span>
+</div>
+<input class="rounded-sm text-primary focus:ring-primary size-5" type="checkbox"/>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-slate-900 text-sm">Cloud Function (Lambda)</h4>
+<span class="inline-block px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold uppercase mt-1">Serverless</span>
+</div>
+</div>
+</div>
+</section>
+<section class="bg-slate-50 rounded-custom border border-slate-200 p-6 space-y-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">dns</span>
+<h4 class="text-sm font-bold text-slate-700">Elastic Compute (EC2) Instances</h4>
+</div>
+<div class="space-y-3">
+<div class="flex items-center gap-4 bg-white p-3 rounded-custom border border-slate-200 card-shadow">
+<span class="size-6 rounded-full bg-slate-900 text-white text-[10px] flex items-center justify-center font-bold">1</span>
+<input class="flex-1 border-none focus:ring-0 text-sm bg-transparent" placeholder="Instance Name (e.g. web-app-prod)" type="text" value="ec2-worker-primary"/>
+<div class="flex items-center gap-2 text-slate-400 bg-slate-50 px-3 py-1 rounded text-xs font-medium">
+<span class="material-symbols-outlined text-base">link_off</span>
+                                No RBAC
+                            </div>
+</div>
+<div class="flex items-center gap-4 bg-white p-3 rounded-custom border border-slate-200 card-shadow">
+<span class="size-6 rounded-full bg-slate-900 text-white text-[10px] flex items-center justify-center font-bold">2</span>
+<input class="flex-1 border-none focus:ring-0 text-sm bg-transparent" placeholder="Instance Name" type="text" value="ec2-worker-secondary"/>
+<div class="flex items-center gap-2 text-slate-400 bg-slate-50 px-3 py-1 rounded text-xs font-medium">
+<span class="material-symbols-outlined text-base">link_off</span>
+                                No RBAC
+                            </div>
+</div>
+<div class="flex items-center gap-4 bg-white p-3 rounded-custom border border-slate-200 card-shadow">
+<span class="size-6 rounded-full bg-slate-900 text-white text-[10px] flex items-center justify-center font-bold">3</span>
+<input class="flex-1 border-none focus:ring-0 text-sm bg-transparent" placeholder="Instance Name" type="text" value="ec2-cache-node"/>
+<div class="flex items-center gap-2 text-slate-400 bg-slate-50 px-3 py-1 rounded text-xs font-medium">
+<span class="material-symbols-outlined text-base">link_off</span>
+                                No RBAC
+                            </div>
+</div>
+</div>
+</section>
+<section class="bg-white rounded-custom border border-slate-200 card-shadow p-6">
+<h3 class="text-lg font-bold text-slate-900 mb-6">RBAC Relationships</h3>
+<div class="space-y-4">
+<div class="flex items-center gap-6 p-4 rounded-custom border border-slate-100 bg-slate-50/50">
+<div class="flex items-center gap-2 bg-white px-3 py-1.5 border border-slate-200 rounded text-xs font-bold shadow-sm">
+<span class="material-symbols-outlined text-sm text-primary">dns</span>
+                                ec2-worker-primary
+                            </div>
+<span class="material-symbols-outlined text-slate-300">trending_flat</span>
+<div class="px-3 py-1.5 bg-blue-100 text-primary text-xs font-bold rounded">
+                                S3_FULL_ACCESS
+                            </div>
+<span class="material-symbols-outlined text-slate-300">trending_flat</span>
+<div class="flex items-center gap-2 bg-white px-3 py-1.5 border border-slate-200 rounded text-xs font-bold shadow-sm">
+<span class="material-symbols-outlined text-sm text-primary">inventory_2</span>
+                                s3-assets-bucket
+                            </div>
+</div>
+</div>
+</section>
+<section class="bg-white rounded-custom border border-slate-200 card-shadow p-6">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="flex flex-col gap-1">
+<label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Owner</label>
+<p class="text-sm font-semibold text-slate-900">Infrastructure Team A</p>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">CR or JIRA #</label>
+<p class="text-sm font-semibold text-slate-900">INF-88421</p>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Age (months)</label>
+<input class="w-24 border-slate-200 rounded-custom text-sm h-8" type="number" value="12"/>
+</div>
+</div>
+</section>
+<div class="flex items-center justify-end gap-4 pt-6">
+<button class="px-6 py-3 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors">
+                        Cancel
+                    </button>
+<button class="px-8 py-3 bg-primary text-white text-sm font-bold rounded-custom shadow-lg shadow-blue-500/20 hover:brightness-110 active:scale-[0.98] transition-all">
+                        Generate Infrastructure Code
+                    </button>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

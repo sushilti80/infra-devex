@@ -1,0 +1,504 @@
+{
+  "title": "Self Service Infra — Workflow Reliability",
+  "description": "SLO: Trigger ≥99.5% | Completion ≥98.5% | p95 completion ≤12m | Polling timeout <1% | Window: 30d",
+  "layout_type": "ordered",
+  "reflow_type": "fixed",
+  "tags": [
+    "team:devsecops"
+  ],
+  "notify_list": [],
+  "widgets": [
+    {
+      "definition": {
+        "type": "note",
+        "content": "## Workflow Reliability — SLO Targets\n| SLI | Target | Alert |\n|---|---|---|\n| Trigger Reliability | ≥ 99.5% | P1: < 90% for 10m |\n| Completion Reliability | ≥ 98.5% | P1: < 90% for 10m |\n| Completion p95 | ≤ 12 min | P2: > 20m for 30m |\n| Polling Timeout | < 1.0% | P2: > 3% for 30m |",
+        "background_color": "green",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_edge": "left",
+        "tick_pos": "50%",
+        "has_padding": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 12,
+        "height": 2
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "Trigger Success Rate",
+        "precision": 2,
+        "autoscale": false,
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "(query_ok / query_total) * 100"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query_ok",
+                "data_source": "metrics",
+                "query": "sum:workflow_triggers_total{service:self-service-infra,env:$env,result:success}.as_count()",
+                "aggregator": "sum"
+              },
+              {
+                "name": "query_total",
+                "data_source": "metrics",
+                "query": "sum:workflow_triggers_total{service:self-service-infra,env:$env}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "response_format": "scalar",
+            "conditional_formats": [
+              {
+                "comparator": ">=",
+                "value": 99.5,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": ">=",
+                "value": 90.0,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<",
+                "value": 90.0,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 2,
+        "width": 3,
+        "height": 3
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "Completion Success Rate",
+        "precision": 2,
+        "autoscale": false,
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "(query_ok / query_total) * 100"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query_ok",
+                "data_source": "metrics",
+                "query": "sum:workflow_completion_total{service:self-service-infra,env:$env,result:success}.as_count()",
+                "aggregator": "sum"
+              },
+              {
+                "name": "query_total",
+                "data_source": "metrics",
+                "query": "sum:workflow_completion_total{service:self-service-infra,env:$env}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "response_format": "scalar",
+            "conditional_formats": [
+              {
+                "comparator": ">=",
+                "value": 98.5,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": ">=",
+                "value": 90.0,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<",
+                "value": 90.0,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ]
+      },
+      "layout": {
+        "x": 3,
+        "y": 2,
+        "width": 3,
+        "height": 3
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "p95 Completion Time (last 1h)",
+        "precision": 0,
+        "autoscale": false,
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "query1 / 60000"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "p95:workflow_completion_duration_ms{service:self-service-infra,env:$env}",
+                "aggregator": "percentile"
+              }
+            ],
+            "response_format": "scalar",
+            "conditional_formats": [
+              {
+                "comparator": "<=",
+                "value": 12,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": "<=",
+                "value": 20,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": ">",
+                "value": 20,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ]
+      },
+      "layout": {
+        "x": 6,
+        "y": 2,
+        "width": 3,
+        "height": 3
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "Polling Timeout Rate",
+        "precision": 2,
+        "autoscale": false,
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "(timeouts / triggers) * 100"
+              }
+            ],
+            "queries": [
+              {
+                "name": "timeouts",
+                "data_source": "metrics",
+                "query": "sum:workflow_poll_timeouts_total{service:self-service-infra,env:$env}.as_count()",
+                "aggregator": "sum"
+              },
+              {
+                "name": "triggers",
+                "data_source": "metrics",
+                "query": "sum:workflow_triggers_total{service:self-service-infra,env:$env}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "response_format": "scalar",
+            "conditional_formats": [
+              {
+                "comparator": "<",
+                "value": 1.0,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": "<",
+                "value": 3.0,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": ">=",
+                "value": 3.0,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ]
+      },
+      "layout": {
+        "x": 9,
+        "y": 2,
+        "width": 3,
+        "height": 3
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Workflow Triggers — Success vs Failure by Type",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "query_ok",
+                "alias": "Success"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query_ok",
+                "data_source": "metrics",
+                "query": "sum:workflow_triggers_total{service:self-service-infra,env:$env,result:success} by {workflow_type}.as_count()"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "bars"
+          },
+          {
+            "formulas": [
+              {
+                "formula": "query_fail",
+                "alias": "Failure"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query_fail",
+                "data_source": "metrics",
+                "query": "sum:workflow_triggers_total{service:self-service-infra,env:$env,result:failure} by {workflow_type}.as_count()"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "bars"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 5,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Workflow Completion — Success vs Failure by Type",
+        "show_legend": true,
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "query_ok",
+                "alias": "Success"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query_ok",
+                "data_source": "metrics",
+                "query": "sum:workflow_completion_total{service:self-service-infra,env:$env,result:success} by {workflow_type}.as_count()"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "bars"
+          },
+          {
+            "formulas": [
+              {
+                "formula": "query_fail",
+                "alias": "Failure"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query_fail",
+                "data_source": "metrics",
+                "query": "sum:workflow_completion_total{service:self-service-infra,env:$env,result:failure} by {workflow_type}.as_count()"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "bars"
+          }
+        ]
+      },
+      "layout": {
+        "x": 6,
+        "y": 5,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Workflow Completion Time p50 / p95 (minutes)",
+        "show_legend": true,
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "query_p50 / 60000",
+                "alias": "p50"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query_p50",
+                "data_source": "metrics",
+                "query": "p50:workflow_completion_duration_ms{service:self-service-infra,env:$env} by {workflow_type}"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": {
+              "palette": "cool",
+              "line_type": "solid",
+              "line_width": "thin"
+            },
+            "display_type": "line"
+          },
+          {
+            "formulas": [
+              {
+                "formula": "query_p95 / 60000",
+                "alias": "p95"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query_p95",
+                "data_source": "metrics",
+                "query": "p95:workflow_completion_duration_ms{service:self-service-infra,env:$env} by {workflow_type}"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": {
+              "palette": "purple",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ],
+        "yaxis": {
+          "include_zero": true
+        },
+        "markers": [
+          {
+            "value": "y = 12",
+            "display_type": "warning dashed",
+            "label": "SLO p95 target (12m)"
+          },
+          {
+            "value": "y = 20",
+            "display_type": "error dashed",
+            "label": "P2 alert (20m)"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 9,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Polling Timeouts by Workflow Type",
+        "show_legend": true,
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "query1",
+                "alias": "Timeouts"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "sum:workflow_poll_timeouts_total{service:self-service-infra,env:$env} by {workflow_type}.as_count()"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "bars"
+          }
+        ],
+        "markers": [
+          {
+            "value": "y = 3",
+            "display_type": "error dashed",
+            "label": "P2 threshold (3%)"
+          }
+        ]
+      },
+      "layout": {
+        "x": 6,
+        "y": 9,
+        "width": 6,
+        "height": 4
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "env",
+      "prefix": "env",
+      "available_values": [
+        "sand",
+        "prod"
+      ],
+      "default": "sand"
+    },
+    {
+      "name": "workflow_type",
+      "prefix": "workflow_type",
+      "available_values": [
+        "infra",
+        "aks",
+        "agent-change"
+      ],
+      "default": "*"
+    }
+  ]
+}

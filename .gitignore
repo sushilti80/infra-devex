@@ -1,0 +1,68 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Runtime configuration (served dynamically, should NOT be static files)
+public/config.js
+dist/config.js
+
+# Logs
+logs/
+*.log
+debug.log
+
+# Runtime files
+pids/
+*.pid
+*.pid.lock
+
+# Coverage reports
+coverage/
+*.lcov
+
+# E2E Testing
+.auth/
+test-results/
+playwright-report/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+
+# Terraform files
+*.tfstate
+
+# Graphify output
+graphify-out/
+*.tfstate.backup
+.terraform/
+
+# Azure-related files
+*.pem
+*.key
+*.crt
+
+# Jest coverage
+jest-html-reporters-*.html
+
+# Vue.js Build Output
+# Note: Root index.html is the source entry point (must be tracked)
+# Only ignore built index.html in dist/
+dist/index.html

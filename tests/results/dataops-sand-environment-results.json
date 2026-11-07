@@ -1,0 +1,25 @@
+{
+  "bug_id": "dataops-sand-environment",
+  "mode": "bug_verification",
+  "status": "pass",
+  "regression_test": "tests/integration/service/environmentsConfig.spec.ts > environment catalog > assigns a unique environment ID and subscription to DataOps Sand",
+  "command": "npx vitest run tests/integration/service/environmentsConfig.spec.ts tests/integration/api/app-metadata.spec.ts",
+  "failures": [],
+  "correlation_ids": [
+    "cid-1790167202517-v7ro45"
+  ],
+  "evidence": {
+    "fix_commit": "ed2e42c1c604df17dea267b52882052a944ca24c (\"Fix DataOps Sand environment identity\")",
+    "working_tree_state": "clean at HEAD=ed2e42c; fix is committed (data/environments.json, data/environmentTiers.json, config.js, data/secretBundles.json, services/infrastructureService.js, srcV2/stores/environments.ts)",
+    "regression_suite_result": "tests/integration/service/environmentsConfig.spec.ts + tests/integration/api/app-metadata.spec.ts -> 2 files passed, 23 tests passed, 0 failed",
+    "type_check": "npm run type-check (vue-tsc -p tsconfig.json --noEmit) -> passed, no errors",
+    "neighboring_suite_check": "npx vitest run tests/integration/service tests/integration/api -> 18 files, 305 tests: 294 passed, 11 failed; all 11 failures confined to tests/integration/api/health.spec.ts (ECONNREFUSED to ::1:3001 because no server was started for this verification run) and are unrelated to the dataops-sand-environment fix or its regression tests, which remained green",
+    "commands_run": [
+      "git log --oneline -5 -- data/environments.json config.js services/infrastructureService.js srcV2/stores/environments.ts data/environmentTiers.json tests/integration/api/app-metadata.spec.ts tests/integration/service/environmentsConfig.spec.ts -> confirms fix commit ed2e42c present, working tree clean",
+      "npx vitest run tests/integration/service/environmentsConfig.spec.ts tests/integration/api/app-metadata.spec.ts -> 2 files passed, 23 tests passed",
+      "npm run type-check -> passed, no errors",
+      "npx vitest run tests/integration/service tests/integration/api -> 294/305 passed; 11 unrelated health.spec.ts failures due to no running server"
+    ]
+  },
+  "notes": "Post-fix verification performed against the committed fix (commit ed2e42c). The DataOps Sand regression test and the app-metadata allowlist tests pass cleanly, confirming data/environments.json now assigns dataops-sand a unique id/subscription distinct from IT Sandbox's sand. Neighboring integration/service and integration/api suites were rerun for regression safety; the only failures observed (tests/integration/api/health.spec.ts, 11 tests) are due to ECONNREFUSED against a server that was not started in this verification session and are unrelated to this bug or its fix. No production code was modified by QA. Residual risk noted by SelfService Debugger (service-catalog and infrastructure-live repositories must recognize the 'dataops-sand' workflow environment identifier) remains outside this repository's test scope."
+}

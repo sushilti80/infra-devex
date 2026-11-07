@@ -1,0 +1,462 @@
+{
+  "specVersion": "1.0",
+  "feature": {
+    "name": "edit-existing-infra-ui-path",
+    "summary": "Add an Edit Infrastructure button to InstalledAppsPage that navigates to CustomInfrastructurePage with the selected app pre-filled via navigation store context, eliminating the need to manually interact with the AppSelector.",
+    "status": "approved"
+  },
+  "sourceDocument": "edit-existing-infra-ui-path-spec.md",
+  "lastModified": "2026-06-03",
+
+  "acceptance": {
+    "user_stories": [
+      {
+        "id": "US-001",
+        "as": "an app owner viewing my installed apps",
+        "i_want": "an Edit Infrastructure button next to each app",
+        "so_that": "I can modify an existing app's modules without raising a support ticket"
+      },
+      {
+        "id": "US-002",
+        "as": "an app owner who clicked Edit on an installed app",
+        "i_want": "the Custom Infrastructure wizard to open with my app already loaded",
+        "so_that": "I do not have to manually select app and environment from the dropdown"
+      },
+      {
+        "id": "US-003",
+        "as": "a user who arrived at Custom Infrastructure via the Edit path",
+        "i_want": "a visible banner telling me I am editing an existing app",
+        "so_that": "I know this Deploy action will modify existing infrastructure, not create new"
+      },
+      {
+        "id": "US-004",
+        "as": "a user in editing mode",
+        "i_want": "a Clear and start fresh control",
+        "so_that": "I can abandon the edit and start a new infrastructure creation without navigating away"
+      }
+    ],
+    "acceptance_criteria": [
+      {
+        "fr_id": "FR-001",
+        "criteria": [
+          "A pencil-icon button (fa-pencil-alt) appears in the action column for every app row on InstalledAppsPage",
+          "The button has title='Edit Infrastructure'",
+          "Clicking the button calls navigateToPage('custom', { appName: app.name, environment: app.environment })",
+          "The button is only rendered when VITE_ENABLE_CATALOG_PREFILL !== 'false'"
+        ]
+      },
+      {
+        "fr_id": "FR-002",
+        "criteria": [
+          "navigateToPage signature is navigateToPage(page: PageId, context?: { appName: string; environment: string }): void",
+          "prefillContext ref is added to navigation store state and return object",
+          "navigateToPage('custom', { appName: 'myapp', environment: 'sand' }) sets prefillContext.value = { appName: 'myapp', environment: 'sand' }",
+          "navigateToPage('home') with no context sets prefillContext.value = null",
+          "All 18 existing call sites (8 files) compile and run without modification"
+        ]
+      },
+      {
+        "fr_id": "FR-003",
+        "criteria": [
+          "On mount, if navigationStore.prefillContext is non-null and prefillEnabled is true, getAppMetadata(appName, environment) is called automatically",
+          "handlePrefill(metadata) is invoked with the API result",
+          "A loading indicator is shown during the auto-load",
+          "If the auto-load fails, step0Error is set and an error banner is displayed at Step 0",
+          "After consuming the context, navigationStore.prefillContext is set to null",
+          "AppSelector is collapsed (not expanded) after a successful auto-load"
+        ]
+      },
+      {
+        "fr_id": "FR-004",
+        "criteria": [
+          "A banner reading 'Editing existing app: {appName} / {environment}' is rendered below the page header",
+          "The banner is only shown when prefillContext was present at mount time",
+          "The banner includes a 'Clear and start fresh' button",
+          "Clicking 'Clear and start fresh' resets isEditingMode, selectedModules, rbacRelationships, currentStep, and prefillData to their initial state"
+        ]
+      },
+      {
+        "fr_id": "FR-005",
+        "criteria": [
+          "When VITE_ENABLE_CATALOG_PREFILL === 'false', the Edit button does not render in InstalledAppsPage",
+          "When VITE_ENABLE_CATALOG_PREFILL === 'false', the auto-load block in CustomInfrastructurePage onMounted is skipped",
+          "The computed prefillEnabled in InstalledAppsPage mirrors the same import.meta.env check as CustomInfrastructurePage"
+        ]
+      },
+      {
+        "fr_id": "FR-006",
+        "criteria": [
+          "Edit button has aria-label='Edit infrastructure for {appName} in {environment}'",
+          "Editing mode banner has role='status'",
+          "'Clear and start fresh' is a focusable keyboard-operable button element",
+          "All new elements pass axe-core accessibility checks in component tests"
+        ]
+      }
+    ]
+  },
+
+  "technical": {
+    "api_endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/app-metadata/:appName/:env",
+        "purpose": "Fetch existing app metadata to pre-populate the Custom Infrastructure wizard",
+        "status": "existing",
+        "auth": "requireAuth (Entra ID JWT)",
+        "response_schema": {
+          "success": "boolean",
+          "data": "AppMetadata",
+          "correlationId": "string"
+        }
+      }
+    ],
+
+    "data_contracts": {
+      "navigation_store_context": {
+        "appName": "string",
+        "environment": "string"
+      },
+      "prefill_context_validation": "alphanumeric, hyphens, underscores only, max 64 chars — regex: /^[a-zA-Z0-9_-]{1,64}$/",
+      "app_metadata": {
+        "name": "string",
+        "environment": "string",
+        "description": "string",
+        "owner": "string",
+        "lifecycle": "string",
+        "modules": "string[]",
+        "rbacPairs": "RbacRelationship[] | undefined",
+        "costCenter": "string",
+        "commitSha": "string",
+        "deployedAt": "string"
+      }
+    },
+
+    "component_changes": [
+      {
+        "file": "srcV2/stores/navigation.ts",
+        "change_type": "existing-extend",
+        "description": "Add optional context param to navigateToPage; add prefillContext ref to store state and return object. Clear prefillContext to null when context is absent.",
+        "new_signature": "navigateToPage(page: PageId, context?: { appName: string; environment: string }): void",
+        "new_state": "prefillContext: Ref<{ appName: string; environment: string } | null>",
+        "backward_compatible": true,
+        "existing_call_sites": 18,
+        "existing_call_site_files": [
+          "srcV2/App.vue",
+          "srcV2/components/common/SharedHeader.vue",
+          "srcV2/pages/CustomInfrastructurePage.vue",
+          "srcV2/pages/TemplateDeployPage.vue",
+          "srcV2/pages/AKSDeployPage.vue",
+          "srcV2/pages/AKSInstalledAppsPage.vue",
+          "srcV2/pages/ExistingInfraChangePage.vue",
+          "srcV2/pages/DocsPage.vue"
+        ]
+      },
+      {
+        "file": "srcV2/pages/InstalledAppsPage.vue",
+        "change_type": "modify",
+        "description": "Add prefillEnabled computed (mirrors CustomInfrastructurePage pattern). Add handleEditInfra(app) handler that calls navigateToPage with context. Add pencil-icon button to action toolbar, gated by v-if='prefillEnabled'.",
+        "new_imports": ["useNavigationStore from '@v2/stores/navigation'"],
+        "new_computed": "prefillEnabled: computed(() => import.meta.env.VITE_ENABLE_CATALOG_PREFILL !== 'false')",
+        "new_handler": "handleEditInfra(app: InstalledApp): void",
+        "ui_changes": [
+          "Add Edit Infrastructure button (fa-pencil-alt, yellow colour) to app row action toolbar after Delete button",
+          "Button renders only when prefillEnabled is true"
+        ],
+        "accessibility": "aria-label='Edit infrastructure for {appName} in {environment}'"
+      },
+      {
+        "file": "srcV2/pages/CustomInfrastructurePage.vue",
+        "change_type": "existing-extend",
+        "description": "Read navigationStore.prefillContext in onMounted. Validate appName/environment. Clear context immediately. Call getAppMetadata() and handlePrefill() on success. Collapse AppSelector via template ref. Set isEditingMode for banner display. Implement clearEditingMode().",
+        "new_state": [
+          "isEditingMode: Ref<boolean>",
+          "editingAppName: Ref<string | null>",
+          "editingEnvironment: Ref<string | null>",
+          "isAutoLoading: Ref<boolean>",
+          "appSelectorRef: Ref<InstanceType<typeof AppSelector> | null>"
+        ],
+        "new_functions": [
+          "clearEditingMode(): void — resets isEditingMode, editingAppName, editingEnvironment, prefillData, step0Error, selectedModules, rbacRelationships, currentStep"
+        ],
+        "onMounted_addition": "Read prefillContext, validate, clear context, set isEditingMode, call getAppMetadata(), invoke handlePrefill(), call appSelectorRef.collapse()",
+        "ui_changes": [
+          "Editing mode banner below page header: 'Editing existing app: {appName} / {environment}' with role='status'",
+          "Loading indicator during auto-load (isAutoLoading)",
+          "Clear and start fresh button in banner"
+        ]
+      },
+      {
+        "file": "srcV2/components/infrastructure/AppSelector.vue",
+        "change_type": "existing-refine",
+        "description": "Add defineExpose({ collapse() }) so parent CustomInfrastructurePage can programmatically collapse the panel after auto-loading via navigation context. No prop, emit, or existing behaviour changes.",
+        "new_expose": "collapse(): void — sets isExpanded.value = false"
+      }
+    ],
+
+    "flows": [
+      {
+        "name": "Happy path: Edit from InstalledAppsPage",
+        "steps": [
+          "User clicks Edit button on an app row in InstalledAppsPage",
+          "handleEditInfra(app) calls navigateToPage('custom', { appName, environment })",
+          "navigation.ts sets prefillContext = { appName, environment }, currentPage = 'custom'",
+          "App.vue renders CustomInfrastructurePage",
+          "onMounted reads prefillContext (non-null), validates format",
+          "prefillContext cleared to null immediately",
+          "isEditingMode = true; editingAppName/editingEnvironment captured for banner",
+          "isAutoLoading = true; editing banner and loading indicator shown",
+          "getAppMetadata(appName, environment) called via existing api.ts interceptor",
+          "handlePrefill(metadata) populates selectedModules and rbacRelationships",
+          "appSelectorRef.collapse() collapses AppSelector panel",
+          "isAutoLoading = false; user sees pre-filled wizard with editing banner"
+        ],
+        "error_paths": [
+          {
+            "at_step": 9,
+            "error": "API returns 4xx/5xx or network failure",
+            "handling": "step0Error set with user-friendly message; isEditingMode = false; AppSelector stays expanded for manual recovery"
+          },
+          {
+            "at_step": 5,
+            "error": "appName or environment fails regex validation",
+            "handling": "step0Error set; no API call; prefillContext already cleared"
+          }
+        ]
+      },
+      {
+        "name": "Context leak prevention: navigate away and back",
+        "steps": [
+          "User is on CustomInfrastructurePage (prefillContext already consumed and cleared to null)",
+          "User navigates to another page via navigateToPage('home')",
+          "navigation.ts: prefillContext = null (no context arg passed)",
+          "User navigates back to 'custom'",
+          "onMounted: prefillContext is null; no auto-load triggered; blank wizard shown"
+        ]
+      },
+      {
+        "name": "Clear and start fresh",
+        "steps": [
+          "User is in editing mode (isEditingMode = true)",
+          "User clicks 'Clear and start fresh'",
+          "clearEditingMode() called: isEditingMode = false, editingAppName/Env = null, prefillData = undefined, step0Error = undefined, selectedModules = [], rbacRelationships = [], currentStep = 0",
+          "Banner disappears; wizard resets to blank Step 0"
+        ]
+      }
+    ],
+
+    "error_scenarios": [
+      {
+        "scenario": "Auto-load API failure (4xx/5xx/network)",
+        "handling": "Catch in try/catch; set step0Error with message; set isEditingMode = false; isAutoLoading = false",
+        "user_message": "Unable to reach the server. Please try again or use the Load panel below.",
+        "logging": "Handled by api.ts interceptor — emits api_request_failed telemetry with correlationId"
+      },
+      {
+        "scenario": "Invalid appName or environment in prefillContext",
+        "handling": "Regex validation before API call; set step0Error; clear prefillContext; return early",
+        "user_message": "Invalid prefill context: appName/environment must be alphanumeric (hyphens and underscores allowed, max 64 chars).",
+        "logging": "No API call made; no telemetry emitted"
+      },
+      {
+        "scenario": "prefillContext is null on mount (normal create path)",
+        "handling": "Auto-load block is skipped entirely; wizard initialises blank",
+        "user_message": null,
+        "logging": "No action required"
+      },
+      {
+        "scenario": "Feature flag VITE_ENABLE_CATALOG_PREFILL=false",
+        "handling": "prefillEnabled computed returns false; Edit button not rendered; auto-load block skipped",
+        "user_message": null,
+        "logging": "No action required"
+      }
+    ]
+  },
+
+  "testing": {
+    "functional_test_scenarios": [
+      {
+        "id": "TS-001",
+        "file": "srcV2/stores/navigation.spec.ts",
+        "description": "navigateToPage with context sets prefillContext",
+        "expected": "prefillContext.value === { appName: 'myapp', environment: 'sand' }"
+      },
+      {
+        "id": "TS-002",
+        "file": "srcV2/stores/navigation.spec.ts",
+        "description": "navigateToPage without context clears prefillContext",
+        "expected": "prefillContext.value === null"
+      },
+      {
+        "id": "TS-003",
+        "file": "srcV2/stores/navigation.spec.ts",
+        "description": "TypeScript: existing call sites without context arg compile",
+        "expected": "0 TypeScript errors from npm run type-check"
+      },
+      {
+        "id": "TS-004",
+        "file": "srcV2/pages/InstalledAppsPage.spec.ts",
+        "description": "Edit button renders when prefill flag is enabled",
+        "expected": "Button with data-testid or aria-label for Edit is present in DOM"
+      },
+      {
+        "id": "TS-005",
+        "file": "srcV2/pages/InstalledAppsPage.spec.ts",
+        "description": "Edit button hidden when VITE_ENABLE_CATALOG_PREFILL === 'false'",
+        "expected": "Button absent from DOM"
+      },
+      {
+        "id": "TS-006",
+        "file": "srcV2/pages/InstalledAppsPage.spec.ts",
+        "description": "Click Edit button calls navigateToPage with correct context",
+        "expected": "navigateToPage called once with ('custom', { appName: app.name, environment: app.environment })"
+      },
+      {
+        "id": "TS-007",
+        "file": "srcV2/pages/CustomInfrastructurePage.prefill.spec.ts",
+        "description": "Mount with valid prefillContext: getAppMetadata called and prefillContext cleared",
+        "expected": "getAppMetadata mock called with (appName, environment); navigationStore.prefillContext === null after mount"
+      },
+      {
+        "id": "TS-008",
+        "file": "srcV2/pages/CustomInfrastructurePage.prefill.spec.ts",
+        "description": "Mount with valid context, API success: editing mode active and AppSelector collapsed",
+        "expected": "isEditingMode = true; banner rendered with appName and environment; AppSelector.collapse() called"
+      },
+      {
+        "id": "TS-009",
+        "file": "srcV2/pages/CustomInfrastructurePage.prefill.spec.ts",
+        "description": "Mount with valid context, API failure: error shown, editing mode not active",
+        "expected": "step0Error non-null; isEditingMode = false; editing banner absent"
+      },
+      {
+        "id": "TS-010",
+        "file": "srcV2/pages/CustomInfrastructurePage.prefill.spec.ts",
+        "description": "Mount with invalid appName (contains special chars): no API call, step0Error set",
+        "expected": "getAppMetadata not called; step0Error message matches validation error; prefillContext cleared"
+      },
+      {
+        "id": "TS-011",
+        "file": "srcV2/pages/CustomInfrastructurePage.prefill.spec.ts",
+        "description": "Navigate away (context cleared) and re-mount: no second auto-load",
+        "expected": "getAppMetadata called exactly once across both mounts"
+      },
+      {
+        "id": "TS-012",
+        "file": "srcV2/pages/CustomInfrastructurePage.prefill.spec.ts",
+        "description": "Click Clear and start fresh: all form state reset",
+        "expected": "isEditingMode = false; selectedModules = []; currentStep = 0; banner absent"
+      },
+      {
+        "id": "TS-013",
+        "file": "srcV2/pages/CustomInfrastructurePage.prefill.spec.ts",
+        "description": "Mount without prefillContext (create path): no auto-load, no banner",
+        "expected": "getAppMetadata not called; editing banner absent; isEditingMode = false"
+      },
+      {
+        "id": "TS-014",
+        "file": "srcV2/components/infrastructure/AppSelector.spec.ts",
+        "description": "Existing manual Load flow passes with defineExpose addition",
+        "expected": "All pre-existing AppSelector tests pass; collapse() callable from parent"
+      },
+      {
+        "id": "TS-015",
+        "file": "srcV2/pages/CustomInfrastructurePage.prefill.spec.ts",
+        "description": "Editing banner has role='status' and Clear button is keyboard-focusable",
+        "expected": "role='status' attribute present; Clear button is a <button> element"
+      },
+      {
+        "id": "TS-016",
+        "file": "srcV2/pages/InstalledAppsPage.spec.ts",
+        "description": "Edit button has correct aria-label per row",
+        "expected": "aria-label='Edit infrastructure for {appName} in {environment}'"
+      }
+    ],
+    "e2e_test_scenarios": [
+      {
+        "id": "E2E-001",
+        "file": "tests/e2e/edit-existing-infra.spec.ts",
+        "description": "Full edit flow: Installed Apps → Edit → wizard pre-filled",
+        "steps": [
+          "Navigate to Installed Apps page",
+          "Click Edit button on first app row",
+          "Assert Custom Infrastructure page loads",
+          "Assert editing banner shows appName and environment",
+          "Assert AppSelector panel is collapsed",
+          "Assert at least one module chip is pre-selected"
+        ]
+      },
+      {
+        "id": "E2E-002",
+        "file": "tests/e2e/edit-existing-infra.spec.ts",
+        "description": "Clear and start fresh resets wizard",
+        "steps": [
+          "Enter editing mode via E2E-001 flow",
+          "Click Clear and start fresh",
+          "Assert editing banner is gone",
+          "Assert module selection is empty"
+        ]
+      },
+      {
+        "id": "E2E-003",
+        "file": "tests/e2e/edit-existing-infra.spec.ts",
+        "description": "Navigate away and back does not re-trigger auto-load",
+        "steps": [
+          "Enter editing mode (banner visible)",
+          "Navigate to Home page",
+          "Navigate back to Custom Infrastructure",
+          "Assert no editing banner; wizard is blank"
+        ]
+      }
+    ]
+  },
+
+  "nfr": [
+    {
+      "id": "NFR-001",
+      "category": "performance",
+      "target": "auto-load via getAppMetadata() completes within 5 s (p95); loading indicator shown within 16 ms of mount"
+    },
+    {
+      "id": "NFR-002",
+      "category": "regression",
+      "target": "existing 437+ tests pass; manual AppSelector flow works without modification"
+    },
+    {
+      "id": "NFR-003",
+      "category": "backward_compatibility",
+      "target": "navigateToPage() with no context arg: zero TypeScript errors at 18 existing call sites across 8 files"
+    },
+    {
+      "id": "NFR-004",
+      "category": "security",
+      "target": "prefillContext cleared to null before awaiting getAppMetadata(); no cross-session context persistence"
+    },
+    {
+      "id": "NFR-005",
+      "category": "security",
+      "target": "appName and environment validated against /^[a-zA-Z0-9_-]{1,64}$/ before any API call"
+    },
+    {
+      "id": "NFR-006",
+      "category": "feature_flag",
+      "target": "VITE_ENABLE_CATALOG_PREFILL=false suppresses both Edit button (InstalledAppsPage) and auto-load block (CustomInfrastructurePage)"
+    },
+    {
+      "id": "NFR-007",
+      "category": "observability",
+      "target": "auto-load API call emits api_request_completed or api_request_failed via existing api.ts interceptor telemetry (no extra instrumentation needed)"
+    },
+    {
+      "id": "NFR-008",
+      "category": "type_safety",
+      "target": "zero new 'any' types; npm run type-check passes with 0 errors"
+    }
+  ],
+
+  "dependencies": {
+    "existing_features": [
+      "service-catalog-prefill (v2.1.0) — handlePrefill(), AppMetadata type, getAppMetadata() API all present"
+    ],
+    "external": []
+  }
+}

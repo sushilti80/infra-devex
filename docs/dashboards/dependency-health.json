@@ -1,0 +1,507 @@
+{
+  "title": "Self Service Infra — Dependency & Queue Health",
+  "description": "GitHub API latency/errors/auth | Data fallback trend | Health dependency status | P2 alerts on sustained degradation",
+  "layout_type": "ordered",
+  "reflow_type": "fixed",
+  "tags": [
+    "team:devsecops"
+  ],
+  "notify_list": [],
+  "widgets": [
+    {
+      "definition": {
+        "type": "note",
+        "content": "## Dependency Health — Alert Thresholds\n| Signal | P2 Alert | P3 Alert |\n|---|---|---|\n| GitHub API p95 latency | > 2 s for 15m | — |\n| GitHub auth failure rate | > 2% for 10m | — |\n| Health dependency status | — | not_initialized/error > 30m |\n| Fallback to local data | — | Sustained increase 30m |",
+        "background_color": "orange",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_edge": "left",
+        "tick_pos": "50%",
+        "has_padding": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 12,
+        "height": 2
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "GitHub API p95 Latency (last 1h)",
+        "precision": 0,
+        "autoscale": false,
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "p95:github_api_duration_ms{service:self-service-infra,env:$env}",
+                "aggregator": "percentile"
+              }
+            ],
+            "response_format": "scalar",
+            "conditional_formats": [
+              {
+                "comparator": "<=",
+                "value": 1000,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": "<=",
+                "value": 2000,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": ">",
+                "value": 2000,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 2,
+        "width": 3,
+        "height": 3
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "GitHub Auth Failure Rate",
+        "precision": 2,
+        "autoscale": false,
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "(auth_failures / total_calls) * 100"
+              }
+            ],
+            "queries": [
+              {
+                "name": "auth_failures",
+                "data_source": "metrics",
+                "query": "sum:github_auth_failures_total{service:self-service-infra,env:$env}.as_count()",
+                "aggregator": "sum"
+              },
+              {
+                "name": "total_calls",
+                "data_source": "metrics",
+                "query": "sum:github_api_requests_total{service:self-service-infra,env:$env}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "response_format": "scalar",
+            "conditional_formats": [
+              {
+                "comparator": "<",
+                "value": 0.5,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": "<",
+                "value": 2.0,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": ">=",
+                "value": 2.0,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ]
+      },
+      "layout": {
+        "x": 3,
+        "y": 2,
+        "width": 3,
+        "height": 3
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "GitHub API Error Rate",
+        "precision": 2,
+        "autoscale": false,
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "(errors / total) * 100"
+              }
+            ],
+            "queries": [
+              {
+                "name": "errors",
+                "data_source": "metrics",
+                "query": "sum:github_api_requests_total{service:self-service-infra,env:$env,result:error}.as_count()",
+                "aggregator": "sum"
+              },
+              {
+                "name": "total",
+                "data_source": "metrics",
+                "query": "sum:github_api_requests_total{service:self-service-infra,env:$env}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "response_format": "scalar",
+            "conditional_formats": [
+              {
+                "comparator": "<",
+                "value": 1.0,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": "<",
+                "value": 5.0,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": ">=",
+                "value": 5.0,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ]
+      },
+      "layout": {
+        "x": 6,
+        "y": 2,
+        "width": 3,
+        "height": 3
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "Local Data Fallbacks (last 1h)",
+        "precision": 0,
+        "autoscale": true,
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "sum:data_fallback_total{service:self-service-infra,env:$env,source:github}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "response_format": "scalar",
+            "conditional_formats": [
+              {
+                "comparator": "=",
+                "value": 0,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": "<=",
+                "value": 5,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": ">",
+                "value": 5,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ]
+      },
+      "layout": {
+        "x": 9,
+        "y": 2,
+        "width": 3,
+        "height": 3
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "GitHub API Latency p50 / p95 by Operation (ms)",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "query_p50",
+                "alias": "p50"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query_p50",
+                "data_source": "metrics",
+                "query": "p50:github_api_duration_ms{service:self-service-infra,env:$env} by {operation}"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": {
+              "palette": "cool",
+              "line_type": "solid",
+              "line_width": "thin"
+            },
+            "display_type": "line"
+          },
+          {
+            "formulas": [
+              {
+                "formula": "query_p95",
+                "alias": "p95"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query_p95",
+                "data_source": "metrics",
+                "query": "p95:github_api_duration_ms{service:self-service-infra,env:$env} by {operation}"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": {
+              "palette": "purple",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ],
+        "yaxis": {
+          "include_zero": true
+        },
+        "markers": [
+          {
+            "value": "y = 2000",
+            "display_type": "error dashed",
+            "label": "P2 alert (2s)"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 5,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "GitHub API Requests — Success vs Error by Operation",
+        "show_legend": true,
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "query_ok",
+                "alias": "Success"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query_ok",
+                "data_source": "metrics",
+                "query": "sum:github_api_requests_total{service:self-service-infra,env:$env,result:success} by {operation}.as_count()"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "bars"
+          },
+          {
+            "formulas": [
+              {
+                "formula": "query_err",
+                "alias": "Error"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query_err",
+                "data_source": "metrics",
+                "query": "sum:github_api_requests_total{service:self-service-infra,env:$env,result:error} by {operation}.as_count()"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "bars"
+          }
+        ]
+      },
+      "layout": {
+        "x": 6,
+        "y": 5,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "GitHub Auth Failures over Time",
+        "show_legend": false,
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "query1",
+                "alias": "Auth Failures"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "sum:github_auth_failures_total{service:self-service-infra,env:$env}.as_count()"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "bars"
+          }
+        ],
+        "markers": [
+          {
+            "value": "y = 0",
+            "display_type": "ok dashed",
+            "label": "Expected: 0"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 9,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Local Fallback Count Trend (GitHub → Local)",
+        "show_legend": false,
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "query1",
+                "alias": "Fallbacks"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "sum:data_fallback_total{service:self-service-infra,env:$env,source:github}.as_count()"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "bars"
+          }
+        ]
+      },
+      "layout": {
+        "x": 6,
+        "y": 9,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "definition": {
+        "type": "toplist",
+        "title": "Top Operations by Error Count (last 1h)",
+        "requests": [
+          {
+            "formulas": [
+              {
+                "formula": "query1",
+                "limit": {
+                  "count": 10,
+                  "order": "desc"
+                }
+              }
+            ],
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "sum:github_api_requests_total{service:self-service-infra,env:$env,result:error} by {operation}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "response_format": "scalar",
+            "conditional_formats": [
+              {
+                "comparator": "=",
+                "value": 0,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": ">",
+                "value": 0,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 12,
+        "width": 12,
+        "height": 3
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "env",
+      "prefix": "env",
+      "available_values": [
+        "sand",
+        "prod"
+      ],
+      "default": "sand"
+    }
+  ]
+}

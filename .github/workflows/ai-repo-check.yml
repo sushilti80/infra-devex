@@ -1,0 +1,81 @@
+name: AI repo map freshness
+
+on:
+  pull_request:
+    paths:
+      - ".ai/ai-repo.md"
+      - "package.json"
+      - "config.js"
+      - ".github/agents/**"
+      - ".github/skills/**"
+      - ".agent/evals/**"
+      - ".github/workflows/**"
+      - "routes/**"
+      - "services/**"
+      - "middleware/**"
+      - "utils/**"
+      - "srcV2/**"
+      - "data/**"
+      - "scripts/generate-ai-repo.mjs"
+  push:
+    branches:
+      - main
+    paths:
+      - ".ai/ai-repo.md"
+      - "package.json"
+      - "config.js"
+      - ".github/agents/**"
+      - ".github/skills/**"
+      - ".agent/evals/**"
+      - ".github/workflows/**"
+      - "routes/**"
+      - "services/**"
+      - "middleware/**"
+      - "utils/**"
+      - "srcV2/**"
+      - "data/**"
+      - "scripts/generate-ai-repo.mjs"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ai-repo-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-ai-repo:
+    runs-on: ubuntu-latest
+    env:
+      # Fork PRs and pushes to main cannot be refreshed in place; they only get the check.
+      CAN_REFRESH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          # Check out the PR branch itself (not the merge ref) so a refresh can be pushed back to it.
+          ref: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && github.event.pull_request.head.ref || github.ref }}
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - name: Regenerate .ai/ai-repo.md and push if stale
+        if: env.CAN_REFRESH == 'true'
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          node scripts/generate-ai-repo.mjs
+          if git diff --quiet -- .ai/ai-repo.md; then
+            echo ".ai/ai-repo.md already current."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .ai/ai-repo.md
+          git commit -m "chore: refresh .ai/ai-repo.md"
+          git push origin "HEAD:${HEAD_REF}"
+      - name: Verify .ai/ai-repo.md
+        run: node scripts/generate-ai-repo.mjs --check

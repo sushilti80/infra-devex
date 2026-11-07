@@ -1,0 +1,155 @@
+name: Generate Agent Configuration
+
+on:
+  workflow_dispatch:
+    inputs:
+      envname:
+        description: 'Environment name'
+        required: true
+        default: 'sand'
+        type: choice
+        options:
+          - sand
+      appname:
+        description: 'Application name (dependency)'
+        required: true
+        default: 'auto-generated-app'
+      namespace:
+        description: 'Application namespace'
+        required: true
+        default: 'auto-generated-app'
+      agentname:
+        description: 'Agent name'
+        required: true
+        default: 'auto-generated-agent'
+      poolname:
+        description: 'Azure agent pool name'
+        required: true
+        default: 'DevOpsPool'
+      agentimagesource:
+        description: 'Agent image repository'
+        required: true
+        default: 'sharedwus3acr2.azurecr.io/adoagent/devopspool'
+      agentimagetag:
+        description: 'Agent image tag'
+        required: true
+        default: 'latest'
+      correlation_id:
+        description: 'Correlation ID for tracking'
+        required: false
+        default: ''
+      triggered_by:
+        description: 'User who triggered this workflow'
+        required: false
+        default: 'system'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate:
+    runs-on: aya-devops-rs
+    name: "Deploy Agent ${{ github.event.inputs.agentname }} [CID: ${{ github.event.inputs.correlation_id }}]"
+    steps:
+      - name: Print Correlation ID
+        run: |
+          echo "============================================"
+          echo "🔗 Correlation ID: ${{ github.event.inputs.correlation_id }}"
+          echo "Triggered by: ${{ github.event.inputs.triggered_by }}"
+          echo "Agent Name: ${{ github.event.inputs.agentname }}"
+          echo "App Name: ${{ github.event.inputs.appname }}"
+          echo "Environment: ${{ github.event.inputs.envname }}"
+          echo "============================================"
+          echo "::notice::Correlation ID: ${{ github.event.inputs.correlation_id }}"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - run: |
+          python -m pip install --upgrade pip
+          pip install "jinja2-cli[yaml]"
+
+      - name: Validate template source exists
+        run: |
+          src=".template/${{ github.event.inputs.envname }}-cluster/agent"
+          [ -d "$src" ] || { echo "::error::Template directory not found: $src"; exit 1; }
+
+      - name: Create agent directory
+        run: |
+          mkdir -p "clusters/${{ github.event.inputs.envname }}/${{ github.event.inputs.envname }}-wus3-aks-1/agents/${{ github.event.inputs.agentname }}"
+
+      - name: Render agent templates
+        run: |
+          src=".template/${{ github.event.inputs.envname }}-cluster/agent"
+          dest="clusters/${{ github.event.inputs.envname }}/${{ github.event.inputs.envname }}-wus3-aks-1/agents/${{ github.event.inputs.agentname }}"
+          for f in "$src"/*; do
+            [ -f "$f" ] || continue
+            jinja2 "$f" \
+              -D appname="${{ github.event.inputs.appname }}" \
+              -D namespace="${{ github.event.inputs.namespace }}" \
+              -D agentname="${{ github.event.inputs.agentname }}" \
+              -D poolname="${{ github.event.inputs.poolname }}" \
+              -D agentimagesource="${{ github.event.inputs.agentimagesource }}" \
+              -D agentimagetag="${{ github.event.inputs.agentimagetag }}" \
+              > "$dest/$(basename "$f")"
+          done
+
+      - name: Update agents kustomization.yaml
+        run: |
+            agents_dir="clusters/${{ github.event.inputs.envname }}/${{ github.event.inputs.envname }}-wus3-aks-1/agents"
+            kustom_file="$agents_dir/kustomization.yaml"
+            mkdir -p "$agents_dir"; touch "$kustom_file"
+
+            # Normalize line endings and ensure file ends with newline
+            if [ -s "$kustom_file" ]; then
+              tr -d '\r' < "$kustom_file" > "$kustom_file.tmp" && mv "$kustom_file.tmp" "$kustom_file"
+              # add trailing newline if missing
+              tail -c1 "$kustom_file" | read -r _ || echo >> "$kustom_file"
+            fi
+
+            # Ensure header exists exactly once
+            if ! grep -q '^resources:' "$kustom_file"; then
+              tmp="$kustom_file.tmp"; printf 'resources:\n' > "$tmp"; grep -v '^resources:' "$kustom_file" >> "$tmp"; mv "$tmp" "$kustom_file"
+            fi
+
+            agent_name="${{ github.event.inputs.agentname }}"
+
+            # Collapse any malformed combined lines like "- a  - b" into separate lines
+            awk 'BEGIN{RS="\n";ORS="\n"} /^  - .+  - / { gsub(/  - /,"\n  - "); print; next } { print }' "$kustom_file" > "$kustom_file.tmp" && mv "$kustom_file.tmp" "$kustom_file"
+
+            # Add entry if not already present (match whole token after dash)
+            if ! grep -E "^  - ${agent_name}(\\s*$)" "$kustom_file" > /dev/null; then
+              printf '  - %s\n' "$agent_name" >> "$kustom_file"
+            fi
+
+            # Optional de-duplication (keep first occurrence)
+            awk '!x[$0]++' "$kustom_file" > "$kustom_file.tmp" && mv "$kustom_file.tmp" "$kustom_file"
+
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "Generate agent ${{ github.event.inputs.agentname }} for ${{ github.event.inputs.envname }}"
+          title: "Generate agent '${{ github.event.inputs.agentname }}' for '${{ github.event.inputs.envname }}' [CID: ${{ github.event.inputs.correlation_id }}]"
+          body: |
+            Auto-generated via workflow_dispatch.
+            
+            **Agent Deployment Details:**
+            - Environment: ${{ github.event.inputs.envname }}
+            - Agent Name: ${{ github.event.inputs.agentname }}
+            - App Name: ${{ github.event.inputs.appname }}
+            - Namespace: ${{ github.event.inputs.namespace }}
+            - Pool Name: ${{ github.event.inputs.poolname }}
+            - Agent Image: ${{ github.event.inputs.agentimagesource }}:${{ github.event.inputs.agentimagetag }}
+            - Triggered by: ${{ github.event.inputs.triggered_by }}
+            - Correlation ID: ${{ github.event.inputs.correlation_id }}
+          branch: "auto/gen-agent-${{ github.event.inputs.envname }}-${{ github.event.inputs.agentname }}"
+          base: "main"
+          labels: "automation,agent"
+          delete-branch: true
