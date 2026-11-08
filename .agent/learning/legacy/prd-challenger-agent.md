@@ -69,7 +69,7 @@
   work for both targets) must explicitly state it is pinned to one fixed repo constant, independent
   of `target` — otherwise an implementer following the file's existing per-function convention will
   silently split the store per-repo, breaking exactly the `target='live'` cases (IDM,
-  ayaApplications, azureDatabricks) the PRD was written to fix. When a PRD adds a cross-target
+  exampleApplications, azureDatabricks) the PRD was written to fix. When a PRD adds a cross-target
   singleton data store in a file whose every other function branches per-target, always check for
   an explicit "which repo/target does this new store use" acceptance criterion.
 - **Unwired pass-through parameter for a tier that's explicitly out of scope**: (same PRD) FR-005

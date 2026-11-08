@@ -1,0 +1,8 @@
+locals {
+  subscriptions = {
+    devsand = "REPLACE_WITH_YOUR_SUBSCRIPTION_ID"
+    sand    = "REPLACE_WITH_YOUR_SUBSCRIPTION_ID"
+  }
+  location = "westus2"
+  alias    = "example"
+}

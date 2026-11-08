@@ -1,7 +1,7 @@
 # Entra ID Integration - Architecture Diagrams
 
 **Created**: November 2025  
-**Related Epic**: [DSO-1893 - Vue.js Migration](https://ayadev.atlassian.net/browse/DSO-1893)  
+**Related Epic**: [DSO-1893 - Vue.js Migration](https://example.atlassian.net/browse/DSO-1893)
 **Note**: Architecture diagrams are technology-agnostic and apply to both backend and frontend implementations.
 
 ---

@@ -4,7 +4,7 @@
 
 ## Context
 
-After an image is published, the existing aya-flux flow must run: `generate-webapp-config.yaml` opens PR
+After an image is published, the existing flux-config flow must run: `generate-webapp-config.yaml` opens PR
 `auto/gen-<env>-<app>` using `secrets.SVC_GITHUB_TOKEN` (not `GITHUB_TOKEN`), which fires `preview-on-pr`. A PR opened with
 `GITHUB_TOKEN` would not trigger `pull_request` workflows, so the ship pipeline must keep that credential property. It must
 also never lower an existing PR's `image_tag` (AC-008-6), i.e. the config step must sit inside the per-app serialised section.
@@ -27,7 +27,7 @@ A retry (`mode=config_only`) re-dispatches the **ship** workflow (same correlati
 
 ## Consequences
 
-- `publish` holds one `aya-devops-rs` slot while waiting for a job that needs another slot on the same pool (the config workflow is `runs-on: aya-devops-rs`). Under saturation N waiting `publish` jobs can starve their own config runs until the 10-min timeout → correlated `CONFIG_PR_FAILED` (A-3). Mitigations: global active-ship cap (`SHIP_MAX_ACTIVE_GLOBAL`, default 10) below pool size minus headroom (runbook), early-signal at 3 min, LT-01 saturation case, retry via `config_only`.
+- `publish` holds one `ubuntu-latest` slot while waiting for a job that needs another slot on the same pool (the config workflow is `runs-on: ubuntu-latest`). Under saturation N waiting `publish` jobs can starve their own config runs until the 10-min timeout → correlated `CONFIG_PR_FAILED` (A-3). Mitigations: global active-ship cap (`SHIP_MAX_ACTIVE_GLOBAL`, default 10) below pool size minus headroom (runbook), early-signal at 3 min, LT-01 saturation case, retry via `config_only`.
 - Verified by V-1 (extended: the `deploy-preview` run used the shipped tag) before the flag is enabled.
 
 ## References

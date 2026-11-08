@@ -10,11 +10,11 @@ changes_requested
 - [ ] **Override sidecar repo location is not pinned relative to `target`, and the primary motivating cases resolve under `target='live'` against a *different* repo than FR-001 names.**
   Reference: FR-001, FR-002 (AC1-AC4), Section 8 "Data contracts".
   Evidence: `services/secretsService.js` `mapRepo(target)` (line ~24) returns `config.github.serviceRepo`
-  (`Aya-DevOpsTeam/service-catalog`) for `target='sand'` and `config.github.infrastructureLiveRepo`
-  (`Aya-DevOpsTeam/infrastructure-live`) for `target='live'` — two different GitHub repos
+  (`organization/service-catalog`) for `target='sand'` and `config.github.infrastructureLiveRepo`
+  (`organization/infrastructure-live`) for `target='live'` — two different GitHub repos
   ([config.js](../../config.js) lines 120/123). The roadmap's own validated probe for the PRD's
-  headline use cases (IDM, `ayaApplications`, implicitly `azureDatabricks`) explicitly calls
-  `resolveKeyVaults('ayaApplications', 'dev', 'live', ...)` — i.e. these vaults are discovered
+  headline use cases (IDM, `exampleApplications`, implicitly `azureDatabricks`) explicitly calls
+  `resolveKeyVaults('exampleApplications', 'dev', 'live', ...)` — i.e. these vaults are discovered
   against `infrastructure-live`, not `service-catalog`. FR-001 states the override sidecar lives
   "in the service-catalog repo," but no FR specifies whether `loadVaultOverrides()` / the write
   endpoint use a fixed repo constant (`config.github.serviceRepo`) regardless of `target`, or
@@ -23,7 +23,7 @@ changes_requested
   existing convention and calls `mapRepo(target)` for the override read/write, overrides written
   while resolving a `target='live'` vault would go to `infrastructure-live`, while FR-001 pins the
   file to `service-catalog` — the override would then never be found on read, silently breaking
-  the feature for exactly the IDM/ayaApplications/azureDatabricks cases this PRD exists to fix.
+  the feature for exactly the IDM/exampleApplications/azureDatabricks cases this PRD exists to fix.
   **Fix**: add an explicit acceptance criterion to FR-002/FR-003 stating the sidecar read/write
   always targets `config.github.serviceRepo` regardless of the `target` parameter passed to
   `resolveKeyVaults()`/the override endpoint (a single central override store, independent of which

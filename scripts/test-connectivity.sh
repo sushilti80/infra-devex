@@ -15,7 +15,7 @@ kubectl run -i --rm --restart=Never test-svc --image=curlimages/curl:latest -n s
 echo ""
 
 echo "3. Testing Ingress from within cluster:"
-kubectl run -i --rm --restart=Never test-ingress --image=curlimages/curl:latest -n self-service-test -- curl -H "Host: self-service.sand.k8s.com" -s -w "Status: %{http_code}\n" http://10.255.4.10/
+kubectl run -i --rm --restart=Never test-ingress --image=curlimages/curl:latest -n self-service-test -- curl -H "Host: self-service.example.com" -s -w "Status: %{http_code}\n" http://10.255.4.10/
 echo ""
 
 echo "=========================================="

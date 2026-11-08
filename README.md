@@ -7,6 +7,17 @@
 
 **Web-based self-service platform for provisioning and managing Azure infrastructure using standardized Terraform modules with Vue 3.**
 
+## Set up your own installation
+
+The portal stores infrastructure metadata in a separate GitHub repository, not a
+database. Start with [service-catalog/README.md](service-catalog/README.md) to set up
+that repository and its copied workflows. Configure repository names, Entra ID,
+Azure subscriptions in `data/environments.json`, and optional AKS registry/DNS
+settings for your installation. No organization-specific runtime defaults are supplied.
+
+Before publishing, complete the [public release checklist](docs/OPEN-SOURCE-SETUP.md).
+This working-tree cleanup does not sanitize Git history or approve licensing.
+
 ---
 
 ## What's New — Edit Infrastructure (v2.2.0)
@@ -334,10 +345,10 @@ GITHUB_CODE_INSTALLATION_ID=89012
 GITHUB_CODE_APP_PRIVATE_KEY_PATH=/app/secrets/github-code-app.pem
 
 # GitHub Repositories
-GITHUB_SERVICE_REPO=Aya-DevOpsTeam/service-catalog
-GITHUB_MODULES_REPO=Aya-DevOpsTeam/terraform-modules
-GITHUB_INFRA_LIVE_REPO=Aya-DevOpsTeam/infrastructure-live
-AKS_FLUX_REPO=Aya-DevOpsTeam/aya-flux
+GITHUB_SERVICE_REPO=organization/service-catalog
+GITHUB_MODULES_REPO=organization/terraform-modules
+GITHUB_INFRA_LIVE_REPO=organization/infrastructure-live
+AKS_FLUX_REPO=organization/flux-config
 
 # Azure Configuration
 AZURE_SUBSCRIPTION_IDS='{"devsand":"subscription-id-1","sand":"subscription-id-2"}'
@@ -653,10 +664,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - self-service.sand.k8s.com
+    - self-service.example.com
     secretName: self-service-tls
   rules:
-  - host: self-service.sand.k8s.com
+  - host: self-service.example.com
     http:
       paths:
       - path: /

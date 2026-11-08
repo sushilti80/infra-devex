@@ -10,7 +10,7 @@
 
 The Secrets page's Application `<select>` is built from `apps.value.map(app => app.name)`, discarding the
 `qualifier` field already returned by `extractAppEnvPairs()` (in [services/secretsService.js](../../services/secretsService.js#L289)).
-A nested sub-app (IDM's `autobk`, `notif`, `idmprtl`, `allctmpr`, or `ayaApplications`/`ayaCoreServices`) has no
+A nested sub-app (IDM's `autobk`, `notif`, `idmprtl`, `allctmpr`, or `exampleApplications`/`exampleCoreServices`) has no
 direct dropdown entry — users must pick the root app, pick an environment, wait for an ambiguous vault-resolution
 response, then use a second "Sub-application" selector. A related bug: `filteredEnvironmentOptions` filters by
 `app.name` alone, so it shows the union of every sub-app's environments regardless of which sub-app the user
@@ -32,7 +32,7 @@ qualifier:
 | Root app shape | Rendered option(s) | Option value |
 |---|---|---|
 | No entry has a `qualifier` (e.g. `mlops`, `webapp01`) | One flat option | `"{name}"` (unchanged from today) |
-| At least one qualified entry, no unqualified entry (e.g. `ayaApplications`) | One option per distinct qualifier, in an `<optgroup :label="name">` | `"{name}::{qualifier}"` |
+| At least one qualified entry, no unqualified entry (e.g. `exampleApplications`) | One option per distinct qualifier, in an `<optgroup :label="name">` | `"{name}::{qualifier}"` |
 | Mixed qualified + unqualified entries (e.g. `idm`) | One option per qualifier **plus** one root-only option, all in one `<optgroup>` | `"{name}::{qualifier}"` and `"{name}::"` |
 
 The `::` delimiter is safe because app/qualifier names are constrained to `^[a-zA-Z0-9_-]{1,64}$` (see

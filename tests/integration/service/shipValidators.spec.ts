@@ -19,11 +19,11 @@ async function run(chains: any[], req: any) {
   return errs.map((e: any) => e.path)
 }
 
-const good = { repo: 'AyaHealthcare/my-svc', branch: 'main', app: 'my-app', env: 'devsand' }
+const good = { repo: 'organization/my-svc', branch: 'main', app: 'my-app', env: 'devsand' }
 let saved: any
 beforeEach(() => {
   saved = { orgs: config.ship.allowedOrgs, envs: config.ship.supportedShipEnvironments, extra: config.ship.reservedNamespaces }
-  config.ship.allowedOrgs = ['AyaHealthcare']
+  config.ship.allowedOrgs = ['organization']
   config.ship.supportedShipEnvironments = ['devsand']
   config.ship.reservedNamespaces = []
 })
@@ -46,11 +46,11 @@ describe('BT-01 shipValidators — POST body', () => {
   })
 
   describe('repo', () => {
-    it.each(['https://github.com/AyaHealthcare/x', 'AyaHealthcare', 'AyaHealthcare/', '/x', 'AyaHealthcare/x/y', 'AyaHealthcare/..', 'AyaHealthcare/.', 'AyaHealthcare/x.git', 'AyaHealthcare/x y', 'AyaHealthcare/x\n', '-bad/x', 'Other/x'])(
+    it.each(['https://github.com/organization/x', 'organization', 'organization/', '/x', 'organization/x/y', 'organization/..', 'organization/.', 'organization/x.git', 'organization/x y', 'organization/x\n', '-bad/x', 'Other/x'])(
       'rejects %j', async (repo) => { expect(await start({ ...good, repo })).toContain('repo') })
     it('org match is case-insensitive and canonicalised from the allowlist', () => {
-      expect(v.parseRepo('ayahealthcare/Svc')).toMatchObject({ ok: true, fullName: 'AyaHealthcare/Svc' })
-      expect(v.pickStartBody({ ...good, repo: 'AYAHEALTHCARE/svc' }).repo).toBe('AyaHealthcare/svc')
+      expect(v.parseRepo('organization/Svc')).toMatchObject({ ok: true, fullName: 'organization/Svc' })
+      expect(v.pickStartBody({ ...good, repo: 'ORGANIZATION/svc' }).repo).toBe('organization/svc')
     })
     it('empty org allowlist rejects everything (fail closed)', async () => {
       config.ship.allowedOrgs = []
@@ -130,7 +130,7 @@ describe('BT-01 shipValidators — POST body', () => {
 
   it('pickStartBody applies defaults and discards non-whitelisted keys', () => {
     const picked = v.pickStartBody({ ...good, triggeredBy: 'x', correlationId: 'y', requesterLogin: 'z', triggered_by_oid: 'o', mode: 'config_only' })
-    expect(picked).toEqual({ repo: 'AyaHealthcare/my-svc', branch: 'main', app: 'my-app', env: 'devsand', namespace: 'my-app', teamLabel: 'software-engineering', port: 8080, healthPath: '/healthz', bump: 'patch' })
+    expect(picked).toEqual({ repo: 'organization/my-svc', branch: 'main', app: 'my-app', env: 'devsand', namespace: 'my-app', teamLabel: 'software-engineering', port: 8080, healthPath: '/healthz', bump: 'patch' })
   })
 })
 
@@ -155,17 +155,17 @@ describe('BT-01 shipValidators — other inputs', () => {
     expect(await run(v.reposQuery, { query: { limit: '0' } })).toContain('limit')
   })
   it('branches params: org must be allowlisted (AC-001-6), repo valid', async () => {
-    expect(await run(v.branchesParams, { params: { org: 'AyaHealthcare', repo: 'svc' }, query: {} })).toEqual([])
+    expect(await run(v.branchesParams, { params: { org: 'organization', repo: 'svc' }, query: {} })).toEqual([])
     expect(await run(v.branchesParams, { params: { org: 'evil', repo: 'svc' }, query: {} })).toContain('org')
-    expect(await run(v.branchesParams, { params: { org: 'AyaHealthcare', repo: '..' }, query: {} })).toContain('org')
-    expect(await run(v.branchesParams, { params: { org: 'AyaHealthcare', repo: 'svc' }, query: { page: '0' } })).toContain('page')
+    expect(await run(v.branchesParams, { params: { org: 'organization', repo: '..' }, query: {} })).toContain('org')
+    expect(await run(v.branchesParams, { params: { org: 'organization', repo: 'svc' }, query: { page: '0' } })).toContain('page')
   })
   it('app-state params', async () => {
-    expect(await run(v.appStateParams, { params: { env: 'devsand', app: 'a1' }, query: { repo: 'AyaHealthcare/x' } })).toEqual([])
+    expect(await run(v.appStateParams, { params: { env: 'devsand', app: 'a1' }, query: { repo: 'organization/x' } })).toEqual([])
     expect(await run(v.appStateParams, { params: { env: 'sand', app: 'A!' }, query: { repo: 'x' } })).toEqual(expect.arrayContaining(['env', 'app', 'repo']))
   })
   it('sanitizeActor lower-cases and maps odd chars; collisions are possible (so never an auth key)', () => {
-    expect(v.sanitizeActor('Sushil.Tiwari@x.com')).toBe('sushil.tiwari@x.com')
+    expect(v.sanitizeActor('Alex.Smith@x.com')).toBe('alex.smith@x.com')
     expect(v.sanitizeActor("O'Brien@x")).toBe('o_brien@x')
     expect(v.sanitizeActor("o_brien@x")).toBe(v.sanitizeActor("O'Brien@x"))
     expect(v.sanitizeActor(undefined)).toBe('')

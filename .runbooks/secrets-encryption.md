@@ -18,7 +18,7 @@ These are the current self-service workloads. Use the existing kube context; rep
 | Environment | Subscription ID | Resource group | Cluster / kube context | Namespace | Deployment |
 |---|---|---|---|---|---|
 | Shared | `ca2c368d-e375-44db-8db9-d6c243c71ca5` | `shared-wus3-aks-rg-1` | `shared-wus3-aks-1` | `self-service` | `self-service-app` |
-| Sand | `552bdc54-0a39-4040-9d8f-4002e8f572aa` | `sand-wus3-aks-rg-1` | `sand-wus3-aks-1` | `self-service-test` | `self-service-test-app` |
+| Sand | `00000000-0000-0000-0000-000000000002` | `sand-wus3-aks-rg-1` | `sand-wus3-aks-1` | `self-service-test` | `self-service-test-app` |
 
 Read the deployed image without changing the workload:
 

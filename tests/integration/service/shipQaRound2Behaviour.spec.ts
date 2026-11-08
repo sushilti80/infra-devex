@@ -17,7 +17,7 @@ const { config, githubService, ship, fx, shipStatus } = h
 
 const MIN = 60_000
 const MB = 1024 * 1024
-const good = { repo: 'AyaHealthcare/my-svc', branch: 'main', app: 'my-app', env: 'devsand' }
+const good = { repo: 'organization/my-svc', branch: 'main', app: 'my-app', env: 'devsand' }
 const iso = (ms: number) => new Date(ms).toISOString()
 let env: ReturnType<typeof h.wire>
 let w: any
@@ -38,16 +38,16 @@ describe('QA-005 re-verification: dedupe key = user + all nine validated fields'
     config.ship.supportedShipEnvironments = ['devsand', 'devprod']
     h.identity.registerProvider('test', h.createTestProvider({
       links: { [h.ID.sam]: 'octocat', [h.ID.admin]: 'admin-login' },
-      repos: { octocat: [{ fullName: 'AyaHealthcare/my-svc', org: 'AyaHealthcare', name: 'my-svc', defaultBranch: 'main', private: true }, { fullName: 'AyaHealthcare/other-svc', org: 'AyaHealthcare', name: 'other-svc', defaultBranch: 'main', private: true }] },
-      permissions: { 'octocat:AyaHealthcare/my-svc': 'admin', 'octocat:AyaHealthcare/other-svc': 'admin', 'admin-login:AyaHealthcare/my-svc': 'write' },
+      repos: { octocat: [{ fullName: 'organization/my-svc', org: 'organization', name: 'my-svc', defaultBranch: 'main', private: true }, { fullName: 'organization/other-svc', org: 'organization', name: 'other-svc', defaultBranch: 'main', private: true }] },
+      permissions: { 'octocat:organization/my-svc': 'admin', 'octocat:organization/other-svc': 'admin', 'admin-login:organization/my-svc': 'write' },
     }))
   })
 
   it('genuinely identical POSTs (sequential, key order shuffled, defaults explicit vs omitted) share ONE dispatch and one ship id', async () => {
     const a = await post(good)
-    const b = await post({ env: 'devsand', app: 'my-app', branch: 'main', repo: 'AyaHealthcare/my-svc' })
+    const b = await post({ env: 'devsand', app: 'my-app', branch: 'main', repo: 'organization/my-svc' })
     const c = await post({ ...good, namespace: 'my-app', port: 8080, bump: 'patch' }) // explicit defaults == omitted defaults (pickStartBody)
-    const d = await post({ ...good, repo: 'ayahealthcare/my-svc' }) // canonical org case
+    const d = await post({ ...good, repo: 'organization/my-svc' }) // canonical org case
     expect([a, b, c, d].map((r: any) => r.statusCode)).toEqual([202, 202, 202, 202])
     expect(new Set([a, b, c, d].map((r: any) => r.body.data.correlationId)).size).toBe(1)
     expect(env.dispatched).toHaveLength(1)
@@ -62,7 +62,7 @@ describe('QA-005 re-verification: dedupe key = user + all nine validated fields'
     ['bump', { bump: 'minor' }],
     ['branch', { branch: 'release' }],
     ['app', { app: 'other-app' }],
-    ['repo', { repo: 'AyaHealthcare/other-svc' }],
+    ['repo', { repo: 'organization/other-svc' }],
   ]
   for (const [field, patch] of variants) {
     it(`a second POST differing only in ${field} within 10 s is a NEW dispatch carrying the new value`, async () => {

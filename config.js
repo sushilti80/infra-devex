@@ -135,23 +135,25 @@ const config = {
     privateKey: githubPrivateKey,
     privateKeyPath: process.env.GITHUB_PRIVATE_KEY_PATH || '',
     installationId: process.env.GITHUB_INSTALLATION_ID || '',
-    // Separate GitHub App for code deployment in AyaHealthcare org
+    // Separate GitHub App for code deployment
     codeApp: {
       appId: process.env.GITHUB_CODE_APP_ID || '',
       privateKeyPath: process.env.GITHUB_CODE_PRIVATE_KEY_PATH || '',
       installationId: process.env.GITHUB_CODE_INSTALLATION_ID || ''
     },
-    serviceRepo: process.env.GITHUB_SERVICE_REPO || 'Aya-DevOpsTeam/service-catalog',
-    selfServiceRepo: process.env.GITHUB_SELF_SERVICE_REPO || 'Aya-DevOpsTeam/self-service-infra',
-    modulesRepo: process.env.GITHUB_MODULES_REPO || 'Aya-DevOpsTeam/terraform-modules',
-    infrastructureLiveRepo: process.env.GITHUB_INFRA_LIVE_REPO || 'Aya-DevOpsTeam/infrastructure-live'
+    serviceRepo: process.env.GITHUB_SERVICE_REPO || '',
+    selfServiceRepo: process.env.GITHUB_SELF_SERVICE_REPO || '',
+    modulesRepo: process.env.GITHUB_MODULES_REPO || '',
+    infrastructureLiveRepo: process.env.GITHUB_INFRA_LIVE_REPO || '',
+    codeServiceRepo: process.env.GITHUB_CODE_SERVICE_REPO || ''
   },
   aks: {
-    fluxRepo: process.env.AKS_FLUX_REPO || 'Aya-DevOpsTeam/aya-flux',
+    fluxRepo: process.env.AKS_FLUX_REPO || '',
     fluxBranch: process.env.AKS_FLUX_BRANCH || 'main',
     defaultEnvironment: process.env.AKS_DEFAULT_ENV || environmentConfig.defaultEnvironment || '',
-    defaultImageRegistry: process.env.AKS_DEFAULT_REGISTRY || 'sharedwus3acr2.azurecr.io',
+    defaultImageRegistry: process.env.AKS_DEFAULT_REGISTRY || '',
     supportedEnvironments: environmentConfig.supportedAksEnvironments,
+    privateZones: parseJsonObject(process.env.AKS_PRIVATE_ZONES),
     workflows: {
       app: 'generate-webapp-config.yaml',
       agent: 'generate-agent-config.yaml'
@@ -161,11 +163,11 @@ const config = {
   // services, so every default here is fail-closed: no orgs, no platform members, identity `none`,
   // no preview host, watchdog cancel and ACR reads off, default workflow ref refused.
   ship: {
-    workflowRepo: process.env.AKS_FLUX_REPO || 'Aya-DevOpsTeam/aya-flux',
+    workflowRepo: process.env.AKS_FLUX_REPO || '',
     workflowFile: 'ship-from-repo.yaml',
     workflowRef: process.env.SHIP_WORKFLOW_REF || process.env.AKS_FLUX_BRANCH || 'main',
     allowedOrgs: csv(process.env.SHIP_ALLOWED_ORGS),
-    registry: process.env.SHIP_REGISTRY || process.env.AKS_DEFAULT_REGISTRY || 'sharedwus3acr2.azurecr.io',
+    registry: process.env.SHIP_REGISTRY || process.env.AKS_DEFAULT_REGISTRY || '',
     acrRepoPrefix: 'selfserve',
     previewHosts: parseJsonObject(process.env.SHIP_PREVIEW_HOSTS),
     platformRoles: csv(process.env.SHIP_PLATFORM_ROLES),

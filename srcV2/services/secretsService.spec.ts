@@ -125,19 +125,19 @@ describe('secretsService pure transformations', () => {
 
   it('treats the application before keyvaults as the nested qualifier', () => {
     const entries = [
-      { path: 'infrastructure/ayaApplications/ayaCoreServices/keyvaults/shared/keyvault', type: 'tree' }
+      { path: 'infrastructure/exampleApplications/exampleCoreServices/keyvaults/shared/keyvault', type: 'tree' }
     ]
 
-    const result = matchVaultsFromEntries(entries, 'ayaApplications', 'shared', 'ayaCoreServices')
+    const result = matchVaultsFromEntries(entries, 'exampleApplications', 'shared', 'exampleCoreServices')
     expect(result.vaults).toEqual([
       {
-        vaultDir: 'infrastructure/ayaApplications/ayaCoreServices/keyvaults/shared/keyvault',
+        vaultDir: 'infrastructure/exampleApplications/exampleCoreServices/keyvaults/shared/keyvault',
         vaultName: null,
         resourceGroup: null,
-        qualifier: 'ayaCoreServices'
+        qualifier: 'exampleCoreServices'
       }
     ])
-    expect(result.qualifiers).toEqual(['ayaCoreServices'])
+    expect(result.qualifiers).toEqual(['exampleCoreServices'])
   })
 
   // TS-038: qualifier omitted → qualifiers list returned (already tested in TS-037 without-qualifier path)
@@ -169,11 +169,11 @@ describe('secretsService pure transformations', () => {
 
   it('extractAppEnvPairs emits the nested application before keyvaults as a qualifier', () => {
     const pairs = extractAppEnvPairs([
-      { path: 'infrastructure/ayaApplications/ayaCoreServices/keyvaults/shared/keyvault', type: 'tree' }
+      { path: 'infrastructure/exampleApplications/exampleCoreServices/keyvaults/shared/keyvault', type: 'tree' }
     ])
 
     expect(pairs).toEqual([
-      { name: 'ayaApplications', environment: 'shared', qualifier: 'ayaCoreServices' }
+      { name: 'exampleApplications', environment: 'shared', qualifier: 'exampleCoreServices' }
     ])
   })
 

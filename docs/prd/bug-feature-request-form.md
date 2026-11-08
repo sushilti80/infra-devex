@@ -9,7 +9,7 @@
 | Date         | 2026-04-07                                                      |
 | Status       | `implemented`                                                   |
 | Stakeholders | Platform Engineering, DevOps Team, End Users (app developers)  |
-| Repository   | `Aya-DevOpsTeam/self-service-infra`                             |
+| Repository   | `organization/self-service-infra`                             |
 
 ---
 
@@ -49,7 +49,7 @@ scale and creates noise rather than actionable signal for the platform team.
    - **Feature requests** (pain point, desired outcome, business justification).
    - **Agent requests** (which existing infra/agent type, what the agent should do, justification).
 2. On submission, automatically create a well-formatted GitHub Issue in
-   `Aya-DevOpsTeam/self-service-infra` with appropriate labels (`bug`, `feature-request`,
+   `organization/self-service-infra` with appropriate labels (`bug`, `feature-request`,
    `agent-request`).
 3. Return the created issue URL to the user so they can track progress.
 4. Thread correlation IDs through all logs and responses per platform convention.
@@ -61,7 +61,7 @@ scale and creates noise rather than actionable signal for the platform team.
 - This form does **not** support anonymous submissions; authentication is required.
 - This form does **not** implement issue triage, assignment, or workflow automation beyond label
   application.
-- This form does **not** create issues in any repository other than `Aya-DevOpsTeam/self-service-infra`.
+- This form does **not** create issues in any repository other than `organization/self-service-infra`.
 
 ---
 
@@ -78,7 +78,7 @@ scale and creates noise rather than actionable signal for the platform team.
 | GitHub service (Octokit client)         | `services/githubService.js`                                                 | Initialises `this.octokit` (infrastructure app); has `createPullRequest`, `createBranch`, etc. |
 | Status modal for async ops              | `srcV2/components/modals/StatusModal.vue`                                   | Used after form submission for polling                                                          |
 | Correlation ID middleware               | `server.js` (inferred from pattern in `routes/api.js`)                      | `req.correlationId` generated per request                                                      |
-| Config: `selfServiceRepo`               | `config.js:121`                                                             | `process.env.GITHUB_SELF_SERVICE_REPO \|\| 'Aya-DevOpsTeam/self-service-infra'`               |
+| Config: `selfServiceRepo`               | `config.js:121`                                                             | `process.env.GITHUB_SELF_SERVICE_REPO \|\| 'organization/self-service-infra'`               |
 
 ### Implementation Status — Shipped ✓
 
@@ -274,7 +274,7 @@ All items below were resolved during the April 2026 sprint. No gaps remain.
 
 | Field              | Detail                                                                                        |
 |--------------------|-----------------------------------------------------------------------------------------------|
-| Description        | The repository where issues are created must be read from `config.github.selfServiceRepo` (already defined as `Aya-DevOpsTeam/self-service-infra`). No hardcoded repository path in the route or service method. |
+| Description        | The repository where issues are created must be read from `config.github.selfServiceRepo` (already defined as `organization/self-service-infra`). No hardcoded repository path in the route or service method. |
 | Priority           | `should`                                                                                      |
 | Rationale          | Keeps configuration centralised and environment-overridable via `GITHUB_SELF_SERVICE_REPO`.   |
 | Acceptance Criteria | 1. `POST /api/feedback` passes `config.github.selfServiceRepo` to `githubService.createIssue()`. <br>2. Changing `GITHUB_SELF_SERVICE_REPO` env var changes the target repo without code changes. |
@@ -439,7 +439,7 @@ All items below were resolved during the April 2026 sprint. No gaps remain.
 - **No new metadata files** are created in `docs/metadata/`. GitHub Issues are the sole storage
   mechanism for feedback.
 - **No database changes** (in line with platform convention: no database).
-- **GitHub Labels** expected to exist in `Aya-DevOpsTeam/self-service-infra`: `bug`,
+- **GitHub Labels** expected to exist in `organization/self-service-infra`: `bug`,
   `feature-request`, `agent-request`. If absent, the implementation must not fail — it must either
   create them or omit the label gracefully.
 
@@ -494,8 +494,8 @@ User (authenticated) clicks "Feedback" in SharedHeader
 ### Explicit Assumptions
 
 1. The infrastructure GitHub App (`this.octokit`) already has or can be granted `issues:write`
-   permission on `Aya-DevOpsTeam/self-service-infra`.
-2. GitHub Issues in `Aya-DevOpsTeam/self-service-infra` are an acceptable long-term home for
+   permission on `organization/self-service-infra`.
+2. GitHub Issues in `organization/self-service-infra` are an acceptable long-term home for
    platform feedback (not JIRA or another system).
 3. The authenticated user's email is always available from `useAuthStore` at the time of submission
    (the existing pattern in `ExistingInfraChangePage.vue` confirms this works post-redirect via a
@@ -610,14 +610,14 @@ User (authenticated) clicks "Feedback" in SharedHeader
 ## Next Decisions Needed (Stakeholders)
 
 1. **[BLOCKING — OQ4]** Confirm the infrastructure GitHub App has `issues:write` permission on
-   `Aya-DevOpsTeam/self-service-infra`. If not, grant it before implementation begins.
+   `organization/self-service-infra`. If not, grant it before implementation begins.
 2. **[OQ1]** Decide whether feedback issues should be public or private (requires GitHub repo
    visibility setting review). Default assumption: public.
 3. **[OQ2]** Decide whether severity should map to additional GitHub labels (e.g., `severity:critical`).
    Current PRD assumes single `bug` label only.
 4. **[OQ3]** Decide whether Slack notification is in-scope for this delivery. Current PRD: out of scope.
 5. **[Labels]** Pre-create GitHub labels `bug`, `feature-request`, `agent-request` in
-   `Aya-DevOpsTeam/self-service-infra` before or alongside implementation.
+   `organization/self-service-infra` before or alongside implementation.
 
 ---
 

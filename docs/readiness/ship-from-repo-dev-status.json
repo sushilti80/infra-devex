@@ -18,7 +18,7 @@
   "branch": "feature/ship-from-repo-prd",
   "pr": 143,
   "date": "2026-10-22",
-  "summary": "Both scoped slices are implemented. Backend: /api/ship endpoints 1-9, requireAuth + ownership on the legacy status route (B-5), status resolver, failure classifier, validators, redactor, caches, config.ship, flag (false). Frontend (spec Phase 3): PageId 'ship', flag-driven environments getters, ship Pinia store, useShipPolling (own file, own commit - H-8), recent-ships storage with logout clearing, ShipFromRepoPage S0-S7 + 8 components, ship API client, App.vue home card (hidden unless an environment has features.shipFromRepo) + page block + ?ship= deep link surviving the MSAL redirect via sessionStorage ship.pendingDeepLink, DocsPage Ship from Repo section. The backend flag is still false on devsand, so the card/page are hidden by default (tested against the real data/environments.json); the fail-closed API states (403 REPO_NOT_ACCESSIBLE / IDENTITY_NOT_LINKED, 503 SHIP_UNAVAILABLE, 429/503 PLATFORM_RATE_LIMITED, preview.state=not_configured) have specific UI. Everything real (identity, preview host, org allowlist, workflow ref, V-gates, aya-flux) remains gated on the human items below. AKSDeployPage.vue / AKSInstalledAppsPage.vue untouched.",
+  "summary": "Both scoped slices are implemented. Backend: /api/ship endpoints 1-9, requireAuth + ownership on the legacy status route (B-5), status resolver, failure classifier, validators, redactor, caches, config.ship, flag (false). Frontend (spec Phase 3): PageId 'ship', flag-driven environments getters, ship Pinia store, useShipPolling (own file, own commit - H-8), recent-ships storage with logout clearing, ShipFromRepoPage S0-S7 + 8 components, ship API client, App.vue home card (hidden unless an environment has features.shipFromRepo) + page block + ?ship= deep link surviving the MSAL redirect via sessionStorage ship.pendingDeepLink, DocsPage Ship from Repo section. The backend flag is still false on devsand, so the card/page are hidden by default (tested against the real data/environments.json); the fail-closed API states (403 REPO_NOT_ACCESSIBLE / IDENTITY_NOT_LINKED, 503 SHIP_UNAVAILABLE, 429/503 PLATFORM_RATE_LIMITED, preview.state=not_configured) have specific UI. Everything real (identity, preview host, org allowlist, workflow ref, V-gates, flux-config) remains gated on the human items below. AKSDeployPage.vue / AKSInstalledAppsPage.vue untouched.",
   "tests_passed": true,
   "type_check_passed": true,
   "type_check_note": "`npm run type-check` (vue-tsc) exit 0 before (baseline) and after the frontend slice. No lint script exists in package.json. `vite build` (to a temp outDir) also compiles.",
@@ -420,7 +420,7 @@
       "reason": "Optional; skipped so nothing claims a V-gate PASS."
     },
     {
-      "item": "Anything in aya-flux (workflow, scripts, OIDC identities, App environment secrets)",
+      "item": "Anything in flux-config (workflow, scripts, OIDC identities, App environment secrets)",
       "reason": "Out of scope for this dispatch (H-6 ownership)."
     },
     {
@@ -429,7 +429,7 @@
     },
     {
       "item": "Playwright E2E-01…08 (tests/e2e/ship-from-repo.spec.ts)",
-      "reason": "Needs the live devsand flow with features.shipFromRepo=true (gated human action) and the aya-flux workflow; not written or run."
+      "reason": "Needs the live devsand flow with features.shipFromRepo=true (gated human action) and the flux-config workflow; not written or run."
     },
     {
       "item": "Frontend data from real services",
@@ -464,7 +464,7 @@
     },
     {
       "id": "H-6",
-      "needs": "aya-flux ownership",
+      "needs": "flux-config ownership",
       "gates": "Phase 1 start (workflow side); not needed to merge this backend slice"
     },
     {

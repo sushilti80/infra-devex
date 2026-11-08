@@ -10,7 +10,7 @@
 | Date         | 2026-07-23                                                                          |
 | Status       | `approved` (human sign-off 2026-07-31, after PRD Challenger rounds 1–4)             |
 | Stakeholders | Platform Engineering, Application Developers, Security/Compliance Team              |
-| Repository   | `Aya-DevOpsTeam/self-service-infra`                                                 |
+| Repository   | `organization/self-service-infra`                                                 |
 
 ---
 
@@ -342,7 +342,7 @@ UX goal and would be brittle as vault names change.
   `appName`/`environment` must be positional-agnostic: a path qualifies when its first segment
   after `infrastructure/` equals `appName` **and** any subsequent segment equals `environment`.
 - (c) The design must correctly handle all of the following layouts, verified to exist in
-  `Aya-DevOpsTeam/infrastructure-live`. This list is the acceptance bar for (b):
+  `organization/infrastructure-live`. This list is the acceptance bar for (b):
 
   | Real path | Variant |
   |---|---|
@@ -363,7 +363,7 @@ UX goal and would be brittle as vault names change.
   all observed); `"${local.prefix}-${local.envName}-${local.alias}-kv-1"`;
   `"${substr(local.prefix, 0, 7)}-..."` (substr length varies per app);
   `"${local.prefix}${local.envName}app-kv-1"` (no separators); `"${local.prefix}prodhubkv-01"`
-  (partially hardcoded); and fully literal names such as `"aya-${local.envName}-kv-wus-01"`.
+  (partially hardcoded); and fully literal names such as `"example-${local.envName}-kv-wus-01"`.
   Observed suffixes include `kv-1`, `kv1`, `kv-01`, `kv-2`, `kv-3`, `kv-4`. The resolver must also
   **ignore commented-out assignments** — `infrastructure/commHub/*/env.hcl` contains a
   `# keyvaultname = ...` line immediately above the live one, which a naive line regex matches
@@ -537,8 +537,8 @@ uniform across both scopes.
 - (a) All secrets endpoints accept a required `target` parameter with allowed values `live` or
   `sand`, validated by express-validator against that exact enum; any other value returns HTTP 400.
 - (b) The backend maps `target` → repository: `live` → `config.github.infrastructureLiveRepo`
-  (`GITHUB_INFRA_LIVE_REPO`, default `Aya-DevOpsTeam/infrastructure-live`); `sand` →
-  `config.github.serviceRepo` (`GITHUB_SERVICE_REPO`, default `Aya-DevOpsTeam/service-catalog`).
+  (`GITHUB_INFRA_LIVE_REPO`, default `organization/infrastructure-live`); `sand` →
+  `config.github.serviceRepo` (`GITHUB_SERVICE_REPO`, default `organization/service-catalog`).
 - (c) Both targets are accessed with the same Infrastructure GitHub App client
   (`githubService.octokit`), confirmed to have PR-create access on both repositories (OQ-003 —
   resolved).
@@ -760,7 +760,7 @@ error):**
   "success": true,
   "correlationId": "cid-1234567890-abcd",
   "prNumber": 42,
-  "prUrl": "https://github.com/Aya-DevOpsTeam/infrastructure-live/pull/42"
+  "prUrl": "https://github.com/organization/infrastructure-live/pull/42"
 }
 ```
 
@@ -912,14 +912,14 @@ set when the CI workflow is added to each repo.*
 **OQ-003 — GitHub App access to target repos** — RESOLVED (confirmed by the user)
 Confirmed via the `terragrunt-new-env` skill (which documents the actual `infrastructure-live`
 directory layout) and `config.js:123` (`config.github.infrastructureLiveRepo`, already
-defaulting to `Aya-DevOpsTeam/infrastructure-live`):
+defaulting to `organization/infrastructure-live`):
 
 - Path convention is **`infrastructure/{appName}/{environment}/{resourceDir}/terragrunt.hcl`**
   — app name first, then environment, then resource directory — the same convention as the
   service-catalog repo's own `infrastructure/{appName}/env.hcl`. This rules out both the
   `{env}/{appName}/...` and `live/{env}/{appName}/...` guesses in the original PRD draft.
 - The `keyvault` directory's `terragrunt.hcl` sets `source =
-  "git::ssh://git@github.com/Aya-DevOpsTeam/terraform-modules.git//keyvault?ref=<tag>"`; the
+  "git::ssh://git@github.com/organization/terraform-modules.git//keyvault?ref=<tag>"`; the
   vault-name input key is confirmed (via GitHub) as `keyvaultname`, a computed expression rather
   than a literal (see FR-003(d)) — no open question remains.
 - **GitHub App installation**: the user has confirmed the Infrastructure GitHub App already has

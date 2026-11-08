@@ -91,9 +91,9 @@ describe('ShipStateNotice and error classification (FT-14)', () => {
   })
 
   it('not_accessible: generic message naming the org (never reveals existence)', () => {
-    const w = mount(ShipStateNotice, { props: { kind: 'not_accessible', org: 'Aya-DevOpsTeam' } })
+    const w = mount(ShipStateNotice, { props: { kind: 'not_accessible', org: 'organization' } })
     expect(w.text()).toContain("We couldn't access that repository with your GitHub permissions.")
-    expect(w.text()).toContain('Aya-DevOpsTeam')
+    expect(w.text()).toContain('organization')
     expect(w.text()).not.toMatch(/exist/i)
   })
 

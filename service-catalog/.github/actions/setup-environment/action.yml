@@ -1,0 +1,96 @@
+name: 'Setup Environment'
+description: 'Install required dependencies for Terragrunt testing and configure SSH access'
+
+inputs:
+  install-jq:
+    description: 'Install jq JSON processor'
+    required: false
+    default: 'true'
+  install-miller:
+    description: 'Install miller (mlr) data processor'
+    required: false
+    default: 'true'
+  install-azure-cli:
+    description: 'Install Azure CLI'
+    required: false
+    default: 'true'
+  ssh-private-key:
+    description: 'SSH private key for accessing private repositories'
+    required: false
+    default: ''
+  ssh-known-hosts:
+    description: 'SSH known hosts entries'
+    required: false
+    default: ''
+
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup SSH Key for Private Repositories
+      if: inputs.ssh-private-key != ''
+      shell: bash
+      env:
+        SSH_PRIVATE_KEY: ${{ inputs.ssh-private-key }}
+        SSH_KNOWN_HOSTS: ${{ inputs.ssh-known-hosts }}
+      run: |
+        # Create SSH directory
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+
+        # Write private key
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+
+        # Write known hosts if provided
+        if [ -n "$SSH_KNOWN_HOSTS" ]; then
+          echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+        fi
+
+        # Start SSH agent and add key
+        eval "$(ssh-agent -s)"
+        ssh-add ~/.ssh/id_ed25519
+
+        # Export for subsequent steps
+        echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+        echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> $GITHUB_ENV
+
+        # Verify
+        echo "✅ SSH key loaded successfully:"
+        ssh-add -l
+
+    - name: Install jq
+      if: inputs.install-jq == 'true'
+      shell: bash
+      run: |
+        if ! command -v jq &> /dev/null; then
+          echo "Installing jq..."
+          sudo apt-get update -qq
+          sudo apt-get install -y jq
+        fi
+        jq --version
+
+    - name: Install Miller (mlr)
+      if: inputs.install-miller == 'true'
+      shell: bash
+      run: |
+        if command -v mlr &> /dev/null; then
+          echo "Miller (mlr) is already installed:"
+          mlr --version
+        else
+          echo "Installing Miller (mlr)..."
+          sudo apt-get update -qq
+          sudo apt-get install -y miller
+          mlr --version
+        fi
+
+    - name: Install Azure CLI
+      if: inputs.install-azure-cli == 'true'
+      shell: bash
+      run: |
+        if ! command -v az &> /dev/null; then
+          echo "Installing Azure CLI..."
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        fi
+        az --version

@@ -23,7 +23,7 @@ jobs:
   # ====================================
   smoke-tests:
     name: 🔥 Smoke Tests (P0)
-    runs-on: aya-devops-rs
+    runs-on: ubuntu-latest
     needs: dependency-audit
     timeout-minutes: 5
     steps:
@@ -75,7 +75,7 @@ jobs:
   # ====================================
   unit-tests:
     name: '🧪 Unit Tests (Components, Composables, Services)'
-    runs-on: aya-devops-rs
+    runs-on: ubuntu-latest
     needs: smoke-tests
     timeout-minutes: 10
     steps:
@@ -131,7 +131,7 @@ jobs:
   # ====================================
   integration-tests:
     name: '🔗 Integration Tests (API Contracts)'
-    runs-on: aya-devops-rs
+    runs-on: ubuntu-latest
     needs: unit-tests
     timeout-minutes: 15
     steps:
@@ -185,7 +185,7 @@ jobs:
   # ====================================
   # NOTE: E2E Tests moved to separate workflow
   # E2E tests run against deployed sand environment:
-  # https://self-service.sand.k8s.com/
+  # https://self-service.example.com/
   # See: .github/workflows/e2e-sand-tests.yml
   # ====================================
 
@@ -200,7 +200,7 @@ jobs:
   # ====================================
   dependency-audit:
     name: '🔍 Dependency Hygiene Gate'
-    runs-on: aya-devops-rs
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Checkout code
@@ -238,7 +238,7 @@ jobs:
   # ====================================
   test-summary:
     name: '📊 Test Summary'
-    runs-on: aya-devops-rs
+    runs-on: ubuntu-latest
     needs: [dependency-audit, smoke-tests, unit-tests, integration-tests]
     if: always()
     steps:
@@ -259,7 +259,7 @@ jobs:
           echo "## 📈 Coverage Report" >> $GITHUB_STEP_SUMMARY
           echo "See artifacts for  detailed coverage reports" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Note:** E2E tests run against deployed sand environment at https://self-service.sand.k8s.com/" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** E2E tests run against deployed sand environment at https://self-service.example.com/" >> $GITHUB_STEP_SUMMARY
 
       - name: Check all tests passed
         if: |

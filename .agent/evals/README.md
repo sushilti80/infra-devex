@@ -6,11 +6,11 @@ This directory contains **repository-specific behavioral regression cases** for 
 These cases complement, but do not duplicate:
 
 - deterministic code/tests such as `tests/smoke/deliveryContract.spec.ts`; and
-- organization-wide behavioral evals owned by `Aya-DevOpsTeam/agent-governance`.
+- organization-wide behavioral evals owned by `organization/agent-governance`.
 
 ## Current execution status
 
-Aya Agent Governance `2026.09.12` executes consumer-local behavioral evals through Promptfoo and
+Example Agent Governance `2026.09.12` executes consumer-local behavioral evals through Promptfoo and
 GPT-5.6 Luna when `validation.repository_evals: true`.
 
 This repository is enrolled with:

@@ -30,7 +30,7 @@ describe('FR-008 — TypeScript Type Contracts', () => {
         name: 'jobplc',
         environment: 'devsand',
         description: 'jobplc service',
-        owner: 'Vijay Batham',
+        owner: 'Example User',
         lifecycle: 'Live',
         modules: ['functionAppSvcWindows'],
         costCenter: 'self-service',
@@ -128,7 +128,7 @@ describe('FR-008 — TypeScript Type Contracts', () => {
       const app: InstalledApp = {
         name: 'jobplc',
         environment: 'devsand',
-        owner: 'Vijay Batham',
+        owner: 'Example User',
         deployedAt: '2025-07-14T21:59:14Z',
         lifecycle: 'experimental',
         status: 'active',
@@ -142,7 +142,7 @@ describe('FR-008 — TypeScript Type Contracts', () => {
       const app: InstalledApp = {
         name: 'jobplc',
         environment: 'devsand',
-        owner: 'Vijay Batham',
+        owner: 'Example User',
         deployedAt: '2025-07-14T21:59:14Z',
         lifecycle: 'experimental',
         status: 'active',
@@ -180,7 +180,7 @@ describe('FR-008 — TypeScript Type Contracts', () => {
           name: 'jobplc',
           environment: 'devsand',
           description: 'jobplc',
-          owner: 'Vijay Batham',
+          owner: 'Example User',
           lifecycle: 'experimental',
           modules: ['functionAppSvcWindows'],
           rbacPairs: [

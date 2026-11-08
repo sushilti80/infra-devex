@@ -37,7 +37,7 @@ graph TB
     GitHubSvc -->|Auth| CodeApp[Code GitHub App]
     
     GitHubSvc -->|API| ServiceRepo[service-catalog]
-    GitHubSvc -->|API| FluxRepo[aya-flux]
+    GitHubSvc -->|API| FluxRepo[flux-config]
     
     InfraSvc -->|Trigger| GHActions[GitHub Actions]
     GHActions -->|Execute| Terraform
@@ -310,7 +310,7 @@ graph LR
     
     subgraph "Code Operations"
         CodeApp[GitHub App<br/>Code Deployment]
-        FluxRepo[aya-flux<br/>Repository]
+        FluxRepo[flux-config<br/>Repository]
         CodeWorkflows[generate-app<br/>create-app]
     end
     
@@ -542,7 +542,7 @@ sequenceDiagram
 graph TB
     subgraph "AKS Cluster"
         subgraph "Namespace: self-service-test"
-            Ingress[NGINX Ingress<br/>self-service.sand.k8s.com]
+            Ingress[NGINX Ingress<br/>self-service.example.com]
             Service[Service<br/>Port 80]
             Deployment[Deployment<br/>self-service-app]
             Pod1[Pod 1]
@@ -624,7 +624,7 @@ graph TB
     
     subgraph "GitHub API"
         ServiceRepo[service-catalog]
-        FluxRepo[aya-flux]
+        FluxRepo[flux-config]
     end
     
     InfraApp -->|JWT Token| Express
@@ -663,7 +663,7 @@ graph TB
     
     subgraph "GitHub"
         ServiceRepo[service-catalog]
-        FluxRepo[aya-flux]
+        FluxRepo[flux-config]
         ModulesRepo[terraform-modules]
         GHActions[GitHub Actions]
     end

@@ -1,21 +1,21 @@
 ---
 name: infrastructure-repo
-description: "Inspect and reason about Aya-DevOpsTeam/infrastructure-live without cloning it. Use when: resolving infrastructure repository paths, Terragrunt layouts, app/environment/resource patterns, Key Vault names, shared or nested infrastructure, workflow files, or validating assumptions against the live repo. Uses read-only gh api queries and records exact-case evidence."
+description: "Inspect and reason about organization/infrastructure-live without cloning it. Use when: resolving infrastructure repository paths, Terragrunt layouts, app/environment/resource patterns, Key Vault names, shared or nested infrastructure, workflow files, or validating assumptions against the live repo. Uses read-only gh api queries and records exact-case evidence."
 argument-hint: "Describe the app, environment, resource, path, or repository pattern to investigate."
 user-invocable: true
 ---
 
 # Infrastructure Repository
 
-Use this skill to inspect `Aya-DevOpsTeam/infrastructure-live` as external source-of-truth evidence.
+Use this skill to inspect `organization/infrastructure-live` as external source-of-truth evidence.
 Do not clone or copy the repository into this workspace. Prefer `gh api`, consistent with the
 project's GitHub access convention.
 
 ## Repository Selection
 
 - Live infrastructure: `config.github.infrastructureLiveRepo`, default
-  `Aya-DevOpsTeam/infrastructure-live`.
-- Sand/service catalog: `config.github.serviceRepo`, default `Aya-DevOpsTeam/service-catalog`.
+  `organization/infrastructure-live`.
+- Sand/service catalog: `config.github.serviceRepo`, default `organization/service-catalog`.
 - Read configured values from `config.js` or environment variables; do not hardcode a different
   owner or repository based on memory.
 - Preserve path and application casing exactly. The live app is `commHub`, not `commhub`.
@@ -35,7 +35,7 @@ project's GitHub access convention.
 ### 1. Resolve repository and default branch
 
 ```bash
-repo="Aya-DevOpsTeam/infrastructure-live"
+repo="organization/infrastructure-live"
 default_branch=$(gh api "repos/$repo" --jq .default_branch)
 ```
 

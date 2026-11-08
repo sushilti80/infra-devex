@@ -21,7 +21,7 @@ Orchestrator decision: **NO-GO** - the code-side QA gate is **waived by human de
 | D-1 | 2026-10-22 | Round 3 architecture review is human-authorized and the spec is treated as the approved implementation contract. |
 | W-1 | 2026-10-22 | The post-Round-3 delta (commit `4b1a9c1`; H-9/H-10 + N3-A1..A5) leaves spec.json `status: ready_for_challenger`; no further Challenger round requested. Waiver quote: "I approve reasonable recommendation but keep it simple for initial implementation and reuse what we have". |
 | H-9 | 2026-10-22 | Reuse existing Code Deployment GitHub App for `prepare` (single-repo, `contents:read`, short-lived). R-A6 accepted for devsand pilot; Z2 hygiene is the compensating control (V-12 still gates). |
-| H-10 | 2026-10-22 | Reuse existing registry `sharedwus3acr2` with code-enforced `selfserve/<validated-app>` allowlist. R-A7 accepted for devsand pilot; ACR ABAC is post-pilot (HO-3). V-8 and WT-09b still gate. |
+| H-10 | 2026-10-22 | Reuse existing registry `exampleregistry` with code-enforced `selfserve/<validated-app>` allowlist. R-A7 accepted for devsand pilot; ACR ABAC is post-pilot (HO-3). V-8 and WT-09b still gate. |
 | D-3 | 2026-10-22 | One additional rework round authorized (final) after QA round 2 exhausted the automatic budget. No further rework rounds. |
 | D-4 | 2026-10-22 | SRE directed to add a minimal Wiz CI workflow (`.github/workflows/wiz-scan.yml`) and run it for real instead of leaving the scan as a human action. |
 | D-5 | 2026-10-22 | Narrow final rework authorized: QA-012, O-7 (if tiny), runtime-built credential fixtures (no Wiz ignore rules), QA delta, Wiz re-run. **No further rework.** |
@@ -63,13 +63,13 @@ Stage history (rework budget = one round per stage, honored):
 
 | NFR | Evidence | Status |
 |---|---|---|
-| NFR-001 build/e2e duration | none — requires aya-flux workflow + V-10/LT-03 | NOT_VERIFIED |
+| NFR-001 build/e2e duration | none — requires flux-config workflow + V-10/LT-03 | NOT_VERIFIED |
 | NFR-002 API latency | caches/single-flight unit-tested (QA results `bt_coverage` BT-14/24); no latency measurement/LT | NOT_VERIFIED |
-| NFR-003 credential separation | BT-05 passing (QA); aya-flux/OIDC side not assessable | PARTIAL (backend only) |
-| NFR-004 input validation/injection | QA `shipQaHostile.spec.ts` (154 hostile cases) pass; workflow re-validation is aya-flux (WT-*) | PARTIAL (backend only) |
-| NFR-005 build isolation | aya-flux WT-04b/05/08b/11b, §7.4 matrix, V-12 not run | NOT_VERIFIED |
-| NFR-006 traceability | BT-21 backend; WT-09/WT-11 aya-flux not run | PARTIAL |
-| NFR-007 auditability | BT-21 metrics/log events; duplicate-emission (QA-008/O-4) fixed and QA-verified round 3 | PARTIAL (aya-flux annotations/run-name not run) |
+| NFR-003 credential separation | BT-05 passing (QA); flux-config/OIDC side not assessable | PARTIAL (backend only) |
+| NFR-004 input validation/injection | QA `shipQaHostile.spec.ts` (154 hostile cases) pass; workflow re-validation is flux-config (WT-*) | PARTIAL (backend only) |
+| NFR-005 build isolation | flux-config WT-04b/05/08b/11b, §7.4 matrix, V-12 not run | NOT_VERIFIED |
+| NFR-006 traceability | BT-21 backend; WT-09/WT-11 flux-config not run | PARTIAL |
+| NFR-007 auditability | BT-21 metrics/log events; duplicate-emission (QA-008/O-4) fixed and QA-verified round 3 | PARTIAL (flux-config annotations/run-name not run) |
 | NFR-008 reliability | dedupe/caps tested (QA-005/006 fixed); watchdog/SUPERSEDED/queuedBehind fixture-only until V-4 | PARTIAL |
 | NFR-009 observability | SRE refresh: O-1..O-7 verified fixed (low residuals: O-7b production callers of `findPullRequestForBranch` pass no correlation id so its `github_api_call` carries `unknown`; O-8 per-process de-dup cache); Datadog log-based metrics/alerts R1–R11 are docs only, not created | PARTIAL |
 | NFR-010 usability/a11y | FT-03/07 pass; FT-15 structural audit only (no axe-core); UX-01 not run | PARTIAL |
@@ -83,7 +83,7 @@ Implemented in this repo (committed + pushed, inert: flag `false`, identity prov
 - Frontend: nav/env/auth store changes, `stores/ship.ts`, `useShipPolling` (isolated commit `3dc3acd`), `shipRecentStorage`, 8 `components/ship/*`, `ShipFromRepoPage` states S0–S7, flag-gated home card, `?ship=` deep link across login, Docs section, `api.ts` ship client.
 - Dev deviations on record (QA judged acceptable unless noted): extra 503 `SHIP_UNAVAILABLE`; `retry-config-pr` requires retrying user to have a linked identity (open Architect/H-2 item); redaction widened beyond §7.3 text (Architect ack pending, non-blocking); dedupe key = user + nine validated fields; frontend own plain-language failure copy; no "Connect GitHub" action until H-2; no server-side repo search (paste `org/name`).
 
-NOT implemented here (blocked-on-human; see §7): all aya-flux work (workflow, scripts, environments, OIDC/Azure identities, GitHub App environment secrets, fixtures, V-gate evidence, runbook), real Entra→GitHub identity provider (H-2), ACR read client (H-3), preview host (H-1), platform role/org allowlist values (H-4/H-7). Handoff list: `aya-flux-ship-from-repo-handoff.md` (session files dir, outside the repo).
+NOT implemented here (blocked-on-human; see §7): all flux-config work (workflow, scripts, environments, OIDC/Azure identities, GitHub App environment secrets, fixtures, V-gate evidence, runbook), real Entra→GitHub identity provider (H-2), ACR read client (H-3), preview host (H-1), platform role/org allowlist values (H-4/H-7). Handoff list: `flux-config-ship-from-repo-handoff.md` (session files dir, outside the repo).
 
 ## 7. Blockers (owner → evidence)
 
@@ -92,7 +92,7 @@ NOT implemented here (blocked-on-human; see §7): all aya-flux work (workflow, s
 | B1 | ~~QA `fail` (QA-014)~~ **RESOLVED BY HUMAN WAIVER (D-7, 2026-10-22, product owner)**: accepted as documented limit L-2, not fixed. QA's artifact still reads `fail`, so the `phase2` validator still says `PHASE2_NOT_READY`; the code-side gate is waived, not passed. | Product owner (decided) | `tests/results/ship-from-repo-results.json` (`QA-014`), section 2 D-7 | None (waived) |
 | B2 | SRE `warn` follow-ups: (a) Security to confirm the 4 filtered library findings carry no high/critical (Wiz run link); (b) container-image scan (`wizcli docker scan --policy e8ef1254-...`, needs Wiz auth outside Actions - add an image job to `wiz-scan.yml` or run where auth exists) before any prod recommendation; (c) optionally make "Wiz directory scan" a required PR check. (The earlier Git Credentials HIGH is resolved.) | Security / SRE | `docs/security/wiz-ship-from-repo-report.json`, runs 39823792502, 39823849217 | Prod promotion (not sandbox pilot) |
 | B3 | Low residuals: O-7b (pass the ship correlation id from `shipStatusService.getPr` / `aksService.getAppState` into `findPullRequestForBranch`), O-8 (per-process de-dup; SLIs use `count_unique(@correlation_id)`); Datadog log-based metrics/alerts R1-R11 to be created by SRE/Platform. | Vue.js Developer / SRE | `docs/security/ship-from-repo-sre-assessment.md` | NFR-009 completeness |
-| B4 | **H-6** aya-flux ownership approvals | Platform Eng (aya-flux) | spec §2.3 | Phase 1 start (all aya-flux work) |
+| B4 | **H-6** flux-config ownership approvals | Platform Eng (flux-config) | spec §2.3 | Phase 1 start (all flux-config work) |
 | B5 | **H-8** own `useShipPolling` vs extend `useWorkflowPolling` | PM / Challenger | spec §2.3, ADR `…-ship-own-polling-composable.md` | **Merge** of `useShipPolling` (Phase 3) |
 | B6 | **H-1** CLUSTER_DNS_SUFFIX / http vs https | Platform Eng | spec §3.8 | FR-010 acceptance (Phase 4) |
 | B7 | **H-2** Entra→GitHub login mapping (Option A needs spec delta + delta re-challenge) | Architect + Security + Platform Eng | spec §3.6.1 | Phase 4 pilot/GA, E2E; until then every ship fails closed |
@@ -109,13 +109,13 @@ NOT implemented here (blocked-on-human; see §7): all aya-flux work (workflow, s
 Code-side gates (this repo): Dev = `complete`; QA = `fail` in QA's artifact with its only open defect (QA-014) **waived by the product owner** as accepted limit L-2 (D-7) and L-1 accepted; SRE = `warn` (sand-valid; remediation plan preserved; image scan not run). Final mechanical validators (2026-10-22): `dev` -> `DEV_COMPLETE`; `qa` -> `QA_FAIL`; `sre` -> `SRE_WARN`; `phase2` -> **`PHASE2_NOT_READY`** (dev=complete, qa=fail, sre=warn). The validator reports PHASE2_NOT_READY solely because QA's artifact says `fail`; that code-side gate is **waived by human decision, not passed**, and the Orchestrator did not edit QA's verdict.
 
 ### 8a. Non-code gates that keep this NO-GO (independent of the QA waiver)
-1. **H-6** - aya-flux ownership approvals not given; **no aya-flux work exists** (workflow, scripts, environments, OIDC/Azure identities, Code App environment secret, fixture repos). The feature cannot run end to end without it.
+1. **H-6** - flux-config ownership approvals not given; **no flux-config work exists** (workflow, scripts, environments, OIDC/Azure identities, Code App environment secret, fixture repos). The feature cannot run end to end without it.
 2. **H-8** - own `useShipPolling` vs extending `useWorkflowPolling` undecided; gates merge of `useShipPolling` (Phase 3).
 3. **Pilot gates** - H-1 (preview DNS suffix/http-vs-https), H-2 (Entra->GitHub identity; provider is `none`, every ship fails closed; Option A needs a spec delta + re-challenge), H-3 (ACR read or signed waiver), H-4 (platform role claim), H-5 (workflow ref; default fails closed on `main`), H-7 (org allowlist/App scope), ASM-10, ASM-11.
 4. **V-gates V-1...V-12** - no evidence recorded (runbook not created); V-3 gates `SHIP_GATE_V3_PASSED`, V-4 gates `SHIP_GATE_V4_PASSED`; G-FLAG gates block enabling the feature.
 5. **Wiz container-image scan** not run (Wiz directory scan: criticals 0, highs 0 listed, 1 INFO; 4 library findings with no visible severity pending Security review). Required before any prod recommendation.
 6. **Feature flag stays `false`** (`data/environments.json` devsand `features.shipFromRepo`; D-2) - flipping it is a human action after G-FLAG gates pass.
-7. NFRs largely PARTIAL/NOT_VERIFIED (NFR-001/-005 need aya-flux evidence, E2E, LT-*, SR-01, UX-01 not run).
+7. NFRs largely PARTIAL/NOT_VERIFIED (NFR-001/-005 need flux-config evidence, E2E, LT-*, SR-01, UX-01 not run).
 
 The feature is inert in code (flag `false`, provider `none`). Phase 4 (Release Manager) was **not** dispatched: no merge/deployment evidence and nothing deployable.
 
@@ -123,7 +123,7 @@ Process note: the QA Engineer reported using `sed -i` once for a trivial fixture
 
 ## 9. Next concrete human actions (all non-code)
 
-1. Platform Eng: answer **H-6** and take over `aya-flux-ship-from-repo-handoff.md` (session files dir; self-contained brief of spec §3.4/§5.2/§6/§11).
+1. Platform Eng: answer **H-6** and take over `flux-config-ship-from-repo-handoff.md` (session files dir; self-contained brief of spec §3.4/§5.2/§6/§11).
 2. PM/Challenger: decide **H-8** before `useShipPolling` merges.
 3. Decide H-1, H-2 (Option A => Architect delta + delta re-challenge), H-3 (or sign waiver), H-4, H-5, H-7; PM confirm ASM-10; Platform Eng complete ASM-11.
 4. Record V-1...V-12 evidence (create `docs/SHIP-FROM-REPO-RUNBOOK.md`); then, only with evidence, set `SHIP_GATE_V3_PASSED` / `SHIP_GATE_V4_PASSED` and (after all G-FLAG gates) `features.shipFromRepo=true`.

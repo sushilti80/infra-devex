@@ -1,6 +1,6 @@
 {
   "feature": "service-catalog-prefill",
-  "scan_target": "/tmp/workspace/Aya-DevOpsTeam/self-service-infra (source code)",
+  "scan_target": "/tmp/workspace/organization/self-service-infra (source code)",
   "scan_mode": "code",
   "environment": "sand",
   "severity_gate": "critical",

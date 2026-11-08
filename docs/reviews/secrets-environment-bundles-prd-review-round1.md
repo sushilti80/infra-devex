@@ -30,8 +30,8 @@ cannot start from this PRD without guessing at several load-bearing design decis
   per-environment `vaultDir` or `qualifier` selection (confirmed by grepping the whole PRD: the only
   other `qualifier` references, at FR-005(g)/NFR-REL-002, treat it as a single whole-submission value
   used for the idempotency key, and FR-005(a) never even declares that field in the schema it
-  presents). This is not a hypothetical: the PRD's own evidence table cites `ayaApplications`
-  requiring an explicit `qualifier` (`ayaCoreServices`) to resolve at all
+  presents). This is not a hypothetical: the PRD's own evidence table cites `exampleApplications`
+  requiring an explicit `qualifier` (`exampleCoreServices`) to resolve at all
   (`docs/roadmaps/plan-layeredKeyVaultResolution.md`), and `secret-self-service`'s own evidence
   (`mlops`-style apps) requires `vaultDir` to disambiguate 2+ vaults per environment — both patterns
   are confirmed real in this codebase (`services/secretsService.js` `matchVaultsFromEntries`/

@@ -67,7 +67,7 @@ describe('ShipFailurePanel (FT-10)', () => {
 
   it('REPO_NOT_ACCESSIBLE names the org and never claims whether the repo exists', () => {
     const w = mountPanel(failed('REPO_NOT_ACCESSIBLE'))
-    expect(w.text()).toContain('Aya-DevOpsTeam')
+    expect(w.text()).toContain('organization')
     expect(w.text()).not.toMatch(/does not exist|doesn't exist|not found/i)
   })
 

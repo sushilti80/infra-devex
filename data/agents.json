@@ -37,7 +37,7 @@
         {
           "name": "eventTypes",
           "required": false,
-          "description": "Specific Event Grid event types to filter for (e.g., Aya.Core.Events.Job.Created)."
+          "description": "Specific Event Grid event types to filter for (e.g., Example.Core.Events.Job.Created)."
         },
         {
           "name": "subscriptionName",
@@ -68,7 +68,7 @@
         {
           "name": "storageAccountNames",
           "required": true,
-          "description": "List of specific storage account names to update (e.g., ayadevwussa01)."
+          "description": "List of specific storage account names to update (e.g., exampledevwussa01)."
         },
         {
           "name": "resourceNames",
@@ -122,7 +122,7 @@
           "name": "environments",
           "required": false,
           "type": "array",
-          "description": "Optional target environments (example: [\"int\", \"prod\"]). If omitted, apply to all environment folders under infrastructure/ayaApplications/ayaIntegrationServices/servicebus."
+          "description": "Optional target environments (example: [\"int\", \"prod\"]). If omitted, apply to all environment folders under infrastructure/exampleApplications/exampleIntegrationServices/servicebus."
         },
         {
           "name": "servicebus_namespace",

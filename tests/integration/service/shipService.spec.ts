@@ -22,7 +22,7 @@ const { isShipId, shipIdTimestamp } = cjsRequire('../../../utils/shipId')
 
 const sam = { id: fx.OID, email: 'Sam@Example.com' }
 const other = { id: fx.OTHER_OID, email: 'other@x.com' }
-const input = { repo: 'AyaHealthcare/my-svc', branch: 'main', app: 'my-app', env: 'devsand', namespace: 'my-app', teamLabel: 'software-engineering', port: 8080, healthPath: '/healthz', bump: 'patch' }
+const input = { repo: 'organization/my-svc', branch: 'main', app: 'my-app', env: 'devsand', namespace: 'my-app', teamLabel: 'software-engineering', port: 8080, healthPath: '/healthz', bump: 'patch' }
 let dispatched: any[]
 let provider: any
 let appState: any
@@ -32,7 +32,7 @@ beforeEach(() => {
   dispatched = []
   appState = { appState: 'new' }
   Object.assign(config.ship, {
-    allowedOrgs: ['AyaHealthcare'], supportedShipEnvironments: ['devsand'], workflowRef: 'ship/v1', allowDefaultRef: false, identityProvider: 'test',
+    allowedOrgs: ['organization'], supportedShipEnvironments: ['devsand'], workflowRef: 'ship/v1', allowDefaultRef: false, identityProvider: 'test',
     maxStartsPerHour: 12, maxActiveGlobal: 10, maxActivePerUser: 3, maxStartsPerUserPerHour: 6, rateLimitGuardRemaining: 1000, retryWindowHours: 24,
     previewHosts: {}, annotationsVerified: true, queueSignalsVerified: false,
   })
@@ -40,13 +40,13 @@ beforeEach(() => {
     links: { [fx.OID]: 'octocat', [fx.OTHER_OID]: 'other-login' },
     repos: {
       octocat: [
-        { fullName: 'AyaHealthcare/zeta', org: 'AyaHealthcare', name: 'zeta', defaultBranch: 'main', private: true },
-        { fullName: 'AyaHealthcare/alpha', org: 'AyaHealthcare', name: 'alpha', defaultBranch: 'develop', private: false },
-        { fullName: 'AyaHealthcare/forked', org: 'AyaHealthcare', name: 'forked', defaultBranch: 'main', private: false, fork: true },
+        { fullName: 'organization/zeta', org: 'organization', name: 'zeta', defaultBranch: 'main', private: true },
+        { fullName: 'organization/alpha', org: 'organization', name: 'alpha', defaultBranch: 'develop', private: false },
+        { fullName: 'organization/forked', org: 'organization', name: 'forked', defaultBranch: 'main', private: false, fork: true },
         { fullName: 'EvilOrg/steal', org: 'EvilOrg', name: 'steal', defaultBranch: 'main', private: false },
       ],
     },
-    permissions: { 'octocat:AyaHealthcare/my-svc': 'admin', 'octocat:AyaHealthcare/zeta': 'read', 'other-login:AyaHealthcare/my-svc': 'read' },
+    permissions: { 'octocat:organization/my-svc': 'admin', 'octocat:organization/zeta': 'read', 'other-login:organization/my-svc': 'read' },
   })
   identity.registerProvider('test', provider)
   githubService.codeAppGetRepo = async () => ({ defaultBranch: 'main', private: true, fork: false })
@@ -63,7 +63,7 @@ describe('BT-04 identity contract through the service', () => {
     config.ship.identityProvider = 'none'
     expect((await shipService.getConfig(sam)).identity).toEqual({ state: 'unlinked', reason: 'IDENTITY_MAPPING_NOT_CONFIGURED' })
     expect((await shipService.listRepos(sam)).repos).toEqual([])
-    for (const call of [() => shipService.start(sam, input), () => shipService.listBranches(sam, 'AyaHealthcare', 'my-svc'), () => shipService.getAppAdvisory(sam, 'devsand', 'my-app', 'AyaHealthcare/my-svc')]) {
+    for (const call of [() => shipService.start(sam, input), () => shipService.listBranches(sam, 'organization', 'my-svc'), () => shipService.getAppAdvisory(sam, 'devsand', 'my-app', 'organization/my-svc')]) {
       await expect(call()).rejects.toMatchObject({ status: 403, code: 'REPO_NOT_ACCESSIBLE', hint: 'IDENTITY_NOT_LINKED' })
     }
     expect(dispatched).toHaveLength(0)
@@ -81,8 +81,8 @@ describe('BT-06 repo / branch listing', () => {
   it('user ∩ App repos in allowed orgs only, forks excluded, sorted by fullName, projection only', async () => {
     const res = await shipService.listRepos(sam)
     expect(res.identity).toEqual({ state: 'linked' })
-    expect(res.repos.map((r: any) => r.fullName)).toEqual(['AyaHealthcare/alpha', 'AyaHealthcare/zeta'])
-    expect(res.repos[0]).toEqual({ fullName: 'AyaHealthcare/alpha', org: 'AyaHealthcare', name: 'alpha', defaultBranch: 'develop', private: false })
+    expect(res.repos.map((r: any) => r.fullName)).toEqual(['organization/alpha', 'organization/zeta'])
+    expect(res.repos[0]).toEqual({ fullName: 'organization/alpha', org: 'organization', name: 'alpha', defaultBranch: 'develop', private: false })
     expect(res.truncated).toBe(false)
   })
   it('q filter and limit with truncated flag', async () => {
@@ -107,30 +107,30 @@ describe('BT-06 repo / branch listing', () => {
   })
   it('branches: default first; typed branch verified when not on the page; cached 5 min; ≤3 pages', async () => {
     githubService.codeAppGetRepo = async () => ({ defaultBranch: 'main', private: true, fork: false })
-    const res = await shipService.listBranches(sam, 'AyaHealthcare', 'my-svc')
+    const res = await shipService.listBranches(sam, 'organization', 'my-svc')
     expect(res.defaultBranch).toBe('main')
     expect(res.branches.map((b: any) => b.name)).toEqual(['main', 'dev', 'feature/x'])
     expect(res.branches[0].isDefault).toBe(true)
     expect(res.nextPage).toBeUndefined()
     const typed = vi.fn(async (_o: string, _r: string, b: string) => b === 'hotfix/1')
     githubService.codeAppBranchExists = typed
-    expect((await shipService.listBranches(sam, 'AyaHealthcare', 'my-svc', { q: 'hotfix/1' })).branches.map((b: any) => b.name)).toEqual(['hotfix/1'])
-    expect((await shipService.listBranches(sam, 'AyaHealthcare', 'my-svc', { q: 'nope' })).branches).toEqual([])
+    expect((await shipService.listBranches(sam, 'organization', 'my-svc', { q: 'hotfix/1' })).branches.map((b: any) => b.name)).toEqual(['hotfix/1'])
+    expect((await shipService.listBranches(sam, 'organization', 'my-svc', { q: 'nope' })).branches).toEqual([])
     expect(typed).toHaveBeenCalledTimes(2)
-    expect((await shipService.listBranches(sam, 'AyaHealthcare', 'my-svc', { q: 'bad..ref' })).branches).toEqual([])
+    expect((await shipService.listBranches(sam, 'organization', 'my-svc', { q: 'bad..ref' })).branches).toEqual([])
     expect(typed).toHaveBeenCalledTimes(2) // invalid refs are never sent to GitHub
   })
   it('branch paging: nextPage while hasNext and page < 3', async () => {
     githubService.codeAppListBranches = async () => ({ branches: [{ name: 'main' }], hasNext: true })
-    expect((await shipService.listBranches(sam, 'AyaHealthcare', 'my-svc', { page: 1 })).nextPage).toBe(2)
-    expect((await shipService.listBranches(sam, 'AyaHealthcare', 'my-svc', { page: 3 })).nextPage).toBeUndefined()
+    expect((await shipService.listBranches(sam, 'organization', 'my-svc', { page: 1 })).nextPage).toBe(2)
+    expect((await shipService.listBranches(sam, 'organization', 'my-svc', { page: 3 })).nextPage).toBeUndefined()
   })
   it('a repo the user cannot read, an uninstalled App, and a missing repo all answer identically (generic)', async () => {
     const answers: any[] = []
-    await shipService.listBranches(sam, 'AyaHealthcare', 'not-permitted').catch((e: any) => answers.push([e.status, e.code, e.message, e.hint]))
+    await shipService.listBranches(sam, 'organization', 'not-permitted').catch((e: any) => answers.push([e.status, e.code, e.message, e.hint]))
     githubService.codeAppListBranches = async () => null
     shipService._resetForTests()
-    await shipService.listBranches(sam, 'AyaHealthcare', 'my-svc').catch((e: any) => answers.push([e.status, e.code, e.message, e.hint]))
+    await shipService.listBranches(sam, 'organization', 'my-svc').catch((e: any) => answers.push([e.status, e.code, e.message, e.hint]))
     expect(answers).toHaveLength(2)
     expect(answers[0]).toEqual(answers[1])
   })
@@ -141,14 +141,14 @@ describe('BT-07 ownership and app state matrix', () => {
     for (const acr of [false, true]) {
       config.ship.acrReadEnabled = acr
       expect(shipService.checkOwnership('my-app', { appState: 'new' })).toEqual({ ownership: 'unknown', ownershipSource: 'none' })
-      expect(shipService.checkOwnership('my-app', { appState: 'merged', imageName: 'sharedwus3acr2.azurecr.io/selfserve/my-app' })).toEqual({ ownership: 'unknown', ownershipSource: 'none' })
-      expect(shipService.checkOwnership('my-app', { appState: 'merged', imageName: 'sharedwus3acr2.azurecr.io/platform/my-app' })).toEqual({ ownership: 'unowned_existing', ownershipSource: 'github' })
+      expect(shipService.checkOwnership('my-app', { appState: 'merged', imageName: 'exampleregistry.azurecr.io/selfserve/my-app' })).toEqual({ ownership: 'unknown', ownershipSource: 'none' })
+      expect(shipService.checkOwnership('my-app', { appState: 'merged', imageName: 'exampleregistry.azurecr.io/platform/my-app' })).toEqual({ ownership: 'unowned_existing', ownershipSource: 'github' })
       expect(shipService.checkOwnership('my-app', { appState: 'merged' })).toEqual({ ownership: 'unknown', ownershipSource: 'none' })
       expect(shipService.checkOwnership('my-app', { appState: 'preview_open', prNumber: 3 })).toEqual({ ownership: 'unknown', ownershipSource: 'none' })
     }
     config.ship.acrReadEnabled = false
   })
-  it('a name that exists on aya-flux as a non-ship app ⇒ start refused with APP_OWNED_BY_OTHER and no dispatch', async () => {
+  it('a name that exists on flux-config as a non-ship app ⇒ start refused with APP_OWNED_BY_OTHER and no dispatch', async () => {
     appState = { appState: 'merged', effectiveSettings: { port: 80, healthPath: '/' }, imageName: 'docker.io/library/nginx' }
     await expect(shipService.start(sam, input)).rejects.toMatchObject({ status: 403, code: 'APP_OWNED_BY_OTHER' })
     expect(dispatched).toHaveLength(0)
@@ -162,20 +162,20 @@ describe('BT-07 ownership and app state matrix', () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     const spy = vi.fn(async () => ({ appState: 'new' }))
     aksService.getAppState = spy
-    await shipService.getAppAdvisory(sam, 'devsand', 'my-app', 'AyaHealthcare/my-svc')
-    await shipService.getAppAdvisory(sam, 'devsand', 'my-app', 'AyaHealthcare/my-svc')
+    await shipService.getAppAdvisory(sam, 'devsand', 'my-app', 'organization/my-svc')
+    await shipService.getAppAdvisory(sam, 'devsand', 'my-app', 'organization/my-svc')
     expect(spy).toHaveBeenCalledTimes(1)
     vi.setSystemTime(Date.now() + 61_000)
-    await shipService.getAppAdvisory(sam, 'devsand', 'my-app', 'AyaHealthcare/my-svc')
+    await shipService.getAppAdvisory(sam, 'devsand', 'my-app', 'organization/my-svc')
     expect(spy).toHaveBeenCalledTimes(2)
   })
   it('advisory refuses a user without read access to the repo', async () => {
-    await expect(shipService.getAppAdvisory(sam, 'devsand', 'my-app', 'AyaHealthcare/unreadable')).rejects.toMatchObject({ code: 'REPO_NOT_ACCESSIBLE' })
+    await expect(shipService.getAppAdvisory(sam, 'devsand', 'my-app', 'organization/unreadable')).rejects.toMatchObject({ code: 'REPO_NOT_ACCESSIBLE' })
   })
 })
 
 describe('BT-08 post-merge effective settings', () => {
-  const merged = { appState: 'merged', effectiveSettings: { port: 9000, healthPath: '/ready' }, imageName: 'sharedwus3acr2.azurecr.io/selfserve/my-app' }
+  const merged = { appState: 'merged', effectiveSettings: { port: 9000, healthPath: '/ready' }, imageName: 'exampleregistry.azurecr.io/selfserve/my-app' }
   it('changed port/healthPath are ignored, reported in settingsIgnored, and the effective values are dispatched', async () => {
     appState = merged
     const res = await shipService.start(sam, { ...input, port: 3000, healthPath: '/other' }, { provided: { port: true, healthPath: true } })
@@ -322,9 +322,9 @@ describe('BT-25 dispatch payload contract / BT-21 start metrics', () => {
   it('full mode: exactly the inputs the workflow expects, server-set actor/oid/login, UUIDv7 correlation_id, string values', async () => {
     const res = await shipService.start(sam, { ...input, port: 3000, healthPath: '/up', bump: 'minor', namespace: 'team-ns', teamLabel: 'platform' }, { provided: { port: true } })
     const { repo, wf, ref, inputs } = dispatched[0]
-    expect([repo, wf, ref]).toEqual(['Aya-DevOpsTeam/aya-flux', 'ship-from-repo.yaml', 'ship/v1'])
+    expect([repo, wf, ref]).toEqual(['organization/flux-config', 'ship-from-repo.yaml', 'ship/v1'])
     expect(Object.keys(inputs).sort()).toEqual(['app', 'branch', 'bump', 'correlation_id', 'env', 'health_path', 'mode', 'namespace', 'port', 'repo', 'requester_github_login', 'team_label', 'triggered_by', 'triggered_by_oid', 'repo'].filter((k, i, a) => a.indexOf(k) === i).sort())
-    expect(inputs).toMatchObject({ repo: 'AyaHealthcare/my-svc', branch: 'main', app: 'my-app', namespace: 'team-ns', team_label: 'platform', env: 'devsand', port: '3000', health_path: '/up', bump: 'minor', triggered_by: 'sam@example.com', triggered_by_oid: fx.OID, requester_github_login: 'octocat', mode: 'full' })
+    expect(inputs).toMatchObject({ repo: 'organization/my-svc', branch: 'main', app: 'my-app', namespace: 'team-ns', team_label: 'platform', env: 'devsand', port: '3000', health_path: '/up', bump: 'minor', triggered_by: 'sam@example.com', triggered_by_oid: fx.OID, requester_github_login: 'octocat', mode: 'full' })
     expect(Object.values(inputs).every((v) => typeof v === 'string')).toBe(true)
     expect(isShipId(inputs.correlation_id)).toBe(true)
     expect(inputs.correlation_id).toBe(res.correlationId)
@@ -334,7 +334,7 @@ describe('BT-25 dispatch payload contract / BT-21 start metrics', () => {
     await shipService.start({ id: fx.OID, email: "O'Brien+tag@Example.com" }, input)
     const full = dispatched[0].inputs
     expect(full.triggered_by).toBe("o_brien+tag@example.com")
-    expect(shipStatus.parseRunName(template(full))).toEqual({ cid: full.correlation_id, app: 'my-app', env: 'devsand', repo: 'AyaHealthcare/my-svc', by: 'o_brien+tag@example.com', oid: fx.OID, mode: 'full', retryBy: '-' })
+    expect(shipStatus.parseRunName(template(full))).toEqual({ cid: full.correlation_id, app: 'my-app', env: 'devsand', repo: 'organization/my-svc', by: 'o_brien+tag@example.com', oid: fx.OID, mode: 'full', retryBy: '-' })
     const cfgOnly = { ...full, mode: 'config_only', retry_by: 'platform@x.com' }
     expect(shipStatus.parseRunName(template(cfgOnly))).toMatchObject({ mode: 'config_only', retryBy: 'platform@x.com' })
     expect(shipStatus.parseRunName(template(cfgOnly).replace('mode=config_only', 'mode=other'))).toBeNull()

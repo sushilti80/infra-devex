@@ -1,9 +1,9 @@
 # Bug Diagnosis: secrets-encryption-failed
 
 ## Report
-- Observed behavior: Secret submission fails for both bundle and single-environment paths with `ENCRYPTION_FAILED` in Shared and Sand. The Shared response includes correlation ID `f976d256-6922-41e8-89c1-a3f42e289159` and names secret `test`; the Sand report identifies subscription `552bdc54-0a39-4040-9d8f-4002e8f572aa` but does not provide a correlation ID.
+- Observed behavior: Secret submission fails for both bundle and single-environment paths with `ENCRYPTION_FAILED` in Shared and Sand. The Shared response includes correlation ID `f976d256-6922-41e8-89c1-a3f42e289159` and names secret `test`; the Sand report identifies subscription `00000000-0000-0000-0000-000000000002` but does not provide a correlation ID.
 - Expected behavior: With valid SOPS configuration and Key Vault authorization, the portal encrypts the value and proceeds to create the encrypted-file pull request.
-- Environment: Shared AKS, subscription `ca2c368d-e375-44db-8db9-d6c243c71ca5`, resource group `shared-wus3-aks-rg-1`, cluster `shared-wus3-aks-1`, namespace `self-service`, workload `self-service-app`; and Sand AKS, subscription `552bdc54-0a39-4040-9d8f-4002e8f572aa`, resource group `sand-wus3-aks-rg-1`, cluster `sand-wus3-aks-1`, namespace `self-service-test`, workload `self-service-test-app`.
+- Environment: Shared AKS, subscription `ca2c368d-e375-44db-8db9-d6c243c71ca5`, resource group `shared-wus3-aks-rg-1`, cluster `shared-wus3-aks-1`, namespace `self-service`, workload `self-service-app`; and Sand AKS, subscription `00000000-0000-0000-0000-000000000002`, resource group `sand-wus3-aks-rg-1`, cluster `sand-wus3-aks-1`, namespace `self-service-test`, workload `self-service-test-app`.
 - Correlation ID: Shared `f976d256-6922-41e8-89c1-a3f42e289159`; Sand unavailable.
 
 ## Evidence
@@ -25,6 +25,6 @@
 ## Resolution
 - Status: fixing
 - Changed paths: `Dockerfile`, `docs/debug/secrets-encryption-failed-diagnosis.md`, and `.agent/state/project-state.md`; no Azure resources changed.
-- Focused validation: `git diff --check` passes. The Docker image build/runtime check was attempted but could not connect to `/Users/Sushil.Tiwari/.colima/default/docker.sock`; no post-fix image was built. QA results remain pending.
+- Focused validation: `git diff --check` passes. The Docker image build/runtime check was attempted but could not connect to `/Users/Alex.Smith/.colima/default/docker.sock`; no post-fix image was built. QA results remain pending.
 - QA results: not_run
 - Residual risk: The source regression is fixed, but the corrected image has not been built or deployed, so encryption recovery is not yet verified. Build the image, verify `sops --version` in the runtime stage, then run a synthetic-value sandbox submission. If that still fails, capture sanitized SOPS stderr and inspect the workload principal's Key Vault `wrapKey` audit result. Never collect or log submitted secret values.

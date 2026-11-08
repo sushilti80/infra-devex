@@ -168,7 +168,7 @@
 
     "data_contracts": {
       "keyvault_override_sidecar": {
-        "location": "docs/overrides/keyvault-overrides.json in config.github.serviceRepo (Aya-DevOpsTeam/service-catalog), read/written via githubService.getFileContent()/createOrUpdateFile() using githubService.octokit only",
+        "location": "docs/overrides/keyvault-overrides.json in config.github.serviceRepo (organization/service-catalog), read/written via githubService.getFileContent()/createOrUpdateFile() using githubService.octokit only",
         "schema": {
           "<vaultDir>": {
             "name": "string - corrected Key Vault name",
@@ -329,7 +329,7 @@
       {
         "scenario": "Override round-trips for a target='live' vault (sidecar always in serviceRepo)",
         "steps": [
-          "Submit an override while resolving a target='live' vault (e.g. ayaApplications, discovered against config.github.infrastructureLiveRepo)",
+          "Submit an override while resolving a target='live' vault (e.g. exampleApplications, discovered against config.github.infrastructureLiveRepo)",
           "Call loadVaultOverrides() again"
         ],
         "assertions": [
@@ -486,7 +486,7 @@
       "srcV2/pages/SecretsPage.vue (existing vault selector and 'Key Vault name unavailable' rendering)"
     ],
     "external": [
-      "GitHub API (Aya-DevOpsTeam/service-catalog repo, docs/overrides/keyvault-overrides.json)"
+      "GitHub API (organization/service-catalog repo, docs/overrides/keyvault-overrides.json)"
     ]
   }
 }

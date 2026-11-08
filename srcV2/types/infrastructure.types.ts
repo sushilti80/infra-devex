@@ -77,7 +77,7 @@ export interface Module {
 
 export interface AKSDeployedApp {
   // identifiers
-  project: string          // top-level "project" from aya-flux JSON
+  project: string          // top-level "project" from flux-config JSON
   appname: string          // meta.appname
   namespace: string        // meta.namespace
   environment: string      // top-level "environment"
@@ -164,7 +164,7 @@ export interface WorkloadIdentityGrant {
    *  Excludes 'global' (subscription-scoped roles are not self-service). */
   resourceType: string
   /** Actual Azure resource name (e.g., 'my-keyvault', 'myStorageAccount').
-   *  aya-flux uses this to construct the ARM resource ID. */
+   *  flux-config uses this to construct the ARM resource ID. */
   resourceName: string
   /** Azure built-in role name from roles.json matching the resourceType scope. */
   role: string

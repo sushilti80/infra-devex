@@ -20,7 +20,7 @@ This skill gives any agent the complete context needed to:
 
 ## Storage Location
 
-**Repository**: `Aya-DevOpsTeam/service-catalog` (configured as `GITHUB_SERVICE_REPO` in `.env`)
+**Repository**: `organization/service-catalog` (configured as `GITHUB_SERVICE_REPO` in `.env`)
 **Path**: `docs/metadata/`
 **File naming**: `<appname>-<environmentname>.json` — one file per deployed app/environment combination
 
@@ -47,7 +47,7 @@ Every metadata file follows this structure:
   "meta": {
     "name": "jobplc",
     "description": "jobplc",
-    "owner": "Vijay Batham",
+    "owner": "Example User",
     "commit_sha": "649f071b29d6d9eec2c4cba417278735ce4d23a8",
     "deployed_at": "2025-07-14T21:59:14Z",
     "cost_center": "self-service",
@@ -90,19 +90,19 @@ Older files may use `projectName` instead of `project`. The backend normalises b
 
 ### 1. GitHub API Call (`services/githubService.js`)
 
-Authentication uses the Infrastructure GitHub App (`GITHUB_APP_ID` + `GITHUB_INSTALLATION_ID`). The installation covers `Aya-DevOpsTeam/service-catalog`, so **no extra credentials are needed** to read metadata.
+Authentication uses the Infrastructure GitHub App (`GITHUB_APP_ID` + `GITHUB_INSTALLATION_ID`). The installation covers `organization/service-catalog`, so **no extra credentials are needed** to read metadata.
 
 ```js
 // List all files in docs/metadata
 const { data: contents } = await githubService.octokit.rest.repos.getContent({
-  owner: 'Aya-DevOpsTeam',
+  owner: 'organization',
   repo: 'service-catalog',
   path: 'docs/metadata'
 });
 
 // Read a single metadata file
 const { data: fileData } = await githubService.octokit.rest.repos.getContent({
-  owner: 'Aya-DevOpsTeam',
+  owner: 'organization',
   repo: 'service-catalog',
   path: 'docs/metadata/jobplc-devsand.json'
 });
@@ -146,7 +146,7 @@ Reads all JSON files in `docs/metadata/`, decodes base64 content, and normalises
     {
       "name": "jobplc",
       "environment": "devsand",
-      "owner": "Vijay Batham",
+      "owner": "Example User",
       "deployedAt": "2025-07-14T21:59:14Z",
       "lifecycle": "Live",
       "status": "active",
@@ -208,7 +208,7 @@ When an agent needs to read one specific app's metadata (e.g., to validate befor
 1. Call `GET /api/installed-apps` — filter client-side by `name` + `environment`
 2. OR call the GitHub API directly using the Infrastructure App token:
    ```
-   GET /repos/Aya-DevOpsTeam/service-catalog/contents/docs/metadata/{appname}-{env}.json
+   GET /repos/organization/service-catalog/contents/docs/metadata/{appname}-{env}.json
    ```
 
 **Never call GitHub API directly from Vue frontend.** Always go through the Express API.

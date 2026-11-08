@@ -9,6 +9,7 @@
     "dev:client": "vite",
     "build:client": "vue-tsc -p tsconfig.json --noEmit && vite build",
     "type-check": "vue-tsc -p tsconfig.json --noEmit",
+    "check:public-source": "node scripts/check-public-source.mjs",
     "build": "npm run build:client",
     "test": "vitest run --project jsdom",
     "test:ui": "vitest --ui",

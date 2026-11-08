@@ -1,6 +1,6 @@
 spec_version: 1
 governance:
-  policy: aya-agent-governance
+  policy: example-agent-governance
   version: "2026.09.12"
 profile:
   type: self-service-platform

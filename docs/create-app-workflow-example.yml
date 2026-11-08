@@ -1,4 +1,4 @@
-# Example: create-app.yml workflow for AyaHealthcare/self-service-catalog
+# Example: create-app.yml workflow for organization/self-service-catalog
 # This file shows how to use the CODE_DEPLOYMENT_TOKEN secret for cloning private repos
 #
 # IMPORTANT: This token is automatically created/updated by the self-service-infra backend
@@ -17,7 +17,7 @@ on:
         description: 'Template repository (format: owner/repo)'
         required: false
         type: string
-        default: 'AyaHealthcare/ApiTemplate'
+        default: 'organization/ApiTemplate'
       jira_number:
         description: 'JIRA ticket number (e.g., PROJ-123)'
         required: false
@@ -63,10 +63,10 @@ jobs:
           # The token is securely passed as an environment variable
           GIT_TERMINAL_PROMPT: 0  # Disable git credential prompts
 
-      - name: Clone leadscoring repository for Azure Pipelines
+      - name: Clone webapp-basic repository for Azure Pipelines
         run: |
-          echo "Cloning leadscoring repository to get Azure Pipelines configuration..."
-          git clone https://x-access-token:${{ secrets.CODE_DEPLOYMENT_TOKEN }}@github.com/AyaHealthcare/leadscoring.git /tmp/LeadScoringRepo
+          echo "Cloning webapp-basic repository to get Azure Pipelines configuration..."
+          git clone https://x-access-token:${{ secrets.CODE_DEPLOYMENT_TOKEN }}@github.com/organization/webapp-basic.git /tmp/LeadScoringRepo
         env:
           GIT_TERMINAL_PROMPT: 0
 
@@ -79,14 +79,14 @@ jobs:
           # Copy all files except .git directory
           rsync -av --exclude='.git' /tmp/TemplateRepo/ "${{ github.event.inputs.appname }}/"
 
-          echo "Copying .azure/pipelines from leadscoring repository..."
+          echo "Copying .azure/pipelines from webapp-basic repository..."
           # Copy .azure/pipelines directory if it exists
           if [ -d "/tmp/LeadScoringRepo/.azure/pipelines" ]; then
             mkdir -p "${{ github.event.inputs.appname }}/.azure"
             cp -r /tmp/LeadScoringRepo/.azure/pipelines "${{ github.event.inputs.appname }}/.azure/"
             echo "✅ Azure Pipelines configuration copied successfully"
           else
-            echo "⚠️  Warning: .azure/pipelines directory not found in leadscoring repository"
+            echo "⚠️  Warning: .azure/pipelines directory not found in webapp-basic repository"
           fi
 
           echo "Template copied successfully!"
@@ -148,7 +148,7 @@ jobs:
 
           ### Files Added
           - 📁 \`${{ github.event.inputs.appname }}/\` - Application folder created from template
-          - ⚙️ \`${{ github.event.inputs.appname }}/.azure/pipelines/\` - Azure Pipelines configuration from leadscoring
+          - ⚙️ \`${{ github.event.inputs.appname }}/.azure/pipelines/\` - Azure Pipelines configuration from webapp-basic
 
           ---
           *This PR was automatically created by the Create App from Template workflow.*"
@@ -170,7 +170,7 @@ jobs:
           echo "✅ Successfully created app folder: ${{ github.event.inputs.appname }}"
           echo "📁 Location: ${{ github.event.inputs.appname }}/"
           echo "📦 Template: ${{ github.event.inputs.template_repo }}"
-          echo "⚙️  Azure Pipelines: Copied from leadscoring repository"
+          echo "⚙️  Azure Pipelines: Copied from webapp-basic repository"
           if [ -n "${{ github.event.inputs.jira_number }}" ]; then
             echo "🎫 JIRA: ${{ github.event.inputs.jira_number }}"
           fi

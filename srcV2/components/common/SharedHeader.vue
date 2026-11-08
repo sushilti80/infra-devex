@@ -73,18 +73,6 @@ function handleNavClick(event: Event, itemId: PageId) {
 
       <!-- Navigation Menu -->
       <nav class="flex items-center gap-10 h-16">
-        <!-- Archie AI External Link (only when authenticated) -->
-        <a
-          v-if="isAuthenticated"
-          href="https://archie.ayahealthcare.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="flex items-center gap-2 h-16 text-[15px] font-medium text-text-secondary dark:text-white/70 hover:text-brand-blue dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5 px-3 rounded-lg transition-all cursor-pointer"
-        >
-          <span class="material-symbols-outlined text-xl">smart_toy</span>
-          Consult Archie
-        </a>
-
         <a
           v-for="item in navItems"
           :key="item.id"

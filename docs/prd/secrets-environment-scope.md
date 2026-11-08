@@ -10,7 +10,7 @@
 | Date         | 2026-08-08                                                                           |
 | Status       | `draft`                                                                              |
 | Stakeholders | Platform Engineering, Application Developers, Security/Compliance Team               |
-| Repository   | `Aya-DevOpsTeam/self-service-infra`                                                  |
+| Repository   | `organization/self-service-infra`                                                  |
 | Extends      | `secret-self-service` (2026-07-31, approved), `secrets-ui-enhancements` (2026-08-01, approved) |
 
 ---

@@ -17,7 +17,7 @@
 When a user wants to re-provision or modify an existing application through the self-service UI
 (Custom Infrastructure or Template Deploy pages), every form field starts blank. The user must
 manually retype the project abbreviation (max 8 chars), owner, environment, and re-select modules.
-The authoritative metadata already exists in `Aya-DevOpsTeam/service-catalog` at
+The authoritative metadata already exists in `organization/service-catalog` at
 `docs/metadata/{appName}-{environment}.json` — it is simply never surfaced back into the form.
 
 ### User Persona
@@ -122,7 +122,7 @@ sequenceDiagram
     "name": "jobplc",
     "environment": "devsand",
     "description": "jobplc",
-    "owner": "Vijay Batham",
+    "owner": "Example User",
     "lifecycle": "Live",
     "modules": ["functionAppSvcWindows"],
     "costCenter": "self-service",
@@ -405,7 +405,7 @@ existing routes or functionality.
 
 | Dependency | Type | Notes |
 |---|---|---|
-| `Aya-DevOpsTeam/service-catalog` repo | External data source | `docs/metadata/*.json` — Infrastructure GitHub App already has read access |
+| `organization/service-catalog` repo | External data source | `docs/metadata/*.json` — Infrastructure GitHub App already has read access |
 | `services/githubService.js` | Internal service | Already initialised; `octokit.rest.repos.getContent` used for file reads |
 | `services/infrastructureService.js` | Internal service | `getApplicationDetails()` needs bug fix (FR-007) before FR-002 can be built |
 | `GET /api/installed-apps` | Existing endpoint | Reused unchanged for selector app list |

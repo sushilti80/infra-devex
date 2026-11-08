@@ -26,6 +26,7 @@
 | `.github/agents/` | Agent role definitions |
 | `.github/skills/` | Reusable task procedure and validation |
 | `.github/workflows/` | GitHub Actions workflows |
+| `service-catalog/` | Sanitized workflow starter for a separate infrastructure catalog repository |
 | `.pipeline/` | Azure DevOps build/release pipeline definition |
 | `routes/` | Express HTTP routes |
 | `services/` | Backend domain and integration services |
@@ -42,7 +43,7 @@
 | Need | First location |
 | --- | --- |
 | Repository orientation | `.ai/ai-repo.md` |
-| Agent governance enrollment | `.agent/governance.yaml` and `.github/workflows/agent-governance.yml` |
+| Public source validation | `scripts/check-public-source.mjs` and `.github/workflows/public-source-check.yml` |
 | Pipeline operational state | `.agent/state/project-state.md` |
 | LearningRecord candidates | `.agent/learning/candidates/` |
 | Repository behavioral eval catalog | `.agent/evals/` |
@@ -92,9 +93,9 @@
 
 ## GitHub workflows
 
-- `.github/workflows/agent-governance.yml`
 - `.github/workflows/ai-repo-check.yml`
 - `.github/workflows/deploy-dashboards.yml`
+- `.github/workflows/public-source-check.yml`
 - `.github/workflows/qa-pipeline.yml`
 - `.github/workflows/wiz-scan.yml`
 
@@ -184,13 +185,14 @@
 - `data/secretBundles.json`
 - `data/templates.json`
 
-## External Aya repositories referenced by config
+## External repository configuration variables
 
-- `Aya-DevOpsTeam/aya-flux`
-- `Aya-DevOpsTeam/infrastructure-live`
-- `Aya-DevOpsTeam/self-service-infra`
-- `Aya-DevOpsTeam/service-catalog`
-- `Aya-DevOpsTeam/terraform-modules`
+- `AKS_FLUX_REPO`
+- `GITHUB_CODE_SERVICE_REPO`
+- `GITHUB_INFRA_LIVE_REPO`
+- `GITHUB_MODULES_REPO`
+- `GITHUB_SELF_SERVICE_REPO`
+- `GITHUB_SERVICE_REPO`
 
 ## Package scripts
 
@@ -199,6 +201,7 @@
 - `npm run dev:client` — `vite`
 - `npm run build:client` — `vue-tsc -p tsconfig.json --noEmit && vite build`
 - `npm run type-check` — `vue-tsc -p tsconfig.json --noEmit`
+- `npm run check:public-source` — `node scripts/check-public-source.mjs`
 - `npm run build` — `npm run build:client`
 - `npm run test` — `vitest run --project jsdom`
 - `npm run test:ui` — `vitest --ui`

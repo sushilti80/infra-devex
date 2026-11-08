@@ -184,7 +184,7 @@ See **4-design-system.md** for complete token reference.
 
 ### Setup
 ```bash
-cd /Users/Sushil.Tiwari/self-service-infra
+cd /Users/Alex.Smith/self-service-infra
 
 # Install dependencies
 npm install

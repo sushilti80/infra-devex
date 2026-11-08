@@ -16,7 +16,7 @@ a skill, or global governance.
 
 ## Candidate contract
 
-Use the central Aya LearningRecord schema from the governance release pinned by
+Use the central Example LearningRecord schema from the governance release pinned by
 `.agent/governance.yaml`. A candidate must include:
 
 - observed failure or risk;

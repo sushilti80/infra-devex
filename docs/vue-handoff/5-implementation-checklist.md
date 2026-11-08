@@ -11,19 +11,19 @@
 
 ## Jira Stories
 
-All implementation phases are tracked in Jira under **Epic DSO-1893**: [Vue.js Migration](https://ayadev.atlassian.net/browse/DSO-1893)
+All implementation phases are tracked in Jira under **Epic DSO-1893**: [Vue.js Migration](https://example.atlassian.net/browse/DSO-1893)
 
 ### Created Stories (37 Story Points Total)
 
 | Story | Phase | Story Points | Status |
 |-------|-------|--------------|--------|
-| [DSO-1899](https://ayadev.atlassian.net/browse/DSO-1899) | Phase 1: Project Structure & Build Setup | 3 | ✅ Story created with description |
-| [DSO-1904](https://ayadev.atlassian.net/browse/DSO-1904) | Phase 2.1: Core Infrastructure Components | 5 | ✅ Story created with description |
-| [DSO-1903](https://ayadev.atlassian.net/browse/DSO-1903) | Phase 2.2: Modal Components | 5 | ✅ Story created with description |
-| [DSO-1905](https://ayadev.atlassian.net/browse/DSO-1905) | Phase 2.3: Page Components | 3 | ✅ Story created with description |
-| [DSO-1900](https://ayadev.atlassian.net/browse/DSO-1900) | Phase 3: State Management & Routing | 5 | ✅ Story created with description |
-| [DSO-1901](https://ayadev.atlassian.net/browse/DSO-1901) | Phase 4: Testing Infrastructure | 5 | ✅ Story created with description |
-| [DSO-1902](https://ayadev.atlassian.net/browse/DSO-1902) | Phase 5: Integration & Feature Parity | 8 | ✅ Story created with description |
+| [DSO-1899](https://example.atlassian.net/browse/DSO-1899) | Phase 1: Project Structure & Build Setup | 3 | ✅ Story created with description |
+| [DSO-1904](https://example.atlassian.net/browse/DSO-1904) | Phase 2.1: Core Infrastructure Components | 5 | ✅ Story created with description |
+| [DSO-1903](https://example.atlassian.net/browse/DSO-1903) | Phase 2.2: Modal Components | 5 | ✅ Story created with description |
+| [DSO-1905](https://example.atlassian.net/browse/DSO-1905) | Phase 2.3: Page Components | 3 | ✅ Story created with description |
+| [DSO-1900](https://example.atlassian.net/browse/DSO-1900) | Phase 3: State Management & Routing | 5 | ✅ Story created with description |
+| [DSO-1901](https://example.atlassian.net/browse/DSO-1901) | Phase 4: Testing Infrastructure | 5 | ✅ Story created with description |
+| [DSO-1902](https://example.atlassian.net/browse/DSO-1902) | Phase 5: Integration & Feature Parity | 8 | ✅ Story created with description |
 | TBD | Phase 6: Documentation & Handoff | 3 | ⏳ To be created |
 | TBD | Docker Configuration for FluxCD | 3 | ⏳ To be created |
 
@@ -71,7 +71,7 @@ This checklist guides the **complete implementation of the v2 design system** fo
 
 **Current Status**: ✅ 95% Complete | 261/265 Tests Passing | All Pages Implemented
 
-**Jira Epic**: [DSO-1893 - Vue.js Migration](https://ayadev.atlassian.net/browse/DSO-1893)  
+**Jira Epic**: [DSO-1893 - Vue.js Migration](https://example.atlassian.net/browse/DSO-1893)
 **Total Story Points**: 37 (7 stories created, 2 pending)
 
 This section provides a comprehensive breakdown of all remaining work needed before production deployment.
@@ -235,7 +235,7 @@ USE_VUE=true npm start
 **Create `.env.production` file**:
 ```bash
 # Production API Configuration
-VITE_API_BASE_URL=https://self-service.sand.k8s.com/api
+VITE_API_BASE_URL=https://self-service.example.com/api
 NODE_ENV=production
 USE_VUE=true
 
@@ -250,16 +250,16 @@ GITHUB_CODE_INSTALLATION_ID=your_code_installation_id
 GITHUB_CODE_PRIVATE_KEY_PATH=/app/secrets/github-code-key.pem
 
 # Azure Subscription IDs
-AZURE_SUBSCRIPTION_IDS='{"devsand":"11844065...","sand":"552bdc54..."}'
-AZURE_DEFAULT_SUBSCRIPTION=11844065-4a70-473d-a17c-9c2b636fc250
+AZURE_SUBSCRIPTION_IDS='{"devsand":"00000000...","sand":"00000000..."}'
+AZURE_DEFAULT_SUBSCRIPTION=00000000-0000-0000-0000-000000000001
 
 # Webhook Configuration
 GITHUB_WEBHOOK_SECRET=your_webhook_secret
 
 # Repository Configuration
-GITHUB_SERVICE_REPO=Aya-DevOpsTeam/service-catalog
-GITHUB_MODULES_REPO=Aya-DevOpsTeam/terraform-modules
-AKS_FLUX_REPO=Aya-DevOpsTeam/aya-flux
+GITHUB_SERVICE_REPO=organization/service-catalog
+GITHUB_MODULES_REPO=organization/terraform-modules
+AKS_FLUX_REPO=organization/flux-config
 ```
 
 **Action Items**:
@@ -297,7 +297,7 @@ CMD ["node", "server.js"]
 cat kubernetes/deployment.yaml
 
 # Verify:
-# - image: sharedwus3acr2.azurecr.io/self-service-infra:v2
+# - image: exampleregistry.azurecr.io/self-service-infra:v2
 # - env: USE_VUE=true
 # - secrets configured (GitHub credentials)
 # - resource limits appropriate
@@ -346,9 +346,9 @@ jobs:
 
       - name: Push to ACR
         run: |
-          echo ${{ secrets.ACR_PASSWORD }} | docker login sharedwus3acr2.azurecr.io -u ${{ secrets.ACR_USERNAME }} --password-stdin
-          docker tag self-service-infra:${{ github.sha }} sharedwus3acr2.azurecr.io/self-service-infra:${{ github.sha }}
-          docker push sharedwus3acr2.azurecr.io/self-service-infra:${{ github.sha }}
+          echo ${{ secrets.ACR_PASSWORD }} | docker login exampleregistry.azurecr.io -u ${{ secrets.ACR_USERNAME }} --password-stdin
+          docker tag self-service-infra:${{ github.sha }} exampleregistry.azurecr.io/self-service-infra:${{ github.sha }}
+          docker push exampleregistry.azurecr.io/self-service-infra:${{ github.sha }}
 
       - name: Deploy to AKS
         uses: azure/k8s-deploy@v1
@@ -357,7 +357,7 @@ jobs:
             kubernetes/deployment.yaml
             kubernetes/service.yaml
             kubernetes/ingress.yaml
-          images: sharedwus3acr2.azurecr.io/self-service-infra:${{ github.sha }}
+          images: exampleregistry.azurecr.io/self-service-infra:${{ github.sha }}
           namespace: self-service-test
 ```
 
@@ -568,7 +568,7 @@ _Estimated Production Ready: 2-8 hours (depending on deployment path chosen)_
   - ✅ `tailwind.config.js` has custom colors (`brand-blue`, `brand-dark`, etc.)
   - ✅ Dark mode: `darkMode: 'class'` configured
   - ✅ Inter font and Material Symbols loaded
-  **File**: [tailwind.config.js](/Users/Sushil.Tiwari/self-service-infra/tailwind.config.js)
+  **File**: [tailwind.config.js](/Users/Alex.Smith/self-service-infra/tailwind.config.js)
 
 - [x] **Configure TypeScript** ✅ VERIFIED
   - ✅ `tsconfig.json` has strict mode
@@ -631,7 +631,7 @@ _Estimated Production Ready: 2-8 hours (depending on deployment path chosen)_
   - ✅ All endpoints defined
   - ✅ TypeScript types for requests/responses
   - ✅ API client functional
-  **File**: [srcV2/services/api.ts](/Users/Sushil.Tiwari/self-service-infra/srcV2/services/api.ts)
+  **File**: [srcV2/services/api.ts](/Users/Alex.Smith/self-service-infra/srcV2/services/api.ts)
 
 - [x] **Test backend connectivity** ✅ VERIFIED
   - ✅ Backend runs on `http://localhost:3000`
@@ -1474,8 +1474,8 @@ _Estimated Production Ready: 2-8 hours (depending on deployment path chosen)_
 
 - [ ] **Push to container registry** ⏳ PENDING
   ```bash
-  docker tag self-service-infra:v2 sharedwus3acr2.azurecr.io/self-service-infra:v2
-  docker push sharedwus3acr2.azurecr.io/self-service-infra:v2
+  docker tag self-service-infra:v2 exampleregistry.azurecr.io/self-service-infra:v2
+  docker push exampleregistry.azurecr.io/self-service-infra:v2
   ```
 
 **Status**: ⏳ PENDING - Dockerfile exists (see `/Dockerfile`) but needs verification for Vue deployment
@@ -1519,7 +1519,7 @@ _Estimated Production Ready: 2-8 hours (depending on deployment path chosen)_
   - ⏳ Test health endpoint from within cluster
 
 - [ ] **Test ingress** ⏳ PENDING
-  - ⏳ Navigate to production URL (self-service.sand.k8s.com)
+  - ⏳ Navigate to production URL (self-service.example.com)
   - ⏳ Test all 5 pages load
   - ⏳ Verify SSL certificate valid
   - ⏳ Test API endpoints work
@@ -1539,7 +1539,7 @@ _Estimated Production Ready: 2-8 hours (depending on deployment path chosen)_
       - name: Build Docker
         run: docker build -t self-service-infra:${{ github.sha }} .
       - name: Push to ACR
-        run: docker push sharedwus3acr2.azurecr.io/self-service-infra:${{ github.sha }}
+        run: docker push exampleregistry.azurecr.io/self-service-infra:${{ github.sha }}
       - name: Deploy to AKS
         run: kubectl set image deployment/self-service-infra ...
   ```

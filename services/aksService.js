@@ -10,7 +10,7 @@ const triggeredByCache = new TtlSingleFlightCache({ max: 500, now: () => Date.no
 
 class AksService {
   /**
-   * Deploy application to AKS by triggering workflow in aya-flux repository
+   * Deploy application to AKS by triggering workflow in flux-config repository
    */
   async deployToAks(
     envname, appname, namespace, isWebApp, imageName, imageTag,
@@ -29,7 +29,7 @@ class AksService {
       exposureMode = exposureMode || 'legacy';
       if (!['legacy', 'private-gateway'].includes(exposureMode)) throw new Error('Invalid exposure mode');
       // Keep server-side policy aligned with the trusted sand/devsand profiles
-      // in aya-flux. The client-side environment choices are not an authorization gate.
+      // in flux-config. The client-side environment choices are not an authorization gate.
       if (exposureMode === 'private-gateway' &&
           (!['sand', 'devsand'].includes(envname) || appname !== namespace ||
             !(isWebApp === true || isWebApp === 'true') ||
@@ -95,7 +95,7 @@ class AksService {
       }
 
       // Get repository information
-      const repoPath = config.aks.fluxRepo; // This will be "Aya-DevOpsTeam/aya-flux"
+      const repoPath = config.aks.fluxRepo; // This will be "organization/flux-config"
 
       logger.info(`[AKS Service] Triggering workflow in ${repoPath}, workflow: ${workflowFile}`, { correlationId });
       logger.info(`[AKS Service] Full workflow path will be: ${repoPath}/.github/workflows/${workflowFile}`, { correlationId });
@@ -110,7 +110,7 @@ class AksService {
       // Agent Workflow (generate-agent-config.yaml) inputs:
       //   - envname, appname, namespace, agentname, poolname, agentimagesource, agentimagetag
       const fluxBranch = config.aks.fluxBranch;
-      logger.info(`[AKS Service] Using aya-flux branch: ${fluxBranch}`, { correlationId });
+      logger.info(`[AKS Service] Using flux-config branch: ${fluxBranch}`, { correlationId });
 
       const workflowResult = await githubService.triggerWorkflow(
         repoPath,
@@ -466,7 +466,7 @@ class AksService {
   }
 
   /**
-   * ship-from-repo (§3.6.4): app state on aya-flux, Infrastructure App.
+   * ship-from-repo (§3.6.4): app state on flux-config, Infrastructure App.
    * `new` (no dir, no PR) · `preview_open` (open PR) · `merged` (dir, no open PR) · `closed_unmerged` (PR closed, no dir).
    * For `merged`, `effectiveSettings` come from selfserve-metadata/<app>-<env>.json; `imageName` (additive) feeds
    * the bring-your-own-image ownership signal.
@@ -499,7 +499,7 @@ class AksService {
   }
 
   /**
-   * List deployed applications from the aya-flux repository
+   * List deployed applications from the flux-config repository
    */
   async getDeployedApps(environment = 'sand') {
     try {

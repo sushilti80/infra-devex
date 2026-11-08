@@ -71,7 +71,7 @@ graph TB
         InfraApp[GitHub App<br/>Infrastructure]
         CodeApp[GitHub App<br/>Code Deployment]
         ServiceRepo[service-catalog<br/>Repository]
-        FluxRepo[aya-flux<br/>Repository]
+        FluxRepo[flux-config<br/>Repository]
         ModulesRepo[terraform-modules<br/>Repository]
     end
 
@@ -409,7 +409,7 @@ class InfrastructureService {
 
 **Responsibilities:**
 - Manage Azure Kubernetes Service deployments (web apps and ADO agents)
-- Trigger AKS deployment workflows in aya-flux repository
+- Trigger AKS deployment workflows in flux-config repository
 - Persist deployment metadata to `docs/aks-metadata/` in service-catalog
 - Track deployment status via correlation ID in workflow job logs
 
@@ -1110,7 +1110,7 @@ jobs:
 
 #### AKS Deployment Workflows
 
-Two separate workflows in the `aya-flux` repository (branch configurable via `config.aks.fluxBranch`):
+Two separate workflows in the `flux-config` repository (branch configurable via `config.aks.fluxBranch`):
 
 **Web App** — `generate-webapp-config.yaml`
 ```yaml
@@ -1468,10 +1468,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - self-service.sand.k8s.com
+    - self-service.example.com
     secretName: self-service-tls
   rules:
-  - host: self-service.sand.k8s.com
+  - host: self-service.example.com
     http:
       paths:
       - path: /
@@ -1634,7 +1634,7 @@ sequenceDiagram
     participant GitHub as GitHub
     participant Flux as Flux Controller<br/>in AKS
     participant Kube as Kubernetes API
-    participant Manifest as aya-flux Repo
+    participant Manifest as flux-config Repo
 
     API->>GitHub: Trigger aks-deploy workflow
     GitHub->>Manifest: Generate/update kustomization

@@ -1,0 +1,369 @@
+name: "Deploy with App Template + AI Code Review"
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_name:
+        description: "Enter Project Name (e.g., my-new-project)"
+        required: true
+      owner:
+        description: "Enter the Owner Name (for tagging)"
+        required: true
+      template_application:
+        description: "Select Application Template"
+        required: true
+        type: choice
+        options:
+          - webapp-storage
+          - webapp-full
+          - webapp-basic
+      jira:
+        description: "Enter the Jira/CR Number (for optional tracking)"
+        required: false
+      age:
+        description: "Select project life"
+        required: true
+        type: choice
+        options:
+          - "3 days"
+          - "1 month"
+          - "3 months"
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        type: choice
+        options:
+          - devsand
+      correlation_id:
+        description: "Unique Correlation ID (for tracking)"
+        required: false
+        default: "none"
+      project_desc:
+        description: "Enter Project description Name (e.g., app description)"
+        required: false
+      enable_ai_review:
+        description: "Enable AI-powered code review and optimization suggestions"
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  models: read  # Required for GitHub Models API access
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Service Catalog Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set Up SSH Key for Infrastructure-Live Repository
+        run: |
+          echo "🔑 Setting up SSH key for infrastructure-live repository..."
+          mkdir -p ~/.ssh
+          echo "${{ secrets.INFRA_LIVE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install GitHub CLI Models Extension
+        if: ${{ github.event.inputs.enable_ai_review == 'true' }}
+        run: |
+          echo "🤖 Installing GitHub Models CLI extension..."
+          gh extension install https://github.com/github/gh-models
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Print Correlation ID
+        if: ${{ github.event.inputs.correlation_id != 'none' }}
+        run: |
+          echo "🔗 Correlation ID: ${{ github.event.inputs.correlation_id }}"
+
+      - name: Copy Files from Template
+        run: |
+          PROJECT_NAME=$(echo "${{ github.event.inputs.project_name }}" | tr '[:upper:]' '[:lower:]')
+          TEMPLATE_APP=$(echo "${{ github.event.inputs.template_application }}" | tr '[:upper:]' '[:lower:]')
+
+          # Debug
+          echo "🔍 PROJECT_NAME: $PROJECT_NAME"
+          echo "🔍 TEMPLATE_APP: $TEMPLATE_APP"
+
+          # Define template path mappings
+          declare -A TEMPLATE_PATHS
+          TEMPLATE_PATHS["webapp-storage"]="_templates/webapp-storage"
+          TEMPLATE_PATHS["webapp-full"]="_templates/webapp-full"
+          TEMPLATE_PATHS["webapp-basic"]="_templates/webapp-basic"
+
+          SOURCE_PATH="${TEMPLATE_PATHS[$TEMPLATE_APP]}"
+          TARGET_PATH="infrastructure/${PROJECT_NAME}/devsand"
+
+          echo "🔍 SOURCE_PATH: $SOURCE_PATH"
+          echo "🔍 TARGET_PATH: $TARGET_PATH"
+
+          echo "📂 Copying files from $SOURCE_PATH to $TARGET_PATH..."
+          mkdir -p "$TARGET_PATH"
+          cp -R "$SOURCE_PATH/." "$TARGET_PATH/"
+          echo "✅ Copied files:"
+          ls -R "$TARGET_PATH"
+
+      - name: AI-Powered Template Analysis
+        if: ${{ github.event.inputs.enable_ai_review == 'true' }}
+        run: |
+          PROJECT_NAME=$(echo "${{ github.event.inputs.project_name }}" | tr '[:upper:]' '[:lower:]')
+          TARGET_PATH="infrastructure/${PROJECT_NAME}/devsand"
+
+          echo "🤖 Analyzing infrastructure template with AI..."
+
+          # Create a summary of the infrastructure files
+          find "$TARGET_PATH" -name "*.hcl" -o -name "*.tf" | head -5 | while read file; do
+            echo "## File: $file"
+            cat "$file"
+            echo -e "\n---\n"
+          done > template_analysis.txt
+
+          # Use GitHub Models API to analyze the infrastructure
+          AI_ANALYSIS=$(curl -s "https://models.github.ai/inference/chat/completions" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -d '{
+              "messages": [
+                {
+                  "role": "system",
+                  "content": "You are an expert DevOps engineer specializing in Terraform/Terragrunt infrastructure analysis. Provide concise recommendations for security, cost optimization, and best practices."
+                },
+                {
+                  "role": "user",
+                  "content": "Analyze this Terraform/Terragrunt infrastructure template and provide 3-5 key recommendations for improvement, security, and cost optimization. Focus on actionable insights.\n\nInfrastructure files:\n'"$(cat template_analysis.txt | head -2000)"'"
+                }
+              ],
+              "model": "openai/gpt-4.1",
+              "max_tokens": 1000,
+              "temperature": 0.3
+            }' | jq -r '.choices[0].message.content // "AI analysis not available"')
+
+          echo "## 🤖 AI Infrastructure Analysis" >> ai_recommendations.md
+          echo "$AI_ANALYSIS" >> ai_recommendations.md
+
+          # Display results
+          echo "✅ AI Analysis completed:"
+          cat ai_recommendations.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate env.hcl File
+        run: |
+          # Define the path for the env.hcl file
+          PROJECT_NAME=$(echo "${{ github.event.inputs.project_name }}" | tr '[:upper:]' '[:lower:]')
+          ENVIRONMENT=$(echo "${{ github.event.inputs.environment }}" | tr '[:upper:]' '[:lower:]')
+          TARGET_PATH="infrastructure/${PROJECT_NAME}/${ENVIRONMENT}"
+          ENV_HCL_PATH="${TARGET_PATH}/env.hcl"
+
+          # Debugging output
+          echo "🔍 ENV_HCL_PATH: $ENV_HCL_PATH"
+
+          # Create the env.hcl file with essential metadata
+          mkdir -p "$TARGET_PATH"
+          cat << 'EOF' > "$ENV_HCL_PATH"
+          locals {
+            common_vars    = read_terragrunt_config(find_in_parent_folders("common.hcl"))
+            envName        = "${basename(dirname(get_original_terragrunt_dir()))}"
+            parentdir      = "${get_terragrunt_dir()}/../"
+            prefix         = lower(basename(dirname(local.parentdir)))
+            currentsubID   = local.common_vars.locals.subscriptions[local.envName]
+            module_version = "2.0.23"
+            location       = local.common_vars.locals.location
+            alias          = local.common_vars.locals.alias
+
+            app_metadata = {
+              name        = "${{ github.event.inputs.project_name }}"
+              owner       = "${{ github.event.inputs.owner }}"
+              github_user = "${{ github.actor }}"
+              commit_sha  = "${{ github.sha }}"
+              deployed_at = "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+              cost_center = "self-service"
+              description = "${{ github.event.inputs.project_desc }}"
+              lifecycle   = "experimental"
+              environment = local.envName
+            }
+            extra_tags = local.app_metadata
+          }
+          EOF
+          # copy root terragrunt.hcl into the env folder which help move into infra-live eventually
+          if [ -f "infrastructure/terragrunt.hcl" ]; then
+            cp "infrastructure/terragrunt.hcl" "${TARGET_PATH}/terragrunt.hcl"
+            echo "📋 Copied infrastructure/terragrunt.hcl → ${TARGET_DIR}/terragrunt.hcl"
+          else
+            echo "⚠️  Root terragrunt.hcl not found at infrastructure/terragrunt.hcl"
+          fi
+          # Verify the file was created
+          if [ -f "$ENV_HCL_PATH" ]; then
+            echo "✅ Successfully created/updated $ENV_HCL_PATH"
+            echo "File contents:"
+            cat "$ENV_HCL_PATH"
+          else
+            echo "❌ Failed to create $ENV_HCL_PATH"
+            exit 1
+          fi
+
+      - name: AI-Powered Configuration Optimization
+        if: ${{ github.event.inputs.enable_ai_review == 'true' }}
+        run: |
+          PROJECT_NAME=$(echo "${{ github.event.inputs.project_name }}" | tr '[:upper:]' '[:lower:]')
+          TARGET_PATH="infrastructure/${PROJECT_NAME}/devsand"
+          ENV_HCL_PATH="${TARGET_PATH}/env.hcl"
+
+          echo "🤖 Optimizing configuration with AI..."
+
+          # Use GitHub CLI Models extension for configuration review
+          cat "$ENV_HCL_PATH" | gh models run openai/gpt-4.1 "Review this Terragrunt configuration for potential improvements, security best practices, and suggest any missing essential tags or configurations. Provide specific, actionable recommendations:" > config_optimization.md
+
+          echo "## 🤖 Configuration Optimization Suggestions" >> ai_recommendations.md
+          cat config_optimization.md >> ai_recommendations.md
+
+          echo "✅ Configuration optimization completed"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate AI-Enhanced Pull Request Description
+        if: ${{ github.event.inputs.enable_ai_review == 'true' }}
+        run: |
+          echo "🤖 Generating AI-enhanced PR description..."
+
+          PROJECT_CONTEXT="Project: ${{ github.event.inputs.project_name }}, Owner: ${{ github.event.inputs.owner }}, Template: ${{ github.event.inputs.template_application }}, Description: ${{ github.event.inputs.project_desc }}"
+
+          # Generate enhanced PR description using AI
+          AI_PR_DESCRIPTION=$(curl -s "https://models.github.ai/inference/chat/completions" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -d '{
+              "messages": [
+                {
+                  "role": "system",
+                  "content": "You are a technical writer specializing in infrastructure deployment documentation. Create clear, professional pull request descriptions."
+                },
+                {
+                  "role": "user",
+                  "content": "Generate a comprehensive pull request description for this infrastructure deployment: '"$PROJECT_CONTEXT"'. Include sections for: Overview, Changes, Validation Steps, and Deployment Notes. Keep it professional and concise."
+                }
+              ],
+              "model": "openai/gpt-4.1",
+              "max_tokens": 500,
+              "temperature": 0.2
+            }' | jq -r '.choices[0].message.content // "Auto-generated deployment PR"')
+
+          # Save AI-generated description
+          echo "$AI_PR_DESCRIPTION" > ai_pr_description.txt
+          echo "✅ AI PR description generated"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit & Push Changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+          BRANCH_NAME="deploy-${{ github.run_id }}"
+          git checkout -b $BRANCH_NAME
+
+          PROJECT_NAME=$(echo "${{ github.event.inputs.project_name }}" | tr '[:upper:]' '[:lower:]')
+          TARGET_PATH="infrastructure/${PROJECT_NAME}/devsand"
+          echo "🔍 PROJECT_NAME: $PROJECT_NAME"
+          echo "🔍 TARGET_PATH: $TARGET_PATH"
+
+          if [[ ! -d "$TARGET_PATH" ]]; then
+            echo "❌ Error: TARGET_PATH ($TARGET_PATH) does not exist."
+            exit 1
+          fi
+
+          # Add infrastructure files and AI recommendations
+          git add "$TARGET_PATH" docs/catalog.json
+          if [ -f "ai_recommendations.md" ]; then
+            git add ai_recommendations.md
+          fi
+
+          git status
+          if git diff --cached --quiet; then
+            echo "✅ No changes detected, skipping commit."
+            exit 0
+          fi
+
+          COMMIT_MESSAGE="Self-Service: Added ${{ github.event.inputs.template_application }} template for ${{ github.event.inputs.project_name }} (Owner: ${{ github.event.inputs.owner }})"
+          if [ "${{ github.event.inputs.enable_ai_review }}" == "true" ]; then
+            COMMIT_MESSAGE="$COMMIT_MESSAGE [AI-Enhanced]"
+          fi
+
+          git commit -m "$COMMIT_MESSAGE"
+          git push origin $BRANCH_NAME
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create AI-Enhanced Pull Request
+        run: |
+          BRANCH_NAME="deploy-${{ github.run_id }}"
+
+          # Prepare PR body
+          PR_BODY="🚀 Auto-generated deployment PR for:
+          - **Project:** ${{ github.event.inputs.project_name }}
+          - **Owner:** ${{ github.event.inputs.owner }}
+          - **Template Used:** ${{ github.event.inputs.template_application }} (Sand)
+          - **New Environment:** devsand
+          - **Triggered by:** ${{ github.actor }}"
+
+          # Add AI-generated description if available
+          if [ -f "ai_pr_description.txt" ] && [ "${{ github.event.inputs.enable_ai_review }}" == "true" ]; then
+            PR_BODY="$PR_BODY
+
+          ## 🤖 AI-Generated Overview
+          $(cat ai_pr_description.txt)"
+          fi
+
+          # Add AI recommendations if available
+          if [ -f "ai_recommendations.md" ] && [ "${{ github.event.inputs.enable_ai_review }}" == "true" ]; then
+            PR_BODY="$PR_BODY
+
+          ## 🤖 AI Infrastructure Analysis & Recommendations
+          $(cat ai_recommendations.md)"
+          fi
+
+          # Create PR title
+          PR_TITLE="Self-Service: Deploy ${{ github.event.inputs.template_application }} as base infrastructure template for ${{ github.event.inputs.project_name }}"
+          if [ "${{ github.event.inputs.enable_ai_review }}" == "true" ]; then
+            PR_TITLE="$PR_TITLE [AI-Enhanced]"
+          fi
+          if [ -n "${{ github.event.inputs.jira }}" ]; then
+            PR_TITLE="$PR_TITLE ${{ github.event.inputs.jira }}"
+          fi
+
+          echo "📦 Creating deployment PR..."
+          gh pr create \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --title "$PR_TITLE" \
+            --body "$PR_BODY"
+
+          echo "✅ Pull request created successfully!"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: AI Summary and Next Steps
+        if: ${{ github.event.inputs.enable_ai_review == 'true' }}
+        run: |
+          echo "🤖 AI-Enhanced Deployment Summary:"
+          echo "================================="
+          echo "✅ Infrastructure template deployed with AI analysis"
+          echo "✅ Configuration optimization suggestions provided"
+          echo "✅ AI-enhanced pull request created"
+          echo ""
+          echo "📋 Next Steps:"
+          echo "1. Review the AI recommendations in the pull request"
+          echo "2. Consider implementing suggested improvements"
+          echo "3. Merge the pull request when ready"
+          echo "4. Monitor deployment for any issues"

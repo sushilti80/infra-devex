@@ -165,7 +165,7 @@ export const faqItems: FaqItem[] = [
     category: 'features',
     question: 'How does the AKS Playground work?',
     answer: [
-      'Bring your own container. Push your image to the AYA Container Registry, then give the portal the app name, namespace, image and tag. It generates the Kubernetes manifests, wires up ingress for web apps, and can map Key Vault secrets into Kubernetes using ExternalSecret.',
+      'Bring your own container. Push your image to the EXAMPLE Container Registry, then give the portal the app name, namespace, image and tag. It generates the Kubernetes manifests, wires up ingress for web apps, and can map Key Vault secrets into Kubernetes using ExternalSecret.',
       'Use a specific image tag rather than latest, and make sure any Key Vault secrets exist before the PR merges.'
     ]
   },
@@ -279,7 +279,7 @@ export const faqItems: FaqItem[] = [
     category: 'troubleshooting',
     question: 'I am not sure what to build. Where can I get design help?',
     answer: [
-      'Consult Archie AI, the Azure architecture assistant linked from the Quick Start guide. Its recommendations are a starting point; designs still need review by a Principal Engineer or the DevOps team.'
+      'Use the public Azure Architecture Center for reference architectures and design guidance. Review your design with your platform engineering team before provisioning resources.'
     ]
   }
 ]
@@ -324,7 +324,7 @@ export const useCases: UseCase[] = [
     icon: 'package_2',
     goal: 'Get an existing image running on the sandbox Kubernetes cluster without writing manifests.',
     steps: [
-      'Push the image with a specific tag to the AYA Container Registry.',
+      'Push the image with a specific tag to the EXAMPLE Container Registry.',
       'Open AKS Playground and pick devsand or sand.',
       'Enter app name, namespace and image; choose App or Agent.',
       'Add environment variables, secret variables or Key Vault mappings, then deploy.'

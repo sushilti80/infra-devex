@@ -39,7 +39,7 @@ on:
       image_name:
         description: 'Image name'
         required: true
-        default: 'sharedwus3acr2.azurecr.io/self-service-infra'
+        default: 'exampleregistry.azurecr.io/self-service-infra'
       image_tag:
         description: 'Image tag'
         required: true
@@ -59,7 +59,7 @@ permissions:
 
 jobs:
   generate:
-    runs-on: aya-devops-rs
+    runs-on: ubuntu-latest
     name: "Deploy ${{ github.event.inputs.appname }} [CID: ${{ github.event.inputs.correlation_id }}]"
     steps:
       - name: Print Correlation ID

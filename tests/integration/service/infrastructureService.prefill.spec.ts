@@ -38,7 +38,7 @@ const SAMPLE_METADATA = {
   projectName: 'jobplc',
   environment: 'devsand',
   description: 'jobplc service',
-  owner: 'Vijay Batham',
+  owner: 'Example User',
   lifecycle: 'Live',
   modules: ['functionAppSvcWindows'],
   rbac_pairs: [
@@ -50,7 +50,7 @@ const SAMPLE_METADATA = {
     commit_sha: '649f071b29d6d9eec2c4cba417278735ce4d23a8',
     deployed_at: '2025-07-14T21:59:14Z',
     description: 'jobplc service',
-    owner: 'Vijay Batham',
+    owner: 'Example User',
     lifecycle: 'Live',
   },
   createdAt: '2025-07-14T21:59:14Z',
@@ -354,14 +354,14 @@ describe('infrastructureService.getApplicationDetails() — FR-007 Bug Fix', () 
     })
 
     it('strips wrapping quotes from name/description/owner fields', async () => {
-      const META = { ...SAMPLE_METADATA, projectName: '"jobplc"', description: '"jobplc service"', owner: '"Vijay Batham"' }
+      const META = { ...SAMPLE_METADATA, projectName: '"jobplc"', description: '"jobplc service"', owner: '"Example User"' }
       mockGetContent.mockResolvedValueOnce({ data: { content: makeBase64(META), type: 'file' } })
 
       const result = await svc.getApplicationDetails('jobplc', 'devsand')
 
       expect(result.name).toBe('jobplc')
       expect(result.description).toBe('jobplc service')
-      expect(result.owner).toBe('Vijay Batham')
+      expect(result.owner).toBe('Example User')
     })
 
     it('does not strip an internal apostrophe (e.g. "O\'Brien")', async () => {

@@ -48,9 +48,9 @@ GITHUB_CODE_INSTALLATION_ID=
 GITHUB_CODE_APP_PRIVATE_KEY_PATH=./secrets/github-code-key.pem
 
 # GitHub repos
-GITHUB_SERVICE_REPO=Aya-DevOpsTeam/service-catalog
-GITHUB_INFRA_LIVE_REPO=Aya-DevOpsTeam/aya-infra-live
-GITHUB_AKS_REPO=Aya-DevOpsTeam/aya-flux
+GITHUB_SERVICE_REPO=organization/service-catalog
+GITHUB_INFRA_LIVE_REPO=organization/example-infra-live
+GITHUB_AKS_REPO=organization/flux-config
 
 # Entra ID (authentication)
 AZURE_AD_CLIENT_ID=
@@ -130,7 +130,7 @@ Each entry shows project name, environment, owner, provisioned modules, and curr
 
 **Card**: Cloud Upload → AKS Playground
 
-Deploy a containerized application to Azure Kubernetes Service via the `aya-flux` GitOps repository.
+Deploy a containerized application to Azure Kubernetes Service via the `flux-config` GitOps repository.
 The page title is **Deploy to Sand AKS** — only environments with `aks: true` in `data/environments.json`
 appear in the environment dropdown. **Both `devsand` and `sand` are AKS-enabled environments**;
 `devsand` is the default selection for teams doing sandbox development.
@@ -143,7 +143,7 @@ appear in the environment dropdown. **Both `devsand` and `sand` are AKS-enabled 
 | Application Name | Lowercase alphanumeric + hyphens, Kubernetes-compliant |
 | Namespace | Defaults to app name; must be Kubernetes-compliant |
 | Deployment Type | **App** (HTTP/HTTPS with ingress) or **Agent** (background service, no ingress) |
-| Container Image | Full registry path, e.g. `sharedwus3acr2.azurecr.io/my-app` |
+| Container Image | Full registry path, e.g. `exampleregistry.azurecr.io/my-app` |
 | Image Tag | e.g. `latest`, `v1.0.0`, or a specific commit SHA |
 
 #### Web App Configuration (App deployment type only)
@@ -189,7 +189,7 @@ Azure Key Vault into a Kubernetes secret. Click **Add KV Secret** to map secrets
 > **Important**: All KV Secret Names listed must already exist in the Azure Key Vault for the
 > selected environment **before the PR is merged**. Missing secrets will prevent pods from starting.
 
-Submitting dispatches a workflow in `aya-flux` which writes Kubernetes manifests and deployment
+Submitting dispatches a workflow in `flux-config` which writes Kubernetes manifests and deployment
 metadata to `selfserve-metadata/{appname}-{envname}.json`.
 
 ### AKS Apps
@@ -197,7 +197,7 @@ metadata to `selfserve-metadata/{appname}-{envname}.json`.
 **Card**: DNS → AKS Apps
 
 Read-only view of all applications deployed via the AKS Playground. Metadata is read from
-`aya-flux/selfserve-metadata/*.json` (written by the aya-flux workflow, never directly by this app).
+`flux-config/selfserve-metadata/*.json` (written by the flux-config workflow, never directly by this app).
 
 Table columns: **App / Namespace** · **Environment** · **Image** · **Owner** · **Deployed At / Commit**
 
@@ -206,7 +206,7 @@ Table columns: **App / Namespace** · **Environment** · **Image** · **Owner** 
 - Refresh button to re-fetch latest data
 - Empty state links back to AKS Playground
 
-> **Note for aya-flux workflow owners:** The workflow must write metadata to
+> **Note for flux-config workflow owners:** The workflow must write metadata to
 > `selfserve-metadata/{appname}-{envname}.json` using the schema documented in
 > `docs/Architecture.md`. The `deployment_type` input passed by this app (`app` or `agent`)
 > identifies which template was used.
@@ -303,7 +303,7 @@ picked up by the agentic orchestration workflow for triage, scope, and delivery.
 | Desired Agent Behaviour | What the agent should do differently |
 | Business Justification | Why this agent change is needed |
 
-On submission the backend creates a GitHub issue in `Aya-DevOpsTeam/self-service-infra` and returns
+On submission the backend creates a GitHub issue in `organization/self-service-infra` and returns
 a direct link to the issue. Your Entra ID email is automatically attached as the reporter.
 Issues are automatically labeled (`bug`, `feature-request`, or `agent-request`) and are visible
 in the repository's issue tracker for the platform team to triage.
@@ -401,13 +401,13 @@ Express Server (:3000)
   ├── routes/api.js          — 30+ REST endpoints
   ├── services/
   │   ├── githubService.js   — Dual Octokit clients (Infra App + Code App)
-  │   ├── infrastructureService.js  — Reads service-catalog + aya-flux metadata
+  │   ├── infrastructureService.js  — Reads service-catalog + flux-config metadata
   │   └── aksService.js      — AKS workflow dispatch
   └── middleware/auth.js     — Entra ID JWT validation
 
 GitHub Repositories (source of truth)
   ├── service-catalog/docs/metadata/   — Custom infra JSON
-  └── aya-flux/selfserve-metadata/     — AKS deployment JSON
+  └── flux-config/selfserve-metadata/     — AKS deployment JSON
 ```
 
 All long-running operations follow the **async workflow polling pattern**:
@@ -462,8 +462,8 @@ enabled by default. If missing, ensure the file has been pulled from `main` (the
 is loaded from GitHub at runtime and falls back to the local copy).
 
 ### AKS Apps page shows empty / no data
-The `aya-flux/selfserve-metadata/` folder does not exist or is empty. Deploy at least one app via
-the AKS Playground, and confirm the aya-flux workflow writes the metadata file after deployment.
+The `flux-config/selfserve-metadata/` folder does not exist or is empty. Deploy at least one app via
+the AKS Playground, and confirm the flux-config workflow writes the metadata file after deployment.
 
 ### Authentication redirect loop
 Verify `VITE_ENTRA_CLIENT_ID`, `VITE_ENTRA_TENANT_ID`, and the redirect URI registered in Entra ID

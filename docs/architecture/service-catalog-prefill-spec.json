@@ -2,7 +2,7 @@
   "specVersion": "1.0",
   "feature": {
     "name": "service-catalog-prefill",
-    "summary": "Adds an optional 'Load from Existing App' selector to the Custom Infrastructure form (CustomInfrastructurePage.vue) that pre-populates Step 0 (Project Information) and Step 1 (Module Selection) with data sourced from docs/metadata/{appName}-{environment}.json in the Aya-DevOpsTeam/service-catalog repository. Includes a new authenticated GET /api/app-metadata/:appName/:environment endpoint, a bug fix to getApplicationDetails() file-naming in infrastructureService.js, a new AppSelector.vue reusable component, a new apiService.getAppMetadata() frontend method, and TypeScript type enrichment. Template Deploy pre-fill (TemplateDeployPage.vue) is explicitly out of scope for this release."
+    "summary": "Adds an optional 'Load from Existing App' selector to the Custom Infrastructure form (CustomInfrastructurePage.vue) that pre-populates Step 0 (Project Information) and Step 1 (Module Selection) with data sourced from docs/metadata/{appName}-{environment}.json in the organization/service-catalog repository. Includes a new authenticated GET /api/app-metadata/:appName/:environment endpoint, a bug fix to getApplicationDetails() file-naming in infrastructureService.js, a new AppSelector.vue reusable component, a new apiService.getAppMetadata() frontend method, and TypeScript type enrichment. Template Deploy pre-fill (TemplateDeployPage.vue) is explicitly out of scope for this release."
   },
   "sourceDocument": "service-catalog-prefill-spec.md",
   "status": "approved",
@@ -97,7 +97,7 @@
         "path": "/api/app-metadata/:appName/:environment",
         "auth": "requireAuth",
         "status": "new",
-        "description": "Returns normalized metadata for a single app/environment pair from docs/metadata/{appName}-{environment}.json in Aya-DevOpsTeam/service-catalog",
+        "description": "Returns normalized metadata for a single app/environment pair from docs/metadata/{appName}-{environment}.json in organization/service-catalog",
         "request_schema": {
           "appName": "string (path param) — /^[a-zA-Z0-9]{1,8}$/",
           "environment": "string (path param) — value from data/environments.json allowlist"
@@ -174,7 +174,7 @@
         "backward_compatible": true
       },
       "service_catalog_source_file": {
-        "location": "Aya-DevOpsTeam/service-catalog — docs/metadata/{appName}-{environment}.json",
+        "location": "organization/service-catalog — docs/metadata/{appName}-{environment}.json",
         "description": "Canonical metadata written by infrastructure workflows. Read-only from self-service-infra's perspective.",
         "key_fields": {
           "project": "app name (also projectName in legacy files)",
@@ -560,7 +560,7 @@
         ],
         "assertions": [
           "projectName field shows 'jobplc'",
-          "owner field shows 'Vijay Batham'",
+          "owner field shows 'Example User'",
           "environment dropdown shows 'devsand'",
           "Pre-fill banner '📋 Pre-filled from jobplc / devsand' is visible",
           "Navigate to Step 1: 'functionAppSvcWindows' module is checked",
@@ -617,7 +617,7 @@
   "dependencies": {
     "external_repos": [
       {
-        "repo": "Aya-DevOpsTeam/service-catalog",
+        "repo": "organization/service-catalog",
         "purpose": "Source of truth for app metadata files at docs/metadata/{appName}-{environment}.json",
         "access": "Read-only via Infrastructure GitHub App (GITHUB_APP_ID + GITHUB_INSTALLATION_ID) — no new credentials required"
       }

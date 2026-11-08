@@ -202,7 +202,7 @@ POST /api/aks-deploy
   "appname": "my-web-app",                     // lowercase alphanumeric + hyphens
   "namespace": "my-web-app",                   // K8s namespace
   "is_web_app": true,                          // true = web, false = background service
-  "image_name": "sharedwus3acr2.azurecr.io/my-app",
+  "image_name": "exampleregistry.azurecr.io/my-app",
   "image_tag": "latest"
 }
 ```
@@ -214,8 +214,8 @@ POST /api/aks-deploy
   "message": "AKS deployment workflow started for my-web-app in sand",
   "correlationId": "aks-1705329000000-a1b2",
   "workflowId": "workflow-123456",
-  "workflowUrl": "https://github.com/org/aya-flux/actions/runs/123456",
-  "repository": "Aya-DevOpsTeam/aya-flux",
+  "workflowUrl": "https://github.com/org/flux-config/actions/runs/123456",
+  "repository": "organization/flux-config",
   "inputs": {
     "envname": "sand",
     "appname": "my-web-app",
@@ -682,14 +682,14 @@ GET /api/aks-status-by-correlation/aks-1705329000000-a1b2
   "status": {
     "status": "completed",
     "conclusion": "success",
-    "url": "https://github.com/org/aya-flux/actions/runs/123456",
+    "url": "https://github.com/org/flux-config/actions/runs/123456",
     "createdAt": "2024-01-20T10:30:00Z",
     "updatedAt": "2024-01-20T10:35:00Z",
     "branch": "deploy-my-web-app-sand",
     "pr": {
       "number": 123,
       "title": "Deploy my-web-app to sand",
-      "url": "https://github.com/org/aya-flux/pull/123",
+      "url": "https://github.com/org/flux-config/pull/123",
       "state": "open"
     }
   }

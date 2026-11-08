@@ -8,6 +8,7 @@ yarn-error.log*
 .env
 .env.local
 .env.*.local
+.env.production
 
 # Runtime configuration (served dynamically, should NOT be static files)
 public/config.js
@@ -53,6 +54,8 @@ build/
 graphify-out/
 *.tfstate.backup
 .terraform/
+*.tfplan
+__pycache__/
 
 # Azure-related files
 *.pem

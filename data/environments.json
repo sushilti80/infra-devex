@@ -4,7 +4,7 @@
     {
       "id": "devsand",
       "displayName": "Dev Sandbox (devsand)",
-      "subscriptionId": "11844065-4a70-473d-a17c-9c2b636fc250",
+      "subscriptionId": "",
       "description": "Development and testing sandbox environment",
       "enabled": true,
       "features": {
@@ -12,13 +12,13 @@
         "templates": true,
         "aks": true,
         "secrets": true,
-        "shipFromRepo": true
+        "shipFromRepo": false
       }
     },
     {
       "id": "sand",
       "displayName": "IT Sandbox (sand)",
-      "subscriptionId": "552bdc54-0a39-4040-9d8f-4002e8f572aa",
+      "subscriptionId": "",
       "description": "IT sandbox environment with AKS support",
       "enabled": true,
       "features": {
@@ -31,7 +31,7 @@
     {
       "id": "dataopssand",
       "displayName": "DataOps Sandbox (dataopssand)",
-      "subscriptionId": "24fadfb5-071d-447d-b7d6-49c25321c319",
+      "subscriptionId": "",
       "description": "DataOps sandbox environment",
       "enabled": true,
       "features": {
@@ -44,7 +44,7 @@
     {
       "id": "aixsand",
       "displayName": "AIX SandBox",
-      "subscriptionId": "a0238c79-2cfd-408d-aaa0-0f86db341f79",
+      "subscriptionId": "",
       "description": "AI/ML workload sandbox environment",
       "enabled": false,
       "features": {
@@ -56,5 +56,5 @@
     }
   ],
   "defaultEnvironment": "devsand",
-  "defaultSubscriptionId": "11844065-4a70-473d-a17c-9c2b636fc250"
+  "defaultSubscriptionId": ""
 }

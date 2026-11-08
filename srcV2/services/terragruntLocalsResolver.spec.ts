@@ -145,9 +145,9 @@ describe('terragruntLocalsResolver', () => {
     )).resolves.toBeNull()
   })
 
-  it('resolves a Key Vault name through a 2-hop alias chain guarded by a contains()-ternary (ayaApplications-style)', async () => {
+  it('resolves a Key Vault name through a 2-hop alias chain guarded by a contains()-ternary (exampleApplications-style)', async () => {
     const files: Record<string, string> = {
-      'infrastructure/ayaCore/dev/keyvault/terragrunt.hcl': `
+      'infrastructure/exampleCore/dev/keyvault/terragrunt.hcl': `
         locals {
           env = read_terragrunt_config(find_in_parent_folders("env.hcl"))
         }
@@ -155,17 +155,17 @@ describe('terragruntLocalsResolver', () => {
           keyvaultname = local.env.locals.keyvaultname
         }
       `,
-      'infrastructure/ayaCore/dev/env.hcl': `
+      'infrastructure/exampleCore/dev/env.hcl': `
         locals {
           common_vars = read_terragrunt_config(find_in_parent_folders("common.hcl"))
           keyvaultname = local.common_vars.locals.env_key_vault_name
         }
       `,
-      'infrastructure/ayaCore/common.hcl': `
+      'infrastructure/exampleCore/common.hcl': `
         locals {
           envName = "\${basename(dirname(get_original_terragrunt_dir()))}"
           intsuffix = contains(["cint", "sint"], "\${local.envName}") ? "1" : "01"
-          env_key_vault_name = contains(["shared"], "\${local.envName}") ? "aya-shared-services-kv-1" : "aya-\${local.envName}-kv-\${local.intsuffix}"
+          env_key_vault_name = contains(["shared"], "\${local.envName}") ? "example-shared-services-kv-1" : "example-\${local.envName}-kv-\${local.intsuffix}"
         }
       `
     }
@@ -174,10 +174,10 @@ describe('terragruntLocalsResolver', () => {
     })
 
     await expect(resolver.resolveName(
-      'infrastructure/ayaCore/dev/keyvault',
+      'infrastructure/exampleCore/dev/keyvault',
       'live',
       'cid-resolver'
-    )).resolves.toBe('aya-dev-kv-01')
+    )).resolves.toBe('example-dev-kv-01')
   })
 
   it('resolves an equality ternary (`X == "literal"`) independent of contains()', async () => {
@@ -228,7 +228,7 @@ describe('terragruntLocalsResolver', () => {
           }
           envcount = lookup(local.envkvcount, "\${local.envName}", "")
           kvintsuffix = contains(["poc", "sint", "demo"], "\${local.envName}") ? "\${local.envcount}" : "01"
-          env_key_vault_name = "aya-\${local.envName}-kv-\${local.kvintsuffix}"
+          env_key_vault_name = "example-\${local.envName}-kv-\${local.kvintsuffix}"
         }
       `
     }
@@ -240,7 +240,7 @@ describe('terragruntLocalsResolver', () => {
       'infrastructure/LookupApp/sint/keyvault',
       'live',
       'cid-resolver'
-    )).resolves.toBe('aya-sint-kv-2')
+    )).resolves.toBe('example-sint-kv-2')
   })
 
   it('resolves a per-hop `get_terragrunt_dir()` (varies per alias hop, unlike get_original_terragrunt_dir) through `lower()`/generic `basename()`/`dirname()` (idm-style)', async () => {

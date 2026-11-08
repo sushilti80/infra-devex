@@ -3,7 +3,7 @@
 > Status: Phase A + C shipped (`vault-resolution-override`, PR #89). Phase B (CI terraform-apply
 > metadata write-back) rejected 2026-08-12 — replaced by extending `terragruntLocalsResolver`
 > itself (multi-hop alias + ternary + `lookup()` support), **shipped and live-verified 2026-08-12**
-> against all `ayaApplications` environments. Phase D (application selector qualifiers) is
+> against all `exampleApplications` environments. Phase D (application selector qualifiers) is
 > spec-approved as its own feature (`secrets-app-selector-qualifiers`), not yet implemented.
 
 ## TL;DR
@@ -13,7 +13,7 @@ this order by `secretsService.resolveKeyVaults()`:
 2. **Live `terragruntLocalsResolver`**, extended to follow up to 3 alias hops and evaluate
    `contains([...]) ? A : B` / `EXPR == "literal"` ternary/conditional expressions plus
    `lookup(map, key, default)` — no longer a frozen last resort. **Shipped and live-verified**
-   against all 11 `ayaApplications` environments + all 3 `shared/*` vaults.
+   against all 11 `exampleApplications` environments + all 3 `shared/*` vaults.
 
 If both miss, the Secrets page shows the existing "Key Vault name unavailable" text plus a
 "Set name manually" affordance that writes into tier 1 — turning every remaining gap into a
@@ -27,36 +27,36 @@ optionality, but building out the CI workflow write-back itself is no longer pla
 
 **Critical scoping fact (confirmed via code read + user decision):** `buildCustomInfrastructure()`
 has no qualifier/sub-app concept and never wrote `docs/metadata` directly. IDM's nested sub-apps
-(`_idmapplications/notif|autobk|idmprtl|allctmpr`), `azureDatabricks`, and `ayaApplications`'s
+(`_idmapplications/notif|autobk|idmprtl|allctmpr`), `azureDatabricks`, and `exampleApplications`'s
 `shared` vault are pre-existing infra this platform only *reads*. **Tier 1 (override sidecar)
 remains the universal safety net for any expression outside even the extended resolver's
 grammar** — the resolver extension's goal is to shrink how often tier 1 needs a manual entry, not
 replace it.
 
-## Validated test case: ayaApplications (live probe, 2026-08-12)
+## Validated test case: exampleApplications (live probe, 2026-08-12)
 
-To ground this plan in more than the IDM incident, the `ayaApplications` app/qualifier pair was
-inspected directly in `Aya-DevOpsTeam/infrastructure-live` (default branch `main`, read-only `gh api`,
+To ground this plan in more than the IDM incident, the `exampleApplications` app/qualifier pair was
+inspected directly in `organization/infrastructure-live` (default branch `main`, read-only `gh api`,
 per the `infrastructure-repo` skill) and then re-run through this app's own
-`services/secretsService.resolveKeyVaults('ayaApplications', 'dev', 'live', ..., 'ayaCoreServices')`.
+`services/secretsService.resolveKeyVaults('exampleApplications', 'dev', 'live', ..., 'exampleCoreServices')`.
 
 **Repo layout observed:**
-- `infrastructure/ayaApplications/ayaCoreServices/keyvaults/<env>/keyvault` — one vault per real
+- `infrastructure/exampleApplications/exampleCoreServices/keyvaults/<env>/keyvault` — one vault per real
   environment (`dev`, `devsand`, `int`, `prod`, `sand`, `sint`, `stage`, `hot`, `dr`, `demo`, `cint`).
-- `infrastructure/ayaApplications/ayaCoreServices/keyvaults/shared/{keyvault,keyvault2,keyvault3}` —
+- `infrastructure/exampleApplications/exampleCoreServices/keyvaults/shared/{keyvault,keyvault2,keyvault3}` —
   three environment-agnostic vaults (ADO pipelines, infra certs, QA performance).
 
 **Live probe result (reproducible today):**
 ```json
 {
-  "vaultDir": "infrastructure/ayaApplications/ayaCoreServices/keyvaults/dev/keyvault",
+  "vaultDir": "infrastructure/exampleApplications/exampleCoreServices/keyvaults/dev/keyvault",
   "vaultName": null,          // ← same "name unavailable" failure class as IDM
-  "qualifier": "ayaCoreServices"
+  "qualifier": "exampleCoreServices"
 },
 {
-  "vaultDir": ".../shared/keyvault",  "vaultName": "aya-ado-pipelines-kv-01" },
-{ "vaultDir": ".../shared/keyvault2", "vaultName": "aya-infra-certs-kv-01" },
-{ "vaultDir": ".../shared/keyvault3", "vaultName": "aya-qa-performance-kv-01" }
+  "vaultDir": ".../shared/keyvault",  "vaultName": "example-ado-pipelines-kv-01" },
+{ "vaultDir": ".../shared/keyvault2", "vaultName": "example-infra-certs-kv-01" },
+{ "vaultDir": ".../shared/keyvault3", "vaultName": "example-qa-performance-kv-01" }
 ```
 The three `shared` vaults resolve fine; the per-environment `dev` vault does not. This confirms the
 bug is not IDM-specific — it recurs anywhere a vault name is defined more than one alias-hop away
@@ -73,31 +73,31 @@ from the vault's own `terragrunt.hcl`.
    reaching `common.hcl`.
 2. **No conditional/ternary support.** Even if hop 2 were supported, `infrastructure/common.hcl`
    defines the value as
-   `env_key_vault_name = contains(["shared"], "${local.envName}") ? "aya-shared-services-kv-1" : "aya-${local.spokeEnv}-kv-${local.region}-${local.kvintsuffix}"`
+   `env_key_vault_name = contains(["shared"], "${local.envName}") ? "example-shared-services-kv-1" : "example-${local.spokeEnv}-kv-${local.region}-${local.kvintsuffix}"`
    — a ternary conditional, which is outside the resolver's documented grammar (literals, local
    refs, interpolation, `substr`, `format`, `basename(dirname(get_terragrunt_dir()))` only, per the
    module's own header comment). This would resolve to `null` regardless of alias depth.
    The `shared` vaults avoid both problems: their `keyvaultname` is a single-hop literal
-   interpolation (`"${local.prefix}-ado-pipelines-kv-01"`, with `prefix = "aya"` a plain literal in
+   interpolation (`"${local.prefix}-ado-pipelines-kv-01"`, with `prefix = "example"` a plain literal in
    `shared/env.hcl`) — no second hop, no conditional.
 
 **Implication for this plan (revised 2026-08-12):** this is now the primary evidence driving the
 resolver extension, not the CI write-back approach —
 - Tier 1 (override) is confirmed necessary as a universal safety net beyond IDM —
-  `ayaApplications`'s per-environment vaults are a second concrete instance, not a hypothetical.
+  `exampleApplications`'s per-environment vaults are a second concrete instance, not a hypothetical.
 - This exact case (`dev/keyvault` → `env.hcl` → `common.hcl` ternary) is precisely what the
   extended resolver (2-hop alias chasing + ternary evaluation, see "Phase B (revised)") is built
   to solve directly, live, with no CI workflow change and no per-vault manual override entry.
 - The earlier "not worth chasing an open-ended HCL grammar" concern is accepted as a real,
   ongoing risk (this only ever covers the grammar observed so far, not all of Terraform's), but is
   judged worth it given how load-bearing tier 1 alone would otherwise have to stay for
-  ayaApplications/IDM/Databricks, and because CI write-back needs cross-repo coordination this
+  exampleApplications/IDM/Databricks, and because CI write-back needs cross-repo coordination this
   decision explicitly avoids.
 
 ## Steps
 
 ### Phase A — Override sidecar + self-heal (ships first, needs no external repo changes beyond service-catalog)
-*Delivers immediate value for IDM/azureDatabricks/ayaApplications; independent of Phase B. **Shipped.***
+*Delivers immediate value for IDM/azureDatabricks/exampleApplications; independent of Phase B. **Shipped.***
 1. **Schema**: `docs/overrides/keyvault-overrides.json` in service-catalog repo:
    ```json
    { "overrides": {
@@ -141,12 +141,12 @@ Targets `services/terragruntLocalsResolver.js` only — no external repo/workflo
 Technically unblocked (both `key_vault_name`/`resource_group_name` Terraform outputs already exist
 in `terraform-modules`, confirmed via `gh api` 2026-08-12), but rejected as a strategy: it only
 ever helps future platform-provisioned flat apps, requires cross-repo CI-workflow coordination,
-and does nothing for the three patterns (IDM sub-apps, `azureDatabricks`, `ayaApplications`) that
+and does nothing for the three patterns (IDM sub-apps, `azureDatabricks`, `exampleApplications`) that
 actually need it today.
 
-**Additional gap found via live probe (2026-08-12): `ayaApplications`'s `cint`/`sint` environments
+**Additional gap found via live probe (2026-08-12): `exampleApplications`'s `cint`/`sint` environments
 still fail even with hop+`contains()`-ternary support**, because `infrastructure/common.hcl`
-(`Aya-DevOpsTeam/infrastructure-live`) uses two more constructs the original scope didn't cover:
+(`organization/infrastructure-live`) uses two more constructs the original scope didn't cover:
 - `envName` itself is computed via an **equality ternary**, not `contains()`:
   `envName = "${basename(dirname(get_original_terragrunt_dir()))}" == "default" ? get_env(...) : ...`.
   The planned `contains([...]) ? A : B` branch alone doesn't cover a bare `X == "literal"` condition.
@@ -165,7 +165,7 @@ still fail even with hop+`contains()`-ternary support**, because `infrastructure
    that detects `COND ? A : B` (split on the first top-level `?`/`:`, respecting nested
    parens/quotes the same way `splitArgs()` already does for function calls). `COND` must support,
    at minimum:
-   - `contains([...], expr)` (the `ayaApplications` `dev`/`prod`/etc. case)
+   - `contains([...], expr)` (the `exampleApplications` `dev`/`prod`/etc. case)
    - bare equality/inequality: `EXPR == "literal"` / `EXPR != "literal"` (needed for `envName`
      itself and the `dr`-alias locals, which every downstream local depends on transitively)
    Then recursively `evaluateExpr()`s whichever branch wins.
@@ -180,17 +180,17 @@ still fail even with hop+`contains()`-ternary support**, because `infrastructure
    Expect more gaps to surface per-environment/per-app as this expands — treat each as a scoped
    addition, not a trigger to build a full expression parser.
 5. **Tests**: add cases to `srcV2/services/terragruntLocalsResolver.spec.ts` reproducing:
-   - `ayaApplications` `dev/keyvault` → `env.hcl` → `common.hcl` (2-hop + `contains()`-ternary)
-   - `ayaApplications` `cint/keyvault` (equality-ternary on `envName`, no `lookup()` needed)
-   - `ayaApplications` `sint/keyvault` (equality-ternary + `lookup()` map resolution)
+   - `exampleApplications` `dev/keyvault` → `env.hcl` → `common.hcl` (2-hop + `contains()`-ternary)
+   - `exampleApplications` `cint/keyvault` (equality-ternary on `envName`, no `lookup()` needed)
+   - `exampleApplications` `sint/keyvault` (equality-ternary + `lookup()` map resolution)
    - a regression test confirming existing single-hop/no-conditional cases are unaffected.
 6. **Verification**: after shipping, re-run the live spot-check from this roadmap's Verification
-   section against `ayaApplications`'s `dev`, `cint`, and `sint` `keyvault` dirs — all three should
+   section against `exampleApplications`'s `dev`, `cint`, and `sint` `keyvault` dirs — all three should
    resolve via tier 2 (live, extended) instead of returning `null`, with no override entries
    required for any of them.
 
-**Shipped 2026-08-12, live-verified against `Aya-DevOpsTeam/infrastructure-live`'s
-`ayaApplications`/`ayaCoreServices` vaults** — all 11 real environments (`dev`, `devsand`, `int`,
+**Shipped 2026-08-12, live-verified against `organization/infrastructure-live`'s
+`exampleApplications`/`exampleCoreServices` vaults** — all 11 real environments (`dev`, `devsand`, `int`,
 `prod`, `sand`, `sint`, `stage`, `hot`, `dr`, `demo`, `cint`) plus all 3 `shared/*` vaults now
 resolve correctly with no override entries. Two additional bugs were found and fixed during live
 verification, beyond the originally-scoped `contains()`/equality/`lookup()` grammar work:
@@ -217,7 +217,7 @@ into the existing `'live'` branch with zero call-site changes.
 ### Phase D — Application selector: surface nested qualifiers as first-class entries (*parallel track, `SecretsPage.vue` only — no dependency on A/B/C*)
 *A UI/discovery-UX fix, distinct from Key Vault **name** resolution: it's about making nested
 sub-apps (IDM's `autobk`, `notif`, `idmprtl`, `allctmpr` under `_idmapplications`; the
-`ayaCoreServices` qualifier under `ayaApplications`) reachable and correctly scoped in the
+`exampleCoreServices` qualifier under `exampleApplications`) reachable and correctly scoped in the
 Application selector, not about how a vault's name gets resolved once selected.*
 
 **Confirmed gap (code read, 2026-08-12):** `secretsService.js`'s `extractAppEnvPairs()` already
@@ -274,14 +274,14 @@ still appears as if it applies to "idm" generally.
 5. Manual E2E: on the Secrets page, trigger an "unavailable" vault, use "Set name manually", confirm
    it persists across a page reload (i.e., actually round-trips through the sidecar file, not just
    local UI state).
-6. Once Phase B (revised) ships: re-run the same `resolveKeyVaults('ayaApplications', 'dev',
-   'live', 'manual-check', 'ayaCoreServices')` spot-check and confirm `dev/keyvault` now resolves
+6. Once Phase B (revised) ships: re-run the same `resolveKeyVaults('exampleApplications', 'dev',
+   'live', 'manual-check', 'exampleCoreServices')` spot-check and confirm `dev/keyvault` now resolves
    with `source: 'live'` (not `null`), with no override entry present for that `vaultDir`.
 
 ## Decisions (locked this session, updated 2026-08-12)
 - Override sidecar lives at `docs/overrides/keyvault-overrides.json` in service-catalog repo, keyed
   by `vaultDir`, not patched into the per-app `docs/metadata/<app>-<env>.json` file. **Shipped.**
-- IDM sub-apps, `azureDatabricks`, and `ayaApplications`'s `shared` vault stay permanently read-only
+- IDM sub-apps, `azureDatabricks`, and `exampleApplications`'s `shared` vault stay permanently read-only
   (no provisioning-schema changes for qualifier/sub-app requests) — Phase A's override is their
   permanent safety net regardless of how far the resolver extension reaches.
 - **2026-08-12: CI terraform-apply metadata write-back (formerly Phase B) rejected.** Requires

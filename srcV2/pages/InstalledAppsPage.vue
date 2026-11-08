@@ -150,7 +150,7 @@ const handleLabel = async (app: InstalledApp) => {
 }
 
 const handleAddRepo = async (app: InstalledApp) => {
-  const templateRepo = 'AyaHealthcare/ApiTemplate'
+  const templateRepo = 'organization/ApiTemplate'
   const confirmed = confirm(
     `Create a code repository for ${app.name} using the standard template ${templateRepo}?`
   )

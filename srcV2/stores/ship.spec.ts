@@ -20,7 +20,7 @@ import type { ShipConfig, ShipStatus } from '@v2/types/ship.types'
 
 const id = (n: number) => `0190${String(n).padStart(4, '0')}-0000-7000-8000-${String(n).padStart(12, '0')}`
 const CONFIG: ShipConfig = {
-  allowedOrgs: ['Aya-DevOpsTeam'], supportedLanguages: ['Node.js', 'Python'],
+  allowedOrgs: ['organization'], supportedLanguages: ['Node.js', 'Python'],
   identity: { state: 'linked' }, previewConfiguredEnvs: [],
   defaults: { port: 8080, healthPath: '/healthz', bump: 'patch', teamLabel: 'software-engineering' },
   limits: { portMin: 1024, portMax: 65535, recentMax: 20, pollIntervalMs: 15000 }
@@ -29,7 +29,7 @@ const ok = <T,>(data: T) => ({ success: true, data })
 const httpError = (status: number, code: string, extra: Record<string, unknown> = {}, headers: Record<string, string> = {}) =>
   ({ response: { status, headers, data: { success: false, error: { code, message: code, ...extra } } } })
 const status = (over: Partial<ShipStatus> = {}): ShipStatus => ({
-  correlationId: id(1), app: 'my-app', env: 'devsand', repo: 'Aya-DevOpsTeam/my-app', startedAt: '2026-01-01T00:00:00Z',
+  correlationId: id(1), app: 'my-app', env: 'devsand', repo: 'organization/my-app', startedAt: '2026-01-01T00:00:00Z',
   state: 'running', terminal: false, attempt: 1, queuedBehind: false, runResolved: true, stages: [], preview: { state: 'pending' }, ...over
 })
 
@@ -44,7 +44,7 @@ beforeEach(() => {
   setActivePinia(createPinia())
   Object.values(api).forEach(f => f.mockReset())
   api.getShipConfig.mockResolvedValue(ok(CONFIG))
-  api.listShipRepos.mockResolvedValue(ok({ repos: [{ fullName: 'Aya-DevOpsTeam/my-app', org: 'Aya-DevOpsTeam', name: 'my-app', defaultBranch: 'trunk', private: true }], identity: { state: 'linked' }, truncated: false }))
+  api.listShipRepos.mockResolvedValue(ok({ repos: [{ fullName: 'organization/my-app', org: 'organization', name: 'my-app', defaultBranch: 'trunk', private: true }], identity: { state: 'linked' }, truncated: false }))
   api.listShipBranches.mockResolvedValue(ok({ branches: [{ name: 'trunk', isDefault: true }, { name: 'dev', isDefault: false }], defaultBranch: 'trunk' }))
   api.getShipAppState.mockResolvedValue(ok({ appState: 'new', ownership: 'unclaimed', ownershipSource: 'github' }))
 })
@@ -71,31 +71,31 @@ describe('ship store — config, repos, branches (FT-04)', () => {
   it('selecting a repo defaults branch to the default branch and prefills the app name', async () => {
     const s = setup()
     await s.loadConfig(); await s.loadRepos()
-    await s.selectRepo('Aya-DevOpsTeam/my-app')
+    await s.selectRepo('organization/my-app')
     expect(s.draft.branch).toBe('trunk')
     expect(s.draft.app).toBe('my-app')
-    expect(api.listShipBranches).toHaveBeenCalledWith('Aya-DevOpsTeam', 'my-app')
+    expect(api.listShipBranches).toHaveBeenCalledWith('organization', 'my-app')
   })
 
   it('does not overwrite an app name the user already edited', async () => {
     const s = setup()
     await s.loadConfig()
     s.setApp('custom')
-    await s.selectRepo('Aya-DevOpsTeam/my-app')
+    await s.selectRepo('organization/my-app')
     expect(s.draft.app).toBe('custom')
   })
 
   it('a pasted GitHub URL is normalised to org/name', async () => {
     const s = setup()
     await s.loadConfig()
-    await s.selectRepo('https://github.com/Aya-DevOpsTeam/my-app.git')
-    expect(s.draft.repo).toBe('Aya-DevOpsTeam/my-app')
+    await s.selectRepo('https://github.com/organization/my-app.git')
+    expect(s.draft.repo).toBe('organization/my-app')
   })
 
   it('a typed branch is kept as typed (not forced back to the default)', async () => {
     const s = setup()
     await s.loadConfig()
-    await s.selectRepo('Aya-DevOpsTeam/my-app')
+    await s.selectRepo('organization/my-app')
     s.draft.branch = 'feature/typed-not-in-first-page'
     expect(s.draft.branch).toBe('feature/typed-not-in-first-page')
     expect(s.validationErrors.branch).toBeUndefined()
@@ -105,7 +105,7 @@ describe('ship store — config, repos, branches (FT-04)', () => {
     api.listShipBranches.mockRejectedValue(httpError(403, 'REPO_NOT_ACCESSIBLE', {}, {}))
     const s = setup()
     await s.loadConfig()
-    await s.selectRepo('Aya-DevOpsTeam/secret')
+    await s.selectRepo('organization/secret')
     expect(s.branchesStatus).toBe('error')
     expect(s.branchesError?.code).toBe('REPO_NOT_ACCESSIBLE')
     expect(s.branches).toEqual([])
@@ -114,9 +114,9 @@ describe('ship store — config, repos, branches (FT-04)', () => {
   it('caches branches per repo for 5 minutes', async () => {
     const s = setup()
     await s.loadConfig()
-    s.draft.repo = 'Aya-DevOpsTeam/my-app'
-    await s.loadBranches('Aya-DevOpsTeam/my-app')
-    await s.loadBranches('Aya-DevOpsTeam/my-app')
+    s.draft.repo = 'organization/my-app'
+    await s.loadBranches('organization/my-app')
+    await s.loadBranches('organization/my-app')
     expect(api.listShipBranches).toHaveBeenCalledTimes(1)
   })
 
@@ -152,10 +152,10 @@ describe('ship store — submit (S4) and errors', () => {
   async function ready() {
     const s = setup()
     await s.loadConfig(); await s.loadRepos()
-    await s.selectRepo('Aya-DevOpsTeam/my-app')
+    await s.selectRepo('organization/my-app')
     return s
   }
-  const started = { correlationId: id(7), app: 'my-app', env: 'devsand', repo: 'Aya-DevOpsTeam/my-app', branch: 'trunk', startedAt: new Date().toISOString(), appState: 'new', effectiveSettings: { port: 8080, healthPath: '/healthz' }, settingsIgnored: [], rollout: 'preview_pr' }
+  const started = { correlationId: id(7), app: 'my-app', env: 'devsand', repo: 'organization/my-app', branch: 'trunk', startedAt: new Date().toISOString(), appState: 'new', effectiveSettings: { port: 8080, healthPath: '/healthz' }, settingsIgnored: [], rollout: 'preview_pr' }
 
   it('sends only the whitelisted request fields and records the ship on 202', async () => {
     api.startShip.mockResolvedValue(ok(started))
@@ -163,11 +163,11 @@ describe('ship store — submit (S4) and errors', () => {
     const res = await s.submit()
     expect(res?.correlationId).toBe(id(7))
     expect(api.startShip).toHaveBeenCalledWith({
-      repo: 'Aya-DevOpsTeam/my-app', branch: 'trunk', app: 'my-app', env: 'devsand',
+      repo: 'organization/my-app', branch: 'trunk', app: 'my-app', env: 'devsand',
       teamLabel: 'software-engineering', bump: 'patch', port: 8080, healthPath: '/healthz'
     })
     expect(s.active?.correlationId).toBe(id(7))
-    expect(readRecent('oid-1')[0]).toMatchObject({ correlationId: id(7), app: 'my-app', env: 'devsand', repo: 'Aya-DevOpsTeam/my-app', branch: 'trunk' })
+    expect(readRecent('oid-1')[0]).toMatchObject({ correlationId: id(7), app: 'my-app', env: 'devsand', repo: 'organization/my-app', branch: 'trunk' })
   })
 
   it('does not submit when the form is invalid (no network call)', async () => {
@@ -233,7 +233,7 @@ describe('ship store — advisory debounce and de-dup (FT-16)', () => {
   async function configured() {
     const s = setup()
     await s.loadConfig()
-    s.draft.repo = 'Aya-DevOpsTeam/my-app'
+    s.draft.repo = 'organization/my-app'
     s.draft.app = 'my-app'
     await nextTick()
     api.getShipAppState.mockClear()
@@ -251,7 +251,7 @@ describe('ship store — advisory debounce and de-dup (FT-16)', () => {
     expect(api.getShipAppState).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(1)
     expect(api.getShipAppState).toHaveBeenCalledTimes(1)
-    expect(api.getShipAppState).toHaveBeenCalledWith('devsand', 'app', 'Aya-DevOpsTeam/my-app')
+    expect(api.getShipAppState).toHaveBeenCalledWith('devsand', 'app', 'organization/my-app')
   })
 
   it('de-duplicates the same (env, app, repo) for 60 s, then calls again', async () => {
@@ -398,7 +398,7 @@ describe('ship store — Ship new version prefill (FT-13)', () => {
     const s = setup()
     await s.loadConfig()
     await s.prefillFromShip(status({ settings: { branch: 'release', namespace: 'ns1', teamLabel: 'team-x', port: 3000, healthPath: '/health', bump: 'minor' } }))
-    expect(s.draft).toMatchObject({ repo: 'Aya-DevOpsTeam/my-app', app: 'my-app', env: 'devsand', branch: 'release', namespace: 'ns1', teamLabel: 'team-x', port: 3000, healthPath: '/health', bump: 'minor' })
+    expect(s.draft).toMatchObject({ repo: 'organization/my-app', app: 'my-app', env: 'devsand', branch: 'release', namespace: 'ns1', teamLabel: 'team-x', port: 3000, healthPath: '/health', bump: 'minor' })
     expect(s.active).toBeNull()
   })
 
@@ -407,12 +407,12 @@ describe('ship store — Ship new version prefill (FT-13)', () => {
     await s.loadConfig()
     s.openShip(id(1))
     await s.prefillFromShip(status({ settings: undefined }))
-    expect(s.draft).toMatchObject({ repo: 'Aya-DevOpsTeam/my-app', app: 'my-app', port: 8080, healthPath: '/healthz', bump: 'patch', teamLabel: 'software-engineering' })
+    expect(s.draft).toMatchObject({ repo: 'organization/my-app', app: 'my-app', port: 8080, healthPath: '/healthz', bump: 'patch', teamLabel: 'software-engineering' })
     expect(s.draft.branch).toBe('trunk') // default branch fallback
   })
 
   it('uses the recent entry\'s branch when settings are missing', async () => {
-    addRecent('oid-1', { correlationId: id(1), app: 'my-app', env: 'devsand', repo: 'Aya-DevOpsTeam/my-app', branch: 'feature/x', startedAt: new Date().toISOString() })
+    addRecent('oid-1', { correlationId: id(1), app: 'my-app', env: 'devsand', repo: 'organization/my-app', branch: 'feature/x', startedAt: new Date().toISOString() })
     const s = setup()
     await s.loadConfig()
     s.loadRecent()
@@ -445,7 +445,7 @@ describe('ship store — cancel / retry-config-pr and reset', () => {
 
   it('reset() clears draft, caches and the active ship (nothing leaks across visits/users)', async () => {
     const s = setup()
-    await s.loadConfig(); await s.selectRepo('Aya-DevOpsTeam/my-app')
+    await s.loadConfig(); await s.selectRepo('organization/my-app')
     s.openShip(id(1))
     s.reset()
     expect(s.draft.repo).toBe('')

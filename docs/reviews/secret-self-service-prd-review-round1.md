@@ -115,7 +115,7 @@ begins.
 
 - `hclParser.findEnvHclFiles()` derives the GitHub org from `config.github.serviceRepo.split('/')[0]`
   rather than from the `repo` parameter passed in. This happens to work for infra-live only because
-  it shares the same org (`Aya-DevOpsTeam`) as the service-catalog repo today. FR-003(f)'s claim that
+  it shares the same org (`organization`) as the service-catalog repo today. FR-003(f)'s claim that
   extending this method is a direct "mirror" with no new credential doesn't flag this implicit
   same-org assumption — worth a one-line note for the Architect.
 

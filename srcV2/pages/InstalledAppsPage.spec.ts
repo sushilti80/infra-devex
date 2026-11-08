@@ -47,7 +47,7 @@ vi.stubGlobal('prompt', vi.fn(() => null))
 const EXPERIMENTAL_APP = {
   name: 'jobplc',
   environment: 'devsand',
-  owner: 'Vijay Batham',
+  owner: 'Example User',
   deployedAt: '2025-07-14T21:59:14Z',
   lifecycle: 'experimental' as const,
   status: 'active' as const,

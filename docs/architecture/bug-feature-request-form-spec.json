@@ -3,7 +3,7 @@
   "feature": {
     "name": "Bug / Feature Request Form",
     "slug": "bug-feature-request-form",
-    "summary": "Adds a Feedback navigation item (authenticated users only) that opens a FeedbackPage.vue with three sub-forms: Bug Report, Feature Request, and Agent Request. On submission, a POST /api/feedback endpoint creates a GitHub Issue in Aya-DevOpsTeam/self-service-infra with appropriate labels and returns the issue URL to the user."
+    "summary": "Adds a Feedback navigation item (authenticated users only) that opens a FeedbackPage.vue with three sub-forms: Bug Report, Feature Request, and Agent Request. On submission, a POST /api/feedback endpoint creates a GitHub Issue in organization/self-service-infra with appropriate labels and returns the issue URL to the user."
   },
   "status": "approved",
   "lastModified": "2025-01-20",
@@ -26,7 +26,7 @@
         "so_that": "the DevOps team receives a well-formatted issue describing the defect",
         "acceptance_criteria": [
           "Bug Report form collects: title (required, \u2264120 chars), observedBehaviour (required), expectedBehaviour (required), stepsToReproduce (optional), severity (required: Critical|High|Medium|Low)",
-          "Submitting creates a GitHub Issue labelled 'bug' in Aya-DevOpsTeam/self-service-infra",
+          "Submitting creates a GitHub Issue labelled 'bug' in organization/self-service-infra",
           "Issue body uses the Bug markdown template with all required sections",
           "Success state displays the created issue URL as a clickable link",
           "Validation errors are shown inline without page reload"
@@ -38,7 +38,7 @@
         "so_that": "the team can evaluate and prioritise the enhancement",
         "acceptance_criteria": [
           "Feature Request form collects: title (required, \u2264120 chars), painPoint (required), desiredOutcome (required), businessJustification (optional), priority (required: High|Medium|Low)",
-          "Submitting creates a GitHub Issue labelled 'enhancement' in Aya-DevOpsTeam/self-service-infra",
+          "Submitting creates a GitHub Issue labelled 'enhancement' in organization/self-service-infra",
           "Issue body uses the Feature markdown template with all required sections",
           "Success state displays the created issue URL"
         ]
@@ -49,7 +49,7 @@
         "so_that": "the team can build or improve AI agent capabilities",
         "acceptance_criteria": [
           "Agent Request form collects: title (required, \u2264120 chars), agentType (required \u2014 populated from GET /api/agents dropdown), agentBehaviour (required), businessJustification (required)",
-          "Submitting creates a GitHub Issue labelled 'agent-request' in Aya-DevOpsTeam/self-service-infra",
+          "Submitting creates a GitHub Issue labelled 'agent-request' in organization/self-service-infra",
           "Issue body uses the Agent markdown template with all required sections",
           "Success state displays the created issue URL"
         ]
@@ -196,7 +196,7 @@
                   "agent-request"
                 ]
               },
-              "github_repo": "config.github.selfServiceRepo (defaults to 'Aya-DevOpsTeam/self-service-infra')",
+              "github_repo": "config.github.selfServiceRepo (defaults to 'organization/self-service-infra')",
               "sanitization": "Strip HTML tags from all user-supplied string fields before interpolating into issue body. Use a simple regex replace or a lightweight library \u2014 do NOT use raw user input directly in the markdown body."
             }
           ],
@@ -389,7 +389,7 @@
         {
           "system": "GitHub Issues API",
           "integration_type": "REST API \u2014 octokit.rest.issues.create",
-          "repo": "Aya-DevOpsTeam/self-service-infra (config.github.selfServiceRepo)",
+          "repo": "organization/self-service-infra (config.github.selfServiceRepo)",
           "github_app": "Infrastructure App (main octokit client \u2014 this.octokit)",
           "inputs": {
             "owner": "string \u2014 derived from config.github.selfServiceRepo",
@@ -433,7 +433,7 @@
         "location": "POST /api/feedback response body (JSON, HTTP 201)",
         "schema": {
           "success": "boolean \u2014 true",
-          "issueUrl": "string \u2014 https://github.com/Aya-DevOpsTeam/self-service-infra/issues/{n}",
+          "issueUrl": "string \u2014 https://github.com/organization/self-service-infra/issues/{n}",
           "issueNumber": "number",
           "correlationId": "string \u2014 UUID"
         }
@@ -603,7 +603,7 @@
             "agent-request"
           ]
         },
-        "github_repo": "config.github.selfServiceRepo (defaults to 'Aya-DevOpsTeam/self-service-infra')",
+        "github_repo": "config.github.selfServiceRepo (defaults to 'organization/self-service-infra')",
         "sanitization": "Strip HTML tags from all user-supplied string fields before interpolating into issue body. Use a simple regex replace or a lightweight library \u2014 do NOT use raw user input directly in the markdown body."
       }
     ]
@@ -702,7 +702,7 @@
         ],
         "assertions": [
           "Success banner is visible with data-testid='feedback-success-banner'",
-          "Issue URL link has data-testid='feedback-issue-url' and href contains 'github.com/Aya-DevOpsTeam/self-service-infra/issues/'",
+          "Issue URL link has data-testid='feedback-issue-url' and href contains 'github.com/organization/self-service-infra/issues/'",
           "No critical axe-core violations on the page"
         ]
       }
@@ -785,7 +785,7 @@
     },
     {
       "file": "config.js",
-      "reason": "config.github.selfServiceRepo provides the target GitHub repo ('Aya-DevOpsTeam/self-service-infra') \u2014 no config change needed, only read"
+      "reason": "config.github.selfServiceRepo provides the target GitHub repo ('organization/self-service-infra') \u2014 no config change needed, only read"
     },
     {
       "file": "GET /api/agents endpoint",

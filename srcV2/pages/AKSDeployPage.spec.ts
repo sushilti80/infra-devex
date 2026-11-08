@@ -49,7 +49,7 @@ describe('AKSDeployPage', () => {
       appname: 'my-app',
       namespace: 'my-app',
       is_web_app: true,
-      image_name: 'sharedwus3acr2.azurecr.io/my-app',
+      image_name: 'exampleregistry.azurecr.io/my-app',
       image_tag: '1.2.3',
       correlation_id: expect.stringMatching(/^aks-/),
       team_label: 'software-engineering',

@@ -15,7 +15,7 @@ const { config, githubService, aksService, ship, api, fx } = h
 const { isPlatformMember } = cjsRequire('../../../utils/platformTeam')
 
 const MIN = 60_000
-const goodBody = { repo: 'AyaHealthcare/my-svc', branch: 'main', app: 'my-app', env: 'devsand' }
+const goodBody = { repo: 'organization/my-svc', branch: 'main', app: 'my-app', env: 'devsand' }
 let env: ReturnType<typeof h.wire>
 let w: any
 let counts: Record<string, number>
@@ -89,8 +89,8 @@ describe('provider none (H-2) fails closed on every identity-dependent endpoint,
   it('config says unlinked; repos is empty; branches and app advisory are 403 with zero GitHub calls', async () => {
     expect((await ship('GET', '/config')).body.data.identity).toMatchObject({ state: 'unlinked' })
     expect((await ship('GET', '/repos')).body.data).toMatchObject({ repos: [], identity: { state: 'unlinked' } })
-    expect((await ship('GET', '/repos/AyaHealthcare/my-svc/branches')).statusCode).toBe(403)
-    expect((await ship('GET', '/apps/devsand/my-app', { query: { repo: 'AyaHealthcare/my-svc' } })).statusCode).toBe(403)
+    expect((await ship('GET', '/repos/organization/my-svc/branches')).statusCode).toBe(403)
+    expect((await ship('GET', '/apps/devsand/my-app', { query: { repo: 'organization/my-svc' } })).statusCode).toBe(403)
     expect(counts).toEqual({ repo: 0, branch: 0, appState: 0 })
   })
   it('a failed start leaves no reserved cap slot behind (10 refused POSTs, then a linked user still starts)', async () => {
@@ -141,7 +141,7 @@ describe('empty org allowlist (H-7)', () => {
     const post = await ship('POST', '/', { body: goodBody })
     expect(post.statusCode).toBe(400)
     expect(post.body.error.details.map((d: any) => d.field)).toContain('repo')
-    expect((await ship('GET', '/repos/AyaHealthcare/my-svc/branches')).statusCode).toBe(400)
+    expect((await ship('GET', '/repos/organization/my-svc/branches')).statusCode).toBe(400)
     expect((await ship('GET', '/repos')).body.data.repos).toEqual([])
     expect(env.dispatched).toHaveLength(0)
   })

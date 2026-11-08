@@ -124,21 +124,21 @@ describe('BT-09 run lookup from the UUIDv7 window', () => {
 describe('BT-10 stage derivation and attempt fold', () => {
   it('all green: succeeded, trusted fields from annotations, PR known, preview not configured (H-1)', async () => {
     full()
-    w.pr = { number: 7, url: 'https://github.com/Aya-DevOpsTeam/aya-flux/pull/7', state: 'open' }
+    w.pr = { number: 7, url: 'https://github.com/organization/flux-config/pull/7', state: 'open' }
     const s = await status()
     expect(s).toMatchObject({ state: 'succeeded', terminal: true, attempt: 1, queuedBehind: false, version: '1.2.3', sha: fx.SHA, shortSha: fx.SHA.slice(0, 7), digest: fx.DIGEST, app: 'my-app', env: 'devsand', repo: fx.REPO, rollout: 'preview_pr' })
     expect(s.imageRef).toBe(`${fx.REGISTRY}/selfserve/my-app:1.2.3`)
     expect(s.settings).toEqual({ branch: 'main', namespace: 'my-app', teamLabel: 'software-engineering', port: 8080, healthPath: '/healthz', bump: 'patch' })
-    expect(s.pr).toEqual({ number: 7, url: 'https://github.com/Aya-DevOpsTeam/aya-flux/pull/7', state: 'open' })
+    expect(s.pr).toEqual({ number: 7, url: 'https://github.com/organization/flux-config/pull/7', state: 'open' })
     expect(s.preview).toEqual({ state: 'not_configured' })
     expect(states(s)).toBe('queued:succeeded prepare:succeeded build:succeeded scan:succeeded publish:succeeded config_pr:succeeded preview:succeeded')
     expect(s.failure).toBeUndefined()
     expect(s.stages).toHaveLength(7)
   })
 
-  it.each(['open', 'merged', 'closed'])('PR state %s from the aya-flux PR lookup is surfaced', async (state) => {
+  it.each(['open', 'merged', 'closed'])('PR state %s from the flux-config PR lookup is surfaced', async (state) => {
     full()
-    w.pr = { number: 7, url: 'https://github.com/Aya-DevOpsTeam/aya-flux/pull/7', state }
+    w.pr = { number: 7, url: 'https://github.com/organization/flux-config/pull/7', state }
     expect((await status()).pr).toMatchObject({ number: 7, state })
   })
 
@@ -491,7 +491,7 @@ describe('BT-13 authorization matrix', () => {
   })
   it('read: repo reader (identity linked + permission ≥ read) allowed; mutate refused', async () => {
     const ctx = await ownerCtx()
-    identity.registerProvider('test', createTestProvider({ links: { [fx.OTHER_OID]: 'octocat' }, permissions: { 'octocat:AyaHealthcare/my-svc': 'read' } }))
+    identity.registerProvider('test', createTestProvider({ links: { [fx.OTHER_OID]: 'octocat' }, permissions: { 'octocat:organization/my-svc': 'read' } }))
     config.ship.identityProvider = 'test'
     const reader = { id: fx.OTHER_OID, email: 'r@x.com' }
     expect(await svc.authorize(reader, ctx.meta)).toBe('repo_reader')
@@ -500,7 +500,7 @@ describe('BT-13 authorization matrix', () => {
   })
   it('repo reader without permission / unlinked / provider none ⇒ denied', async () => {
     const ctx = await ownerCtx()
-    identity.registerProvider('test', createTestProvider({ links: { [fx.OTHER_OID]: 'octocat' }, permissions: { 'octocat:AyaHealthcare/my-svc': 'none' } }))
+    identity.registerProvider('test', createTestProvider({ links: { [fx.OTHER_OID]: 'octocat' }, permissions: { 'octocat:organization/my-svc': 'none' } }))
     config.ship.identityProvider = 'test'
     expect(await svc.authorize({ id: fx.OTHER_OID }, ctx.meta)).toBeNull()
     expect(await svc.authorize({ id: 'someone-else' }, ctx.meta)).toBeNull()
@@ -622,7 +622,7 @@ describe('BT-19 queue watchdog (V-4 gated, report-only)', () => {
     config.ship.watchdogCancelEnabled = true
     queuedPrepare(11)
     // repo reader (not starter/platform) ⇒ no cancel
-    identity.registerProvider('test', createTestProvider({ links: { [fx.OTHER_OID]: 'octocat' }, permissions: { 'octocat:AyaHealthcare/my-svc': 'read' } }))
+    identity.registerProvider('test', createTestProvider({ links: { [fx.OTHER_OID]: 'octocat' }, permissions: { 'octocat:organization/my-svc': 'read' } }))
     config.ship.identityProvider = 'test'
     await svc.getStatus(cid, { id: fx.OTHER_OID })
     expect(w.calls.cancel).toBe(0)

@@ -562,7 +562,7 @@ When reviewing new features or validating technical approaches, ask these questi
 - `move-to-infralive.yaml`: Promote infrastructure to production
 - `UpdateMetadataLive.yaml`: Label an app as live/experiment; inputs: `app_name`, `triggered_by`
 
-**Available Workflows** (code catalog repo `AyaHealthcare/self-service-catalog`, Code App):
+**Available Workflows** (code catalog repo `organization/self-service-catalog`, Code App):
 - `create-app.yml`: Bootstrap new code repository from template; inputs: `appname`, `template_repo`, `jira_number`, `correlation_id`
 
 **Available Workflows** (infra-live repo, Infrastructure App):
@@ -570,9 +570,9 @@ When reviewing new features or validating technical approaches, ask these questi
 
 ### Azure Subscriptions
 **Subscription Mapping** (from `data/environments.json`, served via `GET /api/environments`):
-- `devsand` (enabled): Dev Sandbox — subscription `11844065-4a70-473d-a17c-9c2b636fc250`; features: customInfra ✅ templates ✅ aks ✅
-- `sand` (enabled): IT Sandbox — subscription `552bdc54-0a39-4040-9d8f-4002e8f572aa`; features: customInfra ✅ templates ✅ aks ✅
-- `aisand` (disabled): AI/ML Sandbox — subscription `a0238c79-2cfd-408d-aaa0-0f86db341f79`; features: customInfra ✅ templates ✅ aks ❌
+- `devsand` (enabled): Dev Sandbox — subscription `00000000-0000-0000-0000-000000000001`; features: customInfra ✅ templates ✅ aks ✅
+- `sand` (enabled): IT Sandbox — subscription `00000000-0000-0000-0000-000000000002`; features: customInfra ✅ templates ✅ aks ✅
+- `aisand` (disabled): AI/ML Sandbox — subscription `00000000-0000-0000-0000-000000000004`; features: customInfra ✅ templates ✅ aks ❌
 
 > **Note**: `prod` is not a direct deploy target — it is the result of `POST /api/promote` which triggers `move-to-infralive.yaml`.
 

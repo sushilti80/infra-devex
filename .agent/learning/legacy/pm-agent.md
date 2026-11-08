@@ -101,7 +101,7 @@
 - **Key pages**: `CustomInfrastructurePage.vue` (multi-step wizard), `TemplateDeployPage.vue`,
   `ExistingInfraChangePage.vue` (agent-based), `InstalledAppsPage.vue`.
 - **API service**: All frontend API calls via `srcV2/services/api.ts` `apiService` object.
-- **Metadata**: `Aya-DevOpsTeam/service-catalog` repo, `docs/metadata/{appName}-{env}.json`.
+- **Metadata**: `organization/service-catalog` repo, `docs/metadata/{appName}-{env}.json`.
   Auth via existing GitHub App — no new credentials needed.
 - **`GET /api/installed-apps`**: Returns normalized list. `GET /api/deployed-apps/:name/:env`:
   exists but has a file-naming bug (uses `{name}.json` not `{name}-{env}.json`).
@@ -295,7 +295,7 @@
   external fact block classifying the entire capability.
 - **`docs/roadmaps/*.md` (not just `docs/prd/*` and `docs/architecture/*`) can contain load-bearing
   live-probe evidence** (e.g., `plan-layeredKeyVaultResolution.md`'s "Validated test case:
-  ayaApplications" section lists 11 real environment folder names from a live `gh api` probe of
+  exampleApplications" section lists 11 real environment folder names from a live `gh api` probe of
   `infrastructure-live`). Always check `docs/roadmaps/` when a new PRD's environment/naming claims
   need real-world confirmation — it's frequently faster and more concrete than a fresh live probe,
   and roadmap docs tend to record exact folder-name enumerations that PRDs don't.

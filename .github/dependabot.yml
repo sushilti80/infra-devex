@@ -41,8 +41,6 @@ updates:
     labels:
       - "dependencies"
       - "automated"
-    assignees:
-      - "Sushil-Tiwari"
     commit-message:
       prefix: "deps"
       include: "scope"
@@ -60,11 +58,11 @@ updates:
     groups:
       agent-governance:
         patterns:
-          - "Aya-DevOpsTeam/agent-governance*"
+          - "organization/agent-governance*"
       actions-updates:
         patterns: ["*"]
         exclude-patterns:
-          - "Aya-DevOpsTeam/agent-governance*"
+          - "organization/agent-governance*"
     labels:
       - "dependencies"
       - "github-actions"

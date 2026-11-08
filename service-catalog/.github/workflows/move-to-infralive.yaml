@@ -1,0 +1,190 @@
+name: Copy App Folder to Infrastructure-Live
+
+on:
+  workflow_dispatch:
+    inputs:
+      application_folder:
+        description: 'Name of the application folder to copy (exact folder name under infrastructure/)'
+        required: true
+        type: string
+      source_environment:
+        description: 'Environment folder in service-catalog to use as the template (e.g. devsand)'
+        required: true
+        type: string
+      target_environments:
+        description: 'Optional comma-separated extra environment folders to create from the source (e.g. prod,stage,dev). The source environment is always copied as-is.'
+        required: false
+        default: ''
+        type: string
+      cr_number:
+        description: 'Change Request number'
+        required: true
+        type: string
+      correlation_id:
+        description: "Unique Correlation ID (for tracking runs in logs)"
+        required: false
+        default: "none"
+      triggered_by:
+        description: "Triggered by the self-service portal (if available)"
+        required: false
+
+# Inputs are read from env (never interpolated into shell) to avoid script injection.
+env:
+  APP: ${{ github.event.inputs.application_folder }}
+  SRC_ENV: ${{ github.event.inputs.source_environment }}
+  TARGET_ENVS: ${{ github.event.inputs.target_environments }}
+  ALL_ENVS: ${{ github.event.inputs.target_environments != '' && format('{0},{1}', github.event.inputs.source_environment, github.event.inputs.target_environments) || github.event.inputs.source_environment }}
+  CR: ${{ github.event.inputs.cr_number }}
+  CORRELATION_ID: ${{ github.event.inputs.correlation_id }}
+  TRIGGERED_BY: ${{ github.event.inputs.triggered_by }}
+  INFRA_LIVE_REPO: ${{ vars.INFRASTRUCTURE_LIVE_REPO }}
+
+jobs:
+  copy-and-pr:
+    runs-on: ubuntu-latest
+    steps:
+
+      # 1) Generate an installation token for your GitHub App
+      - name: Generate GitHub App token
+        id: create_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ vars.INFRASTRUCTURE_LIVE_OWNER }}
+          # no `repositories:` → covers all installed repos
+          permission-contents: write
+          permission-pull-requests: write
+
+      # 2) Checkout service-catalog to read the source folder
+      - name: Checkout service-catalog repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.create_token.outputs.token }}
+          fetch-depth: 0
+
+      # 3) Validate inputs and that the source environment exists
+      - name: Validate inputs
+        run: |
+          set -euo pipefail
+          [[ "$APP" =~ ^[A-Za-z0-9_-]+$ ]] || { echo "::error::Invalid application_folder"; exit 1; }
+          [[ "$SRC_ENV" =~ ^[A-Za-z0-9_-]+$ ]] || { echo "::error::Invalid source_environment"; exit 1; }
+          [ -d "infrastructure/$APP/$SRC_ENV" ] || { echo "::error::Folder not found: infrastructure/$APP/$SRC_ENV"; exit 1; }
+          IFS=',' read -ra ENVS <<< "$TARGET_ENVS"
+          for e in "${ENVS[@]}"; do
+            [[ "$e" =~ ^[a-z0-9-]+$ ]] || { echo "::error::Invalid target environment: $e"; exit 1; }
+            [ "$e" != "$SRC_ENV" ] || { echo "::error::Target equals source environment: $e"; exit 1; }
+          done
+
+      # for tracking purpose on UI
+      - name: Print Correlation ID
+        if: ${{ github.event.inputs.correlation_id != 'none' }}
+        run: echo "Correlation ID=$CORRELATION_ID"
+
+      # 4) Checkout infrastructure-live
+      - name: Checkout infrastructure-live repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.INFRASTRUCTURE_LIVE_REPO }}
+          token: ${{ steps.create_token.outputs.token }}
+          path: infrastructure-live
+          fetch-depth: 0
+
+      # 5) Generate a unique branch name
+      - name: Generate branch name
+        id: gen_branch
+        run: echo "branch_name=${APP}-$(date +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
+
+      # 6) Create and switch to the new branch
+      - name: Create new branch in infrastructure-live
+        working-directory: infrastructure-live
+        env:
+          BRANCH: ${{ steps.gen_branch.outputs.branch_name }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git switch -c "$BRANCH" origin/main
+
+      # 7) Copy the source environment into one folder per target environment.
+      #    HCL derives envName from the folder name, so only the descriptive
+      #    `environment = "<src>"` metadata in env.hcl needs rewriting.
+      - name: Copy source environment into each target environment
+        run: |
+          set -euo pipefail
+          SRC="infrastructure/$APP"
+          DEST="infrastructure-live/infrastructure/$APP"
+          mkdir -p "$DEST"
+
+          # App-level files (e.g. terragrunt.hcl) that are not environment folders; overwrite to avoid stale shared config
+          find "$SRC" -maxdepth 1 -type f -exec cp {} "$DEST/" \;
+
+          # Fall back to the shared root.hcl when the source app has none
+          if [ ! -f "$SRC/root.hcl" ] && [ -f infrastructure/root.hcl ]; then
+            cp infrastructure/root.hcl "$DEST/root.hcl"
+          fi
+
+          # Add infra-pipelines.yaml template and substitute the project name
+          TEMPLATE="_templates/_pipeline/infra-pipelines.yaml"
+          if [ -f "$TEMPLATE" ]; then
+            cp "$TEMPLATE" "$DEST/infra-pipelines.yaml"
+            sed -i "s/<PROJECT_NAME>/$APP/g" "$DEST/infra-pipelines.yaml"
+          else
+            echo "::warning::Template not found at $TEMPLATE, skipping infra-pipelines.yaml copy."
+          fi
+
+          # The source environment (devsand/sand) is always moved as-is; skip if already present
+          if [ -e "$DEST/$SRC_ENV" ]; then
+            echo "::notice::infrastructure-live already has $APP/$SRC_ENV; leaving it unchanged"
+          else
+            cp -r "$SRC/$SRC_ENV" "$DEST/$SRC_ENV"
+          fi
+
+          IFS=',' read -ra ENVS <<< "$TARGET_ENVS"
+          for e in "${ENVS[@]}"; do
+            if [ -e "$DEST/$e" ]; then
+              echo "::error::infrastructure-live already has $APP/$e; refusing to overwrite"
+              exit 1
+            fi
+            cp -r "$SRC/$SRC_ENV" "$DEST/$e"
+            if [ -f "$DEST/$e/env.hcl" ]; then
+              sed -i -E "s/^([[:space:]]*environment[[:space:]]*=[[:space:]]*)\"$SRC_ENV\"/\1\"$e\"/" "$DEST/$e/env.hcl"
+            fi
+          done
+
+      # 8) Commit & push with your CR number
+      - name: Commit and push changes
+        working-directory: infrastructure-live
+        env:
+          BRANCH: ${{ steps.gen_branch.outputs.branch_name }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add "infrastructure/$APP"
+          if git diff --cached --quiet; then
+            echo "::error::Nothing to commit; $APP ($ALL_ENVS) is already in infrastructure-live"
+            exit 1
+          fi
+          git commit -m "Moving $APP ($ALL_ENVS) into Infrastructure-live based on CR# $CR"
+          git push --set-upstream origin "$BRANCH"
+
+      - name: Create Pull Request to infra-live
+        env:
+          GH_TOKEN: ${{ steps.create_token.outputs.token }}
+          BRANCH: ${{ steps.gen_branch.outputs.branch_name }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          gh pr create \
+            --repo "$INFRA_LIVE_REPO" \
+            --base main \
+            --head "$BRANCH" \
+            --title "CR# $CR: Copy $APP ($ALL_ENVS) from service-catalog to infrastructure-live" \
+            --body "This PR was automatically created for CR# $CR.
+
+          **Application:** \`$APP\`
+          **Source environment (copied as-is):** \`$SRC_ENV\`
+          **Additional environments:** \`${TARGET_ENVS:-none}\`
+
+          _Next steps:_ review the plan for each environment, and merge when ready.
+          **Requested by (input):** $TRIGGERED_BY
+          **Run initiated by:** \`$ACTOR\`"

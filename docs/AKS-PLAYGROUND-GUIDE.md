@@ -1,11 +1,11 @@
 # AKS Playground guide
 
-Use the AKS Playground to deploy an existing container image from the AYA Azure Container Registry (ACR) to an AKS sandbox. The Playground does not build your application or Docker image. You build and push the image first, then provide its registry path and tag.
+Use the AKS Playground to deploy an existing container image from the EXAMPLE Azure Container Registry (ACR) to an AKS sandbox. The Playground does not build your application or Docker image. You build and push the image first, then provide its registry path and tag.
 
 ## Deployment flow
 
 1. Create and test a Dockerfile in your application repository.
-2. Push a tagged image to the AYA ACR. You can build and push it yourself, or optionally use the Docker build pipeline guidance below.
+2. Push a tagged image to the EXAMPLE ACR. You can build and push it yourself, or optionally use the Docker build pipeline guidance below.
 3. Sign in to Self-Service Infrastructure and open **AKS Playground**.
 4. Choose the environment, configure the application, and submit. The Playground deploys an App and uses either the current legacy ingress (default) or the opt-in Kong Gateway private-hostname pilot in devsand.
 5. Follow the workflow status. When the deployment completes, find the application in **AKS Deployed Applications**.
@@ -14,7 +14,7 @@ Use the AKS Playground to deploy an existing container image from the AYA Azure 
 
 - Your application has a working Dockerfile and listens on the port you plan to configure.
 - The image is pushed to an ACR that the selected AKS environment can pull from.
-- You know the full image repository path and the exact tag. For example, image name `sharedwus3acr2.azurecr.io/team/my-app` and tag `1.2.3`.
+- You know the full image repository path and the exact tag. For example, image name `exampleregistry.azurecr.io/team/my-app` and tag `1.2.3`.
 - You can sign in to Self-Service Infrastructure and have access to the AKS Playground.
 - You have the required environment variables and secret references ready.
 
@@ -32,15 +32,15 @@ ACR tags, excluding `latest`, build-ID-only tags, `v` prefixes, and prerelease t
 
 ## Optional: set up the Docker build pipeline
 
-If your application repository does not already build and push images to ACR, use the [Docker Build v3 agent prompt](https://github.com/Aya-DevOpsTeam/docker-infra-live/blob/main/docs/AGENT_PROMPT_WIRE_DOCKER_BUILDV3.md) from a coding agent while it is working in your application repository. Do this after you have a Dockerfile and before deploying through the Playground. The prompt guides the agent to wire your repository to the shared Azure DevOps template; it does not ask you to copy the template into your repository.
+If your application repository does not already build and push images to ACR, use the [Docker Build v3 agent prompt](https://github.com/organization/docker-infra-live/blob/main/docs/AGENT_PROMPT_WIRE_DOCKER_BUILDV3.md) from a coding agent while it is working in your application repository. Do this after you have a Dockerfile and before deploying through the Playground. The prompt guides the agent to wire your repository to the shared Azure DevOps template; it does not ask you to copy the template into your repository.
 
-The shared pipeline runs Semgrep, builds with Podman, scans the image with Wiz, and pushes it to `sharedwus3acr2`. On `main` or `master`, it pushes a semantic version tag and `latest`. On other branches and pull requests, it pushes a build ID tag and `buildcache` when image pushing is enabled. Use the exact tag that the pipeline reports and publishes.
+The shared pipeline runs Semgrep, builds with Podman, scans the image with Wiz, and pushes it to `exampleregistry`. On `main` or `master`, it pushes a semantic version tag and `latest`. On other branches and pull requests, it pushes a build ID tag and `buildcache` when image pushing is enabled. Use the exact tag that the pipeline reports and publishes.
 
 The pipeline needs setup by an Azure DevOps administrator or someone with the required permissions:
 
 - Create an Azure DevOps pipeline that points to the generated YAML file.
-- Authorize the pipeline to use the `shared-acr-connection` service connection, the `Aya-DevOpsTeam` GitHub connection, and the `podman-pool-1` agent pool.
-- Ensure the service connection can push to ACR `sharedwus3acr2` and read the required Key Vault secrets.
+- Authorize the pipeline to use the `shared-acr-connection` service connection, the `organization` GitHub connection, and the `podman-pool-1` agent pool.
+- Ensure the service connection can push to ACR `exampleregistry` and read the required Key Vault secrets.
 - Optionally add `RENOVATE_GITHUB_TOKEN` or `GITHUB_TOKEN` as a secret pipeline variable to enable pull request version comments.
 
 The prompt leaves Goss validation disabled unless the Dockerfile has `test` and `final` stages, a neighboring `goss.yaml`, and a `test` stage that runs Goss and fails when checks fail. Do not enable it unless those conditions are met.
@@ -76,7 +76,7 @@ After runtime and security validation, Kong Gateway is intended to become the de
 | **Environment** | Selects the AKS-enabled sandbox where the workflow deploys. | Choose the environment that owns the target cluster and its Key Vault resources. Only enabled environments appear. |
 | **Application Name** | Names the application deployment. | Use a unique, Kubernetes-compatible name for the workload. The form also uses it to suggest a namespace and image path. |
 | **Namespace** | Sets the Kubernetes namespace for the workload. | Keep the default when the app should use its own matching namespace. Change it only when you have a reason and the namespace is permitted in the target environment. |
-| **Container Image** | Sets the registry and repository, for example `sharedwus3acr2.azurecr.io/team/my-app`. | Enter the image you pushed. Do not include the tag here; enter it in **Image Tag**. |
+| **Container Image** | Sets the registry and repository, for example `exampleregistry.azurecr.io/team/my-app`. | Enter the image you pushed. Do not include the tag here; enter it in **Image Tag**. |
 | **Image Tag** | Sets the initial image version; defaults to editable `0.0.1`. | Use a tag that exists in ACR. Flux later updates the version to the highest eligible `X.Y.Z` tag after reconciliation. |
 
 ### App configuration

@@ -16,7 +16,7 @@ const mockApps = [
   {
     name: 'jobplc',
     environment: 'devsand',
-    owner: 'Vijay Batham',
+    owner: 'Example User',
     deployedAt: '2025-07-14T21:59:14Z',
     lifecycle: 'experimental',
     status: 'active',
@@ -26,7 +26,7 @@ const mockApps = [
   {
     name: 'jobplc',
     environment: 'sand',
-    owner: 'Vijay Batham',
+    owner: 'Example User',
     deployedAt: '2025-07-10T10:00:00Z',
     lifecycle: 'experimental',
     status: 'active',
@@ -49,7 +49,7 @@ const mockMetadata = {
   name: 'jobplc',
   environment: 'devsand',
   description: 'jobplc',
-  owner: 'Vijay Batham',
+  owner: 'Example User',
   lifecycle: 'Live',
   modules: ['functionAppSvcWindows'],
   costCenter: 'self-service',

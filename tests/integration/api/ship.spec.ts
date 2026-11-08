@@ -62,8 +62,8 @@ let created: string
 function wireHappyPath() {
   identity.registerProvider('test', createTestProvider({
     links: { [users.sam.id]: 'octocat', [users.reader.id]: 'reader-login', [users.admin.id]: 'admin-login' },
-    repos: { octocat: [{ fullName: 'AyaHealthcare/my-svc', org: 'AyaHealthcare', name: 'my-svc', defaultBranch: 'main', private: true }] },
-    permissions: { 'octocat:AyaHealthcare/my-svc': 'admin', 'reader-login:AyaHealthcare/my-svc': 'read', 'admin-login:AyaHealthcare/my-svc': 'write' },
+    repos: { octocat: [{ fullName: 'organization/my-svc', org: 'organization', name: 'my-svc', defaultBranch: 'main', private: true }] },
+    permissions: { 'octocat:organization/my-svc': 'admin', 'reader-login:organization/my-svc': 'read', 'admin-login:organization/my-svc': 'write' },
   }))
   config.ship.identityProvider = 'test'
   githubService.codeAppGetRepo = async () => ({ defaultBranch: 'main', private: true, fork: false })
@@ -72,13 +72,13 @@ function wireHappyPath() {
   aksService.getAppState = async () => ({ appState: 'new' })
 }
 
-const goodBody = { repo: 'AyaHealthcare/my-svc', branch: 'main', app: 'my-app', env: 'devsand' }
+const goodBody = { repo: 'organization/my-svc', branch: 'main', app: 'my-app', env: 'devsand' }
 
 beforeEach(() => {
   shipStatus._resetForTests(); shipService._resetForTests()
   w = fx.makeWorld(githubService)
   dispatched = []
-  config.ship.allowedOrgs = ['AyaHealthcare']
+  config.ship.allowedOrgs = ['organization']
   config.ship.supportedShipEnvironments = ['devsand']
   config.ship.workflowRef = 'ship/v1'
   config.ship.allowDefaultRef = false
@@ -98,7 +98,7 @@ afterEach(() => { vi.restoreAllMocks() })
 
 describe('authentication', () => {
   it.each([
-    ['GET', '/config'], ['GET', '/repos'], ['GET', '/repos/AyaHealthcare/my-svc/branches'], ['GET', '/apps/devsand/my-app'],
+    ['GET', '/config'], ['GET', '/repos'], ['GET', '/repos/organization/my-svc/branches'], ['GET', '/apps/devsand/my-app'],
     ['POST', '/'], ['GET', '/status/x'], ['GET', '/logs/x'], ['POST', '/x/cancel'], ['POST', '/x/retry-config-pr'],
   ])('%s %s without a token ⇒ 401 (existing middleware shape)', async (method, url) => {
     const res = await ship(method, url, { token: null })
@@ -116,7 +116,7 @@ describe('GET /config (#1)', () => {
     expect(res.statusCode).toBe(200)
     expect(res.body.success).toBe(true)
     expect(res.body.data).toMatchObject({
-      allowedOrgs: ['AyaHealthcare'], identity: { state: 'unlinked', reason: 'IDENTITY_MAPPING_NOT_CONFIGURED' }, previewConfiguredEnvs: [],
+      allowedOrgs: ['organization'], identity: { state: 'unlinked', reason: 'IDENTITY_MAPPING_NOT_CONFIGURED' }, previewConfiguredEnvs: [],
       defaults: { port: 8080, healthPath: '/healthz', bump: 'patch', teamLabel: 'software-engineering' },
       limits: { portMin: 1024, portMax: 65535, recentMax: 20, pollIntervalMs: 15000 },
     })
@@ -139,14 +139,14 @@ describe('GET /repos and /branches (#2, #3) via routes', () => {
   it('linked ⇒ user∩App repos; invalid q ⇒ 400', async () => {
     config.ship.identityProvider = 'test'
     const ok = await ship('GET', '/repos', { query: { q: 'my' } })
-    expect(ok.body.data.repos).toEqual([{ fullName: 'AyaHealthcare/my-svc', org: 'AyaHealthcare', name: 'my-svc', defaultBranch: 'main', private: true }])
+    expect(ok.body.data.repos).toEqual([{ fullName: 'organization/my-svc', org: 'organization', name: 'my-svc', defaultBranch: 'main', private: true }])
     const bad = await ship('GET', '/repos', { query: { q: 'a b' } })
     expect(bad.statusCode).toBe(400)
     expect(bad.body.error.code).toBe('VALIDATION_FAILED')
   })
   it('branches: org not allowlisted ⇒ 400; no identity ⇒ 403 REPO_NOT_ACCESSIBLE', async () => {
     expect((await ship('GET', '/repos/evil/x/branches')).statusCode).toBe(400)
-    const res = await ship('GET', '/repos/AyaHealthcare/my-svc/branches')
+    const res = await ship('GET', '/repos/organization/my-svc/branches')
     expect(res.statusCode).toBe(403)
     expect(res.body.error).toMatchObject({ code: 'REPO_NOT_ACCESSIBLE', hint: 'IDENTITY_NOT_LINKED' })
   })
@@ -162,7 +162,7 @@ describe('BT-02 POST /api/ship', () => {
     expect(res.body.success).toBe(true)
     expect(res.body.correlationId).toBe(d.correlationId)
     expect(d.correlationId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
-    expect(d).toMatchObject({ app: 'my-app', env: 'devsand', repo: 'AyaHealthcare/my-svc', branch: 'main', appState: 'new', settingsIgnored: [], rollout: 'preview_pr', effectiveSettings: { port: 8080, healthPath: '/healthz' } })
+    expect(d).toMatchObject({ app: 'my-app', env: 'devsand', repo: 'organization/my-svc', branch: 'main', appState: 'new', settingsIgnored: [], rollout: 'preview_pr', effectiveSettings: { port: 8080, healthPath: '/healthz' } })
     expect(Date.parse(d.startedAt)).toBeGreaterThan(Date.now() - 5000)
     expect(dispatched).toHaveLength(1)
   })
@@ -233,7 +233,7 @@ describe('BT-02 POST /api/ship', () => {
   })
 
   it('403 APP_OWNED_BY_OTHER for a bring-your-own-image app; no dispatch', async () => {
-    aksService.getAppState = async () => ({ appState: 'merged', effectiveSettings: { port: 80, healthPath: '/h' }, imageName: 'sharedwus3acr2.azurecr.io/platform/my-app' })
+    aksService.getAppState = async () => ({ appState: 'merged', effectiveSettings: { port: 80, healthPath: '/h' }, imageName: 'exampleregistry.azurecr.io/platform/my-app' })
     const res = await ship('POST', '/', { body: goodBody })
     expect(res.statusCode).toBe(403)
     expect(res.body.error.code).toBe('APP_OWNED_BY_OTHER')
@@ -299,22 +299,22 @@ describe('BT-03 flag gating at the API', () => {
 describe('GET /apps/:env/:app (#4)', () => {
   it('returns app state + ownership advisory for a user who can read the repo', async () => {
     config.ship.identityProvider = 'test'
-    aksService.getAppState = async () => ({ appState: 'merged', effectiveSettings: { port: 9000, healthPath: '/ready' }, imageName: 'sharedwus3acr2.azurecr.io/selfserve/my-app' })
-    const res = await ship('GET', '/apps/devsand/my-app', { query: { repo: 'AyaHealthcare/my-svc' } })
+    aksService.getAppState = async () => ({ appState: 'merged', effectiveSettings: { port: 9000, healthPath: '/ready' }, imageName: 'exampleregistry.azurecr.io/selfserve/my-app' })
+    const res = await ship('GET', '/apps/devsand/my-app', { query: { repo: 'organization/my-svc' } })
     expect(res.statusCode).toBe(200)
     expect(res.body.data).toEqual({ appState: 'merged', ownership: 'unknown', ownershipSource: 'none', effectiveSettings: { port: 9000, healthPath: '/ready' } })
   })
   it('flags a bring-your-own-image app as unowned_existing; no owner repo is ever named without ACR', async () => {
     config.ship.identityProvider = 'test'
     aksService.getAppState = async () => ({ appState: 'merged', imageName: 'other.azurecr.io/x/my-app' })
-    const res = await ship('GET', '/apps/devsand/my-app', { query: { repo: 'AyaHealthcare/my-svc' } })
+    const res = await ship('GET', '/apps/devsand/my-app', { query: { repo: 'organization/my-svc' } })
     expect(res.body.data).toMatchObject({ ownership: 'unowned_existing', ownershipSource: 'github' })
     expect(res.body.data.owningRepo).toBeUndefined()
   })
   it('403 REPO_NOT_ACCESSIBLE for a user without access; 400 for a non-flagged env', async () => {
     config.ship.identityProvider = 'test'
-    expect((await ship('GET', '/apps/devsand/my-app', { token: 'stranger', query: { repo: 'AyaHealthcare/my-svc' } })).statusCode).toBe(403)
-    expect((await ship('GET', '/apps/sand/my-app', { query: { repo: 'AyaHealthcare/my-svc' } })).statusCode).toBe(400)
+    expect((await ship('GET', '/apps/devsand/my-app', { token: 'stranger', query: { repo: 'organization/my-svc' } })).statusCode).toBe(403)
+    expect((await ship('GET', '/apps/sand/my-app', { query: { repo: 'organization/my-svc' } })).statusCode).toBe(400)
   })
 })
 

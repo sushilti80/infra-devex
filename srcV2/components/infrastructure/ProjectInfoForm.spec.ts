@@ -430,7 +430,7 @@ describe('ProjectInfoForm', () => {
       name: 'jobplc',
       environment: 'devsand',
       description: 'Job PLC Service',
-      owner: 'Vijay Batham',
+      owner: 'Example User',
       lifecycle: 'Live',
       modules: ['functionAppSvcWindows'],
       costCenter: 'self-service',
@@ -491,7 +491,7 @@ describe('ProjectInfoForm', () => {
       await wrapper.vm.$nextTick()
 
       const input = wrapper.find('#owner')
-      expect((input.element as HTMLInputElement).value).toBe('Vijay Batham')
+      expect((input.element as HTMLInputElement).value).toBe('Example User')
     })
 
     it('does NOT pre-fill projectAge', async () => {
@@ -546,7 +546,7 @@ describe('ProjectInfoForm', () => {
       expect(emitted).toBeTruthy()
       const lastEmit = emitted![emitted!.length - 1][0] as any
       expect(lastEmit.projectName).toBe('jobplc')
-      expect(lastEmit.owner).toBe('Vijay Batham')
+      expect(lastEmit.owner).toBe('Example User')
     })
 
     it('pre-filled fields remain editable after pre-fill', async () => {

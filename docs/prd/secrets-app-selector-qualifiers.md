@@ -4,7 +4,7 @@
 - **Feature name:** `secrets-app-selector-qualifiers`
 - **Author/date:** Product Manager Agent, 2026-08-12
 - **Status:** draft
-- **Stakeholders:** Secrets-page users provisioning/rotating secrets for IDM (`autobk`, `notif`, `idmprtl`, `allctmpr`) and `ayaApplications` (`ayaCoreServices`); Vue.js Developer (implementation); QA Engineer (verification)
+- **Stakeholders:** Secrets-page users provisioning/rotating secrets for IDM (`autobk`, `notif`, `idmprtl`, `allctmpr`) and `exampleApplications` (`exampleCoreServices`); Vue.js Developer (implementation); QA Engineer (verification)
 - **Source:** `docs/roadmaps/plan-layeredKeyVaultResolution.md`, section "Phase D — Application selector: surface nested qualifiers as first-class entries" (cited section only; rest of roadmap out of scope for this PRD)
 
 ## 2. Problem Statement
@@ -13,7 +13,7 @@
 
 A second, related bug: `filteredEnvironmentOptions` filters by `app.name` alone, so it shows the **union** of every sub-app's environments under a root app. An environment that only `notif` has (not `autobk`) still appears as valid when "idm" is selected, regardless of which sub-app the user actually wants.
 
-**Why now:** This is a parallel, independent UI/UX track (per the source plan, "no dependency on A/B/C") that can ship without waiting on the Key Vault name-resolution work. It directly reduces the friction users hit today reaching IDM/`ayaApplications` sub-apps.
+**Why now:** This is a parallel, independent UI/UX track (per the source plan, "no dependency on A/B/C") that can ship without waiting on the Key Vault name-resolution work. It directly reduces the friction users hit today reaching IDM/`exampleApplications` sub-apps.
 
 **Expected business value:** Fewer clicks and round-trips to reach a known sub-app; elimination of a class of user error where an environment is selected that doesn't actually apply to the intended sub-app.
 
@@ -21,7 +21,7 @@ A second, related bug: `filteredEnvironmentOptions` filters by `app.name` alone,
 
 **Goals:**
 - G1: Every distinct `{appName, qualifier}` pair discoverable by `extractAppEnvPairs()` is directly selectable in the Application dropdown, without a disambiguation round-trip.
-  - *Success metric:* 100% of known qualifier pairs (IDM's 4 sub-apps, `ayaApplications`/`ayaCoreServices`) appear as distinct, directly selectable options in `SecretsPage.spec.ts` coverage.
+  - *Success metric:* 100% of known qualifier pairs (IDM's 4 sub-apps, `exampleApplications`/`exampleCoreServices`) appear as distinct, directly selectable options in `SecretsPage.spec.ts` coverage.
 - G2: Selecting a grouped option resolves both app name and qualifier in a single interaction (no dependency on a vault-resolution response to learn the qualifier).
   - *Success metric:* `selectedQualifier` is non-empty immediately after the `@change` handler runs, verified by a synchronous assertion in a new spec test (no `await flushPromises()` for an API round-trip required to see the qualifier set).
 - G3: The Environment selector never shows an environment that does not belong to the selected app+qualifier combination, once the user has made an explicit choice (see FR-003's `unresolved` vs `root-only` states).
@@ -41,7 +41,7 @@ A second, related bug: `filteredEnvironmentOptions` filters by `app.name` alone,
 - [srcV2/pages/SecretsPage.vue](../../srcV2/pages/SecretsPage.vue#L270-L276) — `onAppNameChange()` resets environments/vault/qualifier state when the Application selector changes; does not currently set a qualifier from the selector itself.
 - [srcV2/pages/SecretsPage.vue](../../srcV2/pages/SecretsPage.vue#L309-L316) — `watch(selectedQualifier, ...)` re-resolves vault metadata reactively, but only fires after `selectedQualifier` is set from a vault-resolution response (see `resolveSecretMetadata`, lines ~196-215), not from the Application selector directly.
 - [srcV2/pages/SecretsPage.vue](../../srcV2/pages/SecretsPage.vue#L597-L603) — existing "Sub-application" `<select>` renders only when `qualifiers.length > 1`, populated from the `resolveSecretMetadata()` API response — this is the current (sole) path to reach a qualifier.
-- [services/secretsService.js](../../services/secretsService.js#L289) — `extractAppEnvPairs()` already emits `{name, environment, qualifier}` tuples for every recognized vault path, including IDM sub-apps under `_idmapplications` and `ayaApplications`/`ayaCoreServices`. No backend change needed to obtain this data — it is already returned by `GET /api/secrets/apps` and stored in `apps.value`.
+- [services/secretsService.js](../../services/secretsService.js#L289) — `extractAppEnvPairs()` already emits `{name, environment, qualifier}` tuples for every recognized vault path, including IDM sub-apps under `_idmapplications` and `exampleApplications`/`exampleCoreServices`. No backend change needed to obtain this data — it is already returned by `GET /api/secrets/apps` and stored in `apps.value`.
 - [srcV2/services/api.ts](../../srcV2/services/api.ts#L120) — `api.getSecrets(appName, environment, target, vaultDir?, qualifier?)` already accepts and forwards `qualifier` in its query string. No signature change needed.
 - [srcV2/pages/SecretsPage.spec.ts](../../srcV2/pages/SecretsPage.spec.ts#L484-L502) — existing "Bug 3 fix" test confirms environment dedup across multiple qualifiers for the same environment already works; this PRD's environment-scoping fix must not regress that test.
 
@@ -71,7 +71,7 @@ A second, related bug: `filteredEnvironmentOptions` filters by `app.name` alone,
 - **Acceptance criteria:**
   - AC1: Given `apps.value` contains `idm` entries with qualifiers `autobk`, `notif`, `idmprtl`, `allctmpr`, the rendered `<select>` contains 4 distinct qualifier options under one `<optgroup label="idm">`.
   - AC2: Given `apps.value` contains a root app with no qualifier entries at all (e.g. `webapp01`), it renders as a single selectable option with `value="webapp01"` (flat, non-composite), and `option[value="webapp01"]` matches exactly once.
-  - AC3: Given `ayaApplications`/`ayaCoreServices`, the qualifier option is directly selectable without first triggering an ambiguous-vault response.
+  - AC3: Given `exampleApplications`/`exampleCoreServices`, the qualifier option is directly selectable without first triggering an ambiguous-vault response.
   - AC4: No duplicate options are rendered for the same `{name, qualifier}` pair even if multiple environments share that pair (dedup preserved, consistent with existing "Bug 3 fix" test intent).
   - AC5: For a root name with a mix of qualified and unqualified entries (e.g. `idm`), a root-only option with value `"idm::"` is rendered in addition to the qualifier options. For a root name with only qualified entries, no root-only option is rendered.
 
@@ -139,7 +139,7 @@ A second, related bug: `filteredEnvironmentOptions` filters by `app.name` alone,
 - **Validation:** Manual keyboard-only pass on the rendered selector; spec assertion that a qualifier option's `value`/label is present and selectable via a single `setValue()`/`trigger('change')` call.
 
 ### NFR-005: Scalability
-- **Target:** The grouped-option approach scales linearly with the number of distinct `{name, qualifier}` pairs returned by `GET /api/secrets/apps` (currently on the order of tens of entries); no pagination or virtualization is required at current or foreseeable data volumes (IDM's 4 sub-apps + `ayaApplications`'s 1 qualifier + flat root apps).
+- **Target:** The grouped-option approach scales linearly with the number of distinct `{name, qualifier}` pairs returned by `GET /api/secrets/apps` (currently on the order of tens of entries); no pagination or virtualization is required at current or foreseeable data volumes (IDM's 4 sub-apps + `exampleApplications`'s 1 qualifier + flat root apps).
 - **Validation:** Existing `apps.value` data volume observed in production is within native `<select>` rendering limits; no perceptible render delay in manual testing.
 
 ## 8. API and Data Impact

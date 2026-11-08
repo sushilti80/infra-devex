@@ -106,8 +106,8 @@ describe('BT-12 shipFailureClassifier', () => {
       expect(JSON.stringify(f)).not.toMatch(/IGNORE ME|at foo/)
     })
     it('keeps a github.com run URL and runStillQueued', () => {
-      const f = c.buildFailure('RUNNER_UNAVAILABLE', { runUrl: 'https://github.com/Aya-DevOpsTeam/aya-flux/actions/runs/1', runStillQueued: true, hint: 'runner_busy' })
-      expect(f.details).toEqual({ runUrl: 'https://github.com/Aya-DevOpsTeam/aya-flux/actions/runs/1', runStillQueued: true, hint: 'runner_busy' })
+      const f = c.buildFailure('RUNNER_UNAVAILABLE', { runUrl: 'https://github.com/organization/flux-config/actions/runs/1', runStillQueued: true, hint: 'runner_busy' })
+      expect(f.details).toEqual({ runUrl: 'https://github.com/organization/flux-config/actions/runs/1', runStillQueued: true, hint: 'runner_busy' })
     })
     it('catalogue text never contains stack traces or secrets', () => {
       expect(JSON.stringify(c.CATALOGUE)).not.toMatch(/at \w+ \(|Error:|\.js:\d+|ghp_|Bearer /)

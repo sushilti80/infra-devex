@@ -152,14 +152,14 @@ const VAULT_ROOTS = ['infrastructure', 'azureDatabricks'];
 
 // FR-003 Round 4: grouping directories that organise sub-apps under one app but are themselves
 // neither an environment nor a vault. Spec §FR-003(c), §4 row 2. Curated allow-list (not
-// auto-learned): `keyvaults` (plural, ayaCoreServices), `_idmapplications` (idm sub-apps).
+// auto-learned): `keyvaults` (plural, exampleCoreServices), `_idmapplications` (idm sub-apps).
 const GROUPING_DIR_SKIP_LIST = new Set(['keyvaults', '_idmapplications']);
 const QUALIFIER_GROUPING_DIRS = new Set(['_idmapplications']);
 const QUALIFIER_BEFORE_GROUPING_DIRS = new Set(['keyvaults']);
 
 // Segment name used by Terragrunt include-only directories (e.g. itg/_common/keyvault.hcl) that
 // are never themselves a selectable vault. NOT an env-agnostic "matches any environment" marker —
-// a literal `shared` segment (e.g. ayaApplications/ayaCoreServices/keyvaults/shared) is a real,
+// a literal `shared` segment (e.g. exampleApplications/exampleCoreServices/keyvaults/shared) is a real,
 // distinct sibling environment alongside dev/prod/sand and must only match when requested.
 const SHARED_SEGMENT_RE = /(^_?common$|^shared$)/i;
 

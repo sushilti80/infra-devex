@@ -21,14 +21,14 @@ import { addRecent, readRecent } from '@v2/utils/shipRecentStorage'
 import { CID, status, succeeded, failed } from '@v2/components/ship/ship.fixtures'
 
 const CONFIG = {
-  allowedOrgs: ['Aya-DevOpsTeam'], supportedLanguages: ['Node.js', 'Python'], identity: { state: 'linked' }, previewConfiguredEnvs: [],
+  allowedOrgs: ['organization'], supportedLanguages: ['Node.js', 'Python'], identity: { state: 'linked' }, previewConfiguredEnvs: [],
   defaults: { port: 8080, healthPath: '/healthz', bump: 'patch', teamLabel: 'software-engineering' },
   limits: { portMin: 1024, portMax: 65535, recentMax: 20, pollIntervalMs: 15000 }
 }
 const ok = (data: unknown) => ({ success: true, data })
 const httpError = (s: number, code: string, extra: Record<string, unknown> = {}) => ({ response: { status: s, headers: {}, data: { success: false, error: { code, message: code, ...extra } } } })
 const shipEnv = (over: Record<string, unknown> = {}) => ({ id: 'devsand', displayName: 'Dev Sandbox', subscriptionId: 's', enabled: true, features: { customInfra: true, templates: true, aks: true, shipFromRepo: true }, ...over })
-const started = { correlationId: CID, app: 'my-app', env: 'devsand', repo: 'Aya-DevOpsTeam/my-app', branch: 'trunk', startedAt: '2026-01-01T00:00:00Z', appState: 'new', effectiveSettings: { port: 8080, healthPath: '/healthz' }, settingsIgnored: [], rollout: 'preview_pr' }
+const started = { correlationId: CID, app: 'my-app', env: 'devsand', repo: 'organization/my-app', branch: 'trunk', startedAt: '2026-01-01T00:00:00Z', appState: 'new', effectiveSettings: { port: 8080, healthPath: '/healthz' }, settingsIgnored: [], rollout: 'preview_pr' }
 
 async function mountPage(opts: { envs?: unknown[] } = {}) {
   const pinia = createPinia()
@@ -77,7 +77,7 @@ beforeEach(() => {
   window.history.replaceState({}, '', '/')
   Object.values(api).forEach(f => f.mockReset())
   api.getShipConfig.mockResolvedValue(ok(CONFIG))
-  api.listShipRepos.mockResolvedValue(ok({ repos: [{ fullName: 'Aya-DevOpsTeam/my-app', org: 'Aya-DevOpsTeam', name: 'my-app', defaultBranch: 'trunk', private: true }], identity: { state: 'linked' }, truncated: false }))
+  api.listShipRepos.mockResolvedValue(ok({ repos: [{ fullName: 'organization/my-app', org: 'organization', name: 'my-app', defaultBranch: 'trunk', private: true }], identity: { state: 'linked' }, truncated: false }))
   api.listShipBranches.mockResolvedValue(ok({ branches: [{ name: 'trunk', isDefault: true }], defaultBranch: 'trunk' }))
   api.getShipAppState.mockResolvedValue(ok({ appState: 'new', ownership: 'unclaimed', ownershipSource: 'github' }))
   api.getShipLogs.mockResolvedValue(ok({ stage: 'prepare', text: '', offset: 0, complete: false, available: false, truncated: false, skippedBytes: 0, totalBytes: 0 }))
@@ -151,7 +151,7 @@ describe('ShipFromRepoPage — states (FT-14)', () => {
 
 describe('ShipFromRepoPage — ship flow (S4→S7) with polling', () => {
   async function pickAndShip(ctx: Awaited<ReturnType<typeof mountPage>>) {
-    await ctx.ship.selectRepo('Aya-DevOpsTeam/my-app')
+    await ctx.ship.selectRepo('organization/my-app')
     await flushPromises()
     await ctx.w.get('form').trigger('submit')
     await flushPromises()
@@ -332,7 +332,7 @@ describe('ShipFromRepoPage — Ship new version (FT-13)', () => {
     await w.findAll('button').find(b => b.text() === 'Ship new version')!.trigger('click')
     await flushPromises()
     expect(w.find('form').exists()).toBe(true)
-    expect(ship.draft).toMatchObject({ repo: 'Aya-DevOpsTeam/my-app', app: 'my-app', branch: 'release', port: 3000, healthPath: '/health', bump: 'minor', namespace: 'ns1', teamLabel: 'team-x' })
+    expect(ship.draft).toMatchObject({ repo: 'organization/my-app', app: 'my-app', branch: 'release', port: 3000, healthPath: '/health', bump: 'minor', namespace: 'ns1', teamLabel: 'team-x' })
     expect((w.get('#ship-app').element as HTMLInputElement).value).toBe('my-app')
     expect(window.location.search).toBe('')
     w.unmount()
@@ -345,7 +345,7 @@ describe('ShipFromRepoPage — Ship new version (FT-13)', () => {
     await flushPromises()
     await w.findAll('button').find(b => b.text() === 'Ship new version')!.trigger('click')
     await flushPromises()
-    expect(ship.draft).toMatchObject({ repo: 'Aya-DevOpsTeam/my-app', app: 'my-app', branch: 'trunk', port: 8080, healthPath: '/healthz', bump: 'patch' })
+    expect(ship.draft).toMatchObject({ repo: 'organization/my-app', app: 'my-app', branch: 'trunk', port: 8080, healthPath: '/healthz', bump: 'patch' })
     w.unmount()
   })
 

@@ -251,8 +251,8 @@ echo "Test Result: $passed / $total passed"
 echo ""
 
 # Save test report
-TEST_REPORT="/Users/Sushil.Tiwari/self-service-infra/docs/test-results/deploy-button-test-$(date +%Y%m%d-%H%M%S).txt"
-mkdir -p "/Users/Sushil.Tiwari/self-service-infra/docs/test-results"
+TEST_REPORT="/Users/Alex.Smith/self-service-infra/docs/test-results/deploy-button-test-$(date +%Y%m%d-%H%M%S).txt"
+mkdir -p "/Users/Alex.Smith/self-service-infra/docs/test-results"
 
 cat > "$TEST_REPORT" << EOF
 Vue Deploy Button Test Report

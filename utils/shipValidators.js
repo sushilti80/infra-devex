@@ -1,6 +1,6 @@
 /**
  * Ship-from-repo request validation (spec §4.4, NFR-004). Pure checks + express-validator chains.
- * Allowlists/flags are read from config at call time. Every value that reaches the aya-flux
+ * Allowlists/flags are read from config at call time. Every value that reaches the flux-config
  * workflow is whitelisted here (it is string-interpolated into shell/Python there).
  */
 const { body, param, query, validationResult } = require('express-validator');

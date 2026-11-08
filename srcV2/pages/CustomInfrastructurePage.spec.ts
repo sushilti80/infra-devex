@@ -41,7 +41,7 @@ vi.mock('@v2/services/api', () => ({
         name: 'jobplc',
         environment: 'devsand',
         description: 'Job PLC Service',
-        owner: 'Vijay Batham',
+        owner: 'Example User',
         lifecycle: 'Live',
         modules: ['functionAppSvcWindows', 'keyvault'],
         costCenter: 'self-service',

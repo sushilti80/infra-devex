@@ -634,7 +634,7 @@ class GitHubService {
       if (workflowType === 'agent') {
         repoToSearch = config.github.infrastructureLiveRepo;
       } else if (workflowType === 'create-repo') {
-        repoToSearch = 'AyaHealthcare/self-service-catalog';
+        repoToSearch = config.github.codeServiceRepo;
       } else {
         repoToSearch = config.github.serviceRepo;
       }

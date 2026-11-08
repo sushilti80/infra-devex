@@ -83,13 +83,10 @@ describe('SharedHeader', () => {
       expect(templateLink.exists()).toBe(false)
     })
 
-    it('shows Consult Archie link when authenticated', () => {
+    it('does not expose organization-specific external navigation', () => {
       mockIsAuthenticated.value = true
       const wrapper = mount(SharedHeader)
-      const archieLink = wrapper.findAll('nav a').find(link => link.text().includes('Consult Archie'))
-      expect(archieLink).toBeTruthy()
-      expect(archieLink?.attributes('href')).toBe('https://archie.ayahealthcare.com/')
-      expect(archieLink?.attributes('target')).toBe('_blank')
+      expect(wrapper.findAll('nav a').every(link => link.attributes('href') === '#')).toBe(true)
     })
 
     it('highlights the active navigation item', async () => {
@@ -209,7 +206,6 @@ describe('SharedHeader', () => {
       const wrapper = mount(SharedHeader)
       expect(wrapper.find('header').exists()).toBe(true)
       expect(wrapper.find('nav').exists()).toBe(true)
-      // When authenticated: 6 nav items + 1 Consult Archie external link = 7 total
       const navLinks = wrapper.findAll('nav a')
       expect(navLinks.length).toBeGreaterThanOrEqual(2) // At minimum 2 (home + docs)
     })

@@ -2,7 +2,7 @@
 
 **Created**: November 2025  
 **Updated**: January 30, 2026 (Vue 3 context)  
-**Related Epic**: [DSO-1893 - Vue.js Migration](https://ayadev.atlassian.net/browse/DSO-1893)  
+**Related Epic**: [DSO-1893 - Vue.js Migration](https://example.atlassian.net/browse/DSO-1893)
 **Target**: srcV2/ (Vue 3 + TypeScript)
 
 ⚠️ **Important**: This integration targets the **new Vue 3 implementation** in srcV2/ directory. See [Vue.js Migration Context](./entra-id-integration-plan.md#vuejs-migration-context) for details.

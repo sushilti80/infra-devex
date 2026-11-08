@@ -16,7 +16,7 @@ Implement the v2 design system for Self Service Infrastructure Catalog by migrat
 ## 🎁 Complete Handoff Package Location
 
 ```
-/Users/Sushil.Tiwari/self-service-infra/docs/vue-handoff/
+/Users/Alex.Smith/self-service-infra/docs/vue-handoff/
 ```
 
 ### 📚 Read These Files in Order:
@@ -31,7 +31,7 @@ Implement the v2 design system for Self Service Infrastructure Catalog by migrat
 ### 🎨 Design References:
 
 ```
-/Users/Sushil.Tiwari/self-service-infra/docs/screens/*.html
+/Users/Alex.Smith/self-service-infra/docs/screens/*.html
 ```
 
 11 HTML screens with complete v2 designs (reference implementations)
@@ -203,7 +203,7 @@ Use **5-implementation-checklist.md** to track progress:
 ## 🎬 Getting Started Command
 
 ```bash
-cd /Users/Sushil.Tiwari/self-service-infra
+cd /Users/Alex.Smith/self-service-infra
 
 # 1. Review handoff package
 ls -la docs/vue-handoff/

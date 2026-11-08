@@ -1,0 +1,33 @@
+parameters:
+  directorypath: ''
+  env: ''
+
+steps:
+- script: |
+    # Install jq on Linux agents
+    echo "Installing jq..."
+    sudo apt-get install -y jq
+    # Verify jq installation
+    jq --version
+  displayName: 'Install dependencies'
+
+- script: |
+    # Initialize empty Apply_errors.md and Apply_success.md files
+    echo "# Terraform Apply Errors" > $(System.DefaultWorkingDirectory)/Apply_errors.md
+    echo "# Terraform Apply Success" > $(System.DefaultWorkingDirectory)/Apply_success.md
+    echo "# Combined Apply Results" > $(System.DefaultWorkingDirectory)/Apply_combined.md
+
+    while read -r dir; do
+      echo "Processing directory: $dir"
+
+      cd $dir
+      # terragrunt run-all refresh -no-color -compact-warnings
+
+      terragrunt run --all --non-interactive --parallelism 1 -- destroy -lock=false
+
+
+
+    done < $(System.DefaultWorkingDirectory)/changed_dirs.txt
+
+  displayName: 'Apply Terraform'
+  # workingDirectory: '$(System.DefaultWorkingDirectory)'

@@ -9,7 +9,7 @@
 | Date         | 2025-07-15                                                                 |
 | Status       | `draft`                                                                    |
 | Stakeholders | Platform Engineering, DevOps Team, App Developers (self-service consumers) |
-| Repository   | `Aya-DevOpsTeam/self-service-infra`                                        |
+| Repository   | `organization/self-service-infra`                                        |
 | PRD Slug     | `service-catalog-prefill`                                                  |
 
 ---
@@ -64,7 +64,7 @@ connected.
 1. Add an optional **"Load Existing App"** selector to the **Custom Infrastructure** form.
 2. When a user selects an app + environment combination, all matching fields in the form must be
    pre-populated from the `docs/metadata/{appName}-{environment}.json` file in the
-   `Aya-DevOpsTeam/service-catalog` repository.
+   `organization/service-catalog` repository.
 3. Pre-filled values must remain fully editable — the user can override any field before submitting.
 4. The selector must use data from the existing `GET /api/installed-apps` endpoint (no new
    catalog list call required).
@@ -177,7 +177,7 @@ infrastructure will start here.
 
 **Description**: Create a new authenticated REST endpoint that accepts an app name and environment
 as path parameters and returns a normalized metadata object sourced from
-`docs/metadata/{appName}-{environment}.json` in the `Aya-DevOpsTeam/service-catalog` repository.
+`docs/metadata/{appName}-{environment}.json` in the `organization/service-catalog` repository.
 
 **Priority**: `must`
 
@@ -195,7 +195,7 @@ assumption and is not suitable for direct frontend consumption.
       "name": "jobplc",
       "environment": "devsand",
       "description": "jobplc",
-      "owner": "Vijay Batham",
+      "owner": "Example User",
       "lifecycle": "Live",
       "modules": ["functionAppSvcWindows"],
       "costCenter": "self-service",
@@ -506,7 +506,7 @@ getAppMetadata: (appName: string, environment: string): Promise<ApiResponse> =>
     "name": "jobplc",
     "environment": "devsand",
     "description": "jobplc",
-    "owner": "Vijay Batham",
+    "owner": "Example User",
     "lifecycle": "Live",
     "modules": ["functionAppSvcWindows"],
     "costCenter": "self-service",
@@ -529,7 +529,7 @@ getAppMetadata: (appName: string, environment: string): Promise<ApiResponse> =>
 
 ### Source Repository
 
-All metadata is sourced from `Aya-DevOpsTeam/service-catalog` at path `docs/metadata/`.
+All metadata is sourced from `organization/service-catalog` at path `docs/metadata/`.
 Authentication uses the existing Infrastructure GitHub App (`GITHUB_APP_ID` +
 `GITHUB_INSTALLATION_ID`). No new credentials are required.
 
@@ -548,7 +548,7 @@ Authentication uses the existing Infrastructure GitHub App (`GITHUB_APP_ID` +
 6. User selects "devsand" and clicks "Load".
 7. A loading spinner appears on the Load button (≤ 2 s).
 8. Form fields are populated: projectName = "jobplc", descriptiveName = "jobplc",
-   environment = "devsand", owner = "Vijay Batham".
+   environment = "devsand", owner = "Example User".
 9. A blue banner "📋 Pre-filled from jobplc / devsand" appears.
 10. Step 1 (Module Selection): "functionAppSvcWindows" is already checked.
 11. User fills in projectAge (new value) and approvalNumber (new JIRA ticket).
@@ -586,7 +586,7 @@ Authentication uses the existing Infrastructure GitHub App (`GITHUB_APP_ID` +
    files in `docs/metadata/`. Legacy files using `{appName}.json` (no environment suffix) are
    edge cases that the fallback scan in `getApplicationDetails()` (FR-007) handles.
 2. The Infrastructure GitHub App installation already covers read access to
-   `Aya-DevOpsTeam/service-catalog`. No new credential setup is required.
+   `organization/service-catalog`. No new credential setup is required.
 3. `projectName` in the form maps 1:1 to the `project` (or `projectName`) field in the metadata
    JSON. There is no separate "display name" vs "identifier" distinction in the selector.
 4. The `AppSelector.vue` component does not need to support multi-select (one app at a time).

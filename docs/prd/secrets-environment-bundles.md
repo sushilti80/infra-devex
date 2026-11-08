@@ -10,7 +10,7 @@
 | Date         | 2026-09-18                                                                           |
 | Status       | `draft` (revised; pending PRD Challenger round 2)                                    |
 | Stakeholders | Platform Engineering, Application Developers, Security/Compliance Team, DevSecOps    |
-| Repository   | `Aya-DevOpsTeam/self-service-infra`                                                  |
+| Repository   | `organization/self-service-infra`                                                  |
 | Supersedes (partial) | `secrets-environment-scope` — FR-002 (free multi-select), FR-004 (N-PR-per-environment fan-out), NFR-REL-001 (per-environment independence), for any environment that is a member of a configured bundle. See §4/§5/§10. |
 | Extends      | `secret-self-service` (2026-07-31), `secrets-environment-scope` (2026-08-08, resolves its OQ-004), `secrets-ui-enhancements` (2026-08-01) |
 
@@ -68,7 +68,7 @@ binary tier model or the N-PR-per-environment mechanism:
    (lines 908–913, 956) flagged the CODEOWNERS entry for
    `infrastructure/**/keyvault*/secrets.enc.yaml` in `infrastructure-live`/`service-catalog` as an
    *"implementation follow-up... set at build time,"* never confirmed resolved. Verification
-   attempted for this PRD (`gh api repos/Aya-DevOpsTeam/infrastructure-live` via the same GitHub
+   attempted for this PRD (`gh api repos/organization/infrastructure-live` via the same GitHub
    App this platform uses) returned `404 Not Found` — this workspace's credentials cannot inspect
    branch protection/CODEOWNERS state in either target repo directly (see §10 OQ-001).
 
@@ -181,13 +181,13 @@ current (about-to-be-wrong) `stage`/`cint`/`hot`/`demo` classifications.
 | Single-file-per-commit GitOps mechanism | `services/secretsService.js` `submitSecretViaGitOps()` (lines 714–849) | Uses `githubService.createOrUpdateFile()` (Contents API, one file per call) to write exactly one vault's `secrets.enc.yaml`, then opens one PR — this mechanism has no existing path for one commit spanning multiple files/vaults across environments |
 | Request/response contract (existing, unmodified by this feature except additively) | [routes/api.js](../../routes/api.js) `POST /api/secrets` (lines 313–533) | Validator chain enforces exactly one of `environment` (legacy singular) XOR `environments` (array); response is `results: []` for the fan-out shape. No `bundleId` concept exists. |
 | Server never trusts client production-tier confirmation | `routes/api.js` lines 471–474, 486–488 | Re-derives `productionEnvironments` server-side via `classifyEnvironmentTier()` for the audit log, but does not reject an unconfirmed write — confirmed residual risk in `docs/readiness/secrets-environment-scope-readiness.md` Security Gate section |
-| Confirmed real environment folder names matching every requested bundle member | `docs/roadmaps/plan-layeredKeyVaultResolution.md` ("Validated test case: ayaApplications", live probe 2026-08-12) | `infrastructure/ayaApplications/ayaCoreServices/keyvaults/<env>/keyvault` in `infrastructure-live` has exactly: `dev`, `devsand`, `int`, `prod`, `sand`, `sint`, `stage`, `hot`, `dr`, `demo`, `cint` — **all 11 requested bundle members already exist as real, deployed environment folders for at least one app.** This confirms `dr` is real infra-live evidence, not a hypothetical. |
+| Confirmed real environment folder names matching every requested bundle member | `docs/roadmaps/plan-layeredKeyVaultResolution.md` ("Validated test case: exampleApplications", live probe 2026-08-12) | `infrastructure/exampleApplications/exampleCoreServices/keyvaults/<env>/keyvault` in `infrastructure-live` has exactly: `dev`, `devsand`, `int`, `prod`, `sand`, `sint`, `stage`, `hot`, `dr`, `demo`, `cint` — **all 11 requested bundle members already exist as real, deployed environment folders for at least one app.** This confirms `dr` is real infra-live evidence, not a hypothetical. |
 | No plaintext secret value in PR body (existing invariant) | `services/secretsService.js` lines 835–845 | `prBody` array includes only Target/App/Environment/Qualifier/Vault/Jira/secret **names**/Submitted-by/Correlation-ID — never `secretValue` |
 | No plaintext secret value in validation error responses (existing invariant) | `routes/api.js` lines 340–354 | `redactSecretValues()` recurses `nestedErrors` to strip any submitted `secretValue` from a 400 response body |
 | Portal-scoped, unrelated "environment" concept | [data/environments.json](../../data/environments.json) | 3 entries (`devsand`, `sand` ×2, `aisand`) gating unrelated portal feature flags (`customInfra`/`templates`/`aks`/`secrets`) — confirmed distinct from bundle/tier folder-name concepts by both prior secrets PRDs; unaffected by this feature |
-| Versioned-config-via-PR precedent (this repo) | [CODEOWNERS](../../CODEOWNERS) (`* @Aya-DevOpsTeam/team-devops-write`) | Every file change in this repository, including any `data/*.json` config, already requires a reviewed PR merge — the same convention this feature's bundle config file will use, no new mechanism needed |
+| Versioned-config-via-PR precedent (this repo) | [CODEOWNERS](../../CODEOWNERS) (`* @organization/team-devops-write`) | Every file change in this repository, including any `data/*.json` config, already requires a reviewed PR merge — the same convention this feature's bundle config file will use, no new mechanism needed |
 | Unresolved external CODEOWNERS/PR-review gap for target repos | `docs/prd/secret-self-service.md` lines 908–913, 956 | Flagged as an "implementation follow-up... set at build time" for `infrastructure/**/keyvault*/secrets.enc.yaml` in **both** `infrastructure-live` and `service-catalog` — never confirmed resolved by any later PRD/readiness report |
-| Confirmed inaccessibility of target repos from this workspace | Verified live during this PRD's authoring: `gh api repos/Aya-DevOpsTeam/infrastructure-live` (and the equivalent MCP GitHub tool call) returned `404 Not Found` | This workspace cannot directly inspect or configure branch protection/CODEOWNERS state in either target repo — the actual PR-review enforcement for release bundles is an external dependency, not something this PRD's engineering phase can verify or ship end-to-end |
+| Confirmed inaccessibility of target repos from this workspace | Verified live during this PRD's authoring: `gh api repos/organization/infrastructure-live` (and the equivalent MCP GitHub tool call) returned `404 Not Found` | This workspace cannot directly inspect or configure branch protection/CODEOWNERS state in either target repo — the actual PR-review enforcement for release bundles is an external dependency, not something this PRD's engineering phase can verify or ship end-to-end |
 | Prior open question this PRD resolves | `docs/prd/secrets-environment-scope.md` OQ-004 (lines 722–734) | *"Should the UI support a third tier bucket... or does Platform Engineering want a richer taxonomy?"* — left open, "revisit only if Platform Engineering later requests a richer taxonomy." That request is this PRD. |
 
 ### Gaps and Limitations
@@ -873,7 +873,7 @@ response fields, require no changes.
 ### Explicit Assumptions
 
 - `data/secretBundles.json` lives in this repository (`self-service-infra`) and is governed by
-  the existing CODEOWNERS-gated PR process already in effect here (`* @Aya-DevOpsTeam/team-devops-write`),
+  the existing CODEOWNERS-gated PR process already in effect here (`* @organization/team-devops-write`),
   identical to `data/environmentTiers.json`/`data/environments.json`/`data/modules.json`/
   `data/roles.json`.
 - The GitHub App installation already used for `secret-self-service`/`secrets-environment-scope`

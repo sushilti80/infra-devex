@@ -190,7 +190,7 @@ correlation as the fallback, and do not claim end-to-end tracing from logs alone
    repository target, and submission mode. If unknown, begin with both namespaces
    in a small window; expand time deliberately, not indefinitely.
 2. Discover the available Datadog tools before invoking them. For the current MCP
-   integration use `datadogaya-get_logs`; start with a small limit and oldest-first
+   integration use `datadogexample-get_logs`; start with a small limit and oldest-first
    sorting. Do not invoke mutating tools or run synthetic submissions during triage.
 3. Example request (replace the timestamps and request ID):
 

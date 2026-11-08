@@ -84,7 +84,7 @@ SelfService Infrastructure Catalog
 │
 └── GitHub Integration
     ├── service-catalog - Metadata storage, infrastructure workflows
-    ├── aya-flux - Kubernetes manifests, AKS GitOps
+    ├── flux-config - Kubernetes manifests, AKS GitOps
     └── terraform-modules - Reusable Terraform modules
 ```
 
@@ -153,7 +153,7 @@ SelfService Infrastructure Catalog
 1. User fills AKS form → Generate correlationId
 2. POST /api/aks-deploy {appname, namespace, image_name, image_tag, correlationId}
 3. AKSService.deployToAks() → Validate K8s naming conventions
-4. GitHubService.triggerWorkflow("generate-app.yaml" in aya-flux repo)
+4. GitHubService.triggerWorkflow("generate-app.yaml" in flux-config repo)
 5. GitHub Actions: Generate K8s manifests → Commit to flux repo
 6. Flux operator detects change → Deploys to AKS cluster
 7. Client polls GET /api/aks-status-by-correlation/{correlationId}
@@ -202,11 +202,11 @@ SelfService Infrastructure Catalog
 
 ### Deployment Steps
 1. Build Docker image: `docker build -t self-service-infra:latest .`
-2. Push to ACR: `docker push sharedwus3acr2.azurecr.io/self-service-infra:latest`
-3. Update K8s manifests in aya-flux repository
+2. Push to ACR: `docker push exampleregistry.azurecr.io/self-service-infra:latest`
+3. Update K8s manifests in flux-config repository
 4. Flux automatically deploys to AKS
 5. Configure ingress: `kubectl apply -f kubernetes/ingress.yaml`
-6. Verify health: `curl https://self-service.sand.k8s.com/health`
+6. Verify health: `curl https://self-service.example.com/health`
 
 ### Environment Variables Required
 ```bash
@@ -225,9 +225,9 @@ AZURE_CLIENT_SECRET=...
 AZURE_SUBSCRIPTION_IDS={"devsand":"...", "sand":"..."}
 
 # Repositories
-GITHUB_SERVICE_REPO=Aya-DevOpsTeam/service-catalog
-GITHUB_MODULES_REPO=Aya-DevOpsTeam/terraform-modules
-AKS_FLUX_REPO=Aya-DevOpsTeam/aya-flux
+GITHUB_SERVICE_REPO=organization/service-catalog
+GITHUB_MODULES_REPO=organization/terraform-modules
+AKS_FLUX_REPO=organization/flux-config
 ```
 
 ---
@@ -253,7 +253,7 @@ AKS_FLUX_REPO=Aya-DevOpsTeam/aya-flux
 - Verify Kubernetes naming conventions (lowercase, alphanumeric, hyphens)
 - Check Flux operator is running in AKS cluster
 - Verify image exists in Azure Container Registry
-- Check aya-flux repository has correct structure
+- Check flux-config repository has correct structure
 
 ---
 
@@ -327,7 +327,7 @@ AKS_FLUX_REPO=Aya-DevOpsTeam/aya-flux
 1. Navigate to "AKS Deploy"
 2. Fill form (app name, namespace, image name, image tag)
 3. Click "Deploy" → Correlation ID generated
-4. Workflow generates K8s manifests in aya-flux
+4. Workflow generates K8s manifests in flux-config
 5. Flux operator deploys to AKS cluster
 6. Poll status → view deployment progress
 

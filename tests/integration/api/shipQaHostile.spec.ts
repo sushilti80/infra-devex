@@ -15,7 +15,7 @@ const { config, githubService, aksService, ship, api, fx, shipRouter, apiRouter,
 
 const MIN = 60_000
 const DAY = 24 * 60 * MIN
-const good = { repo: 'AyaHealthcare/my-svc', branch: 'main', app: 'my-app', env: 'devsand' }
+const good = { repo: 'organization/my-svc', branch: 'main', app: 'my-app', env: 'devsand' }
 let env: ReturnType<typeof h.wire>
 let w: any
 
@@ -65,16 +65,16 @@ describe('POST /api/ship hostile inputs (NFR-004) — every one ⇒ 400 on the n
   const table: Array<[string, any, string]> = [
     // repo
     ['repo missing', { ...good, repo: undefined }, 'repo'],
-    ['repo org only', { ...good, repo: 'AyaHealthcare' }, 'repo'],
-    ['repo empty name', { ...good, repo: 'AyaHealthcare/' }, 'repo'],
-    ['repo pasted URL', { ...good, repo: 'https://github.com/AyaHealthcare/my-svc' }, 'repo'],
-    ['repo .git suffix', { ...good, repo: 'AyaHealthcare/my-svc.git' }, 'repo'],
-    ['repo dot-dot', { ...good, repo: 'AyaHealthcare/..' }, 'repo'],
-    ['repo shell metachar', { ...good, repo: 'AyaHealthcare/my-svc;id' }, 'repo'],
-    ['repo trailing newline', { ...good, repo: `AyaHealthcare/my-svc${NL}` }, 'repo'],
-    ['repo extra segment', { ...good, repo: 'AyaHealthcare/a/b' }, 'repo'],
+    ['repo org only', { ...good, repo: 'organization' }, 'repo'],
+    ['repo empty name', { ...good, repo: 'organization/' }, 'repo'],
+    ['repo pasted URL', { ...good, repo: 'https://github.com/organization/my-svc' }, 'repo'],
+    ['repo .git suffix', { ...good, repo: 'organization/my-svc.git' }, 'repo'],
+    ['repo dot-dot', { ...good, repo: 'organization/..' }, 'repo'],
+    ['repo shell metachar', { ...good, repo: 'organization/my-svc;id' }, 'repo'],
+    ['repo trailing newline', { ...good, repo: `organization/my-svc${NL}` }, 'repo'],
+    ['repo extra segment', { ...good, repo: 'organization/a/b' }, 'repo'],
     ['repo org not allowlisted', { ...good, repo: 'Evil/my-svc' }, 'repo'],
-    ['repo as array', { ...good, repo: ['AyaHealthcare/my-svc'] }, 'repo'],
+    ['repo as array', { ...good, repo: ['organization/my-svc'] }, 'repo'],
     ['repo as object', { ...good, repo: { toString: 'x' } }, 'repo'],
     ['repo null', { ...good, repo: null }, 'repo'],
     ['repo number', { ...good, repo: 123 }, 'repo'],
@@ -125,9 +125,9 @@ describe('POST /api/ship hostile inputs (NFR-004) — every one ⇒ 400 on the n
   })
 
   it('valid boundaries are accepted and normalised: canonical org case, port 1024/65535 (also as string), healthPath "/" and 255 chars', async () => {
-    const r1 = await post({ ...good, repo: 'ayahealthcare/my-svc', port: 1024, healthPath: '/', app: 'a1' })
+    const r1 = await post({ ...good, repo: 'organization/my-svc', port: 1024, healthPath: '/', app: 'a1' })
     expect(r1.statusCode, JSON.stringify(r1.body)).toBe(202)
-    expect(env.dispatched[0].inputs.repo).toBe('AyaHealthcare/my-svc')
+    expect(env.dispatched[0].inputs.repo).toBe('organization/my-svc')
     const r2 = await post({ ...good, port: '65535', healthPath: `/${'a'.repeat(254)}`, app: 'a2', branch: 'release/1.2.3_rc-1' })
     expect(r2.statusCode, JSON.stringify(r2.body)).toBe(202)
     expect(env.dispatched[1].inputs.port).toBe('65535')
@@ -236,7 +236,7 @@ describe('authorization is oid-based; read ≠ mutate; tampered run sets are 404
     const missing = await ship('GET', `/status/${fx.mintAt(Date.now() - 10 * MIN)}`, { token: 'stranger' })
     for (const res of [forbidden, missing]) {
       expect(Object.keys(res.body.error).sort()).toEqual(['code', 'message'])
-      expect(JSON.stringify(res.body)).not.toMatch(/my-app|my-svc|AyaHealthcare|sam@|11111111|octocat|actions\/runs/)
+      expect(JSON.stringify(res.body)).not.toMatch(/my-app|my-svc|organization|sam@|11111111|octocat|actions\/runs/)
     }
   })
   it('runs sharing a ship id but with a different oid/app/repo are treated as tampering: 404 for everyone, starter included', async () => {

@@ -407,7 +407,7 @@ Request:
   "appname": "my-web-app",
   "namespace": "my-web-app",
   "is_web_app": true,
-  "image_name": "sharedwus3acr2.azurecr.io/my-app",
+  "image_name": "exampleregistry.azurecr.io/my-app",
   "image_tag": "latest"
 }
 

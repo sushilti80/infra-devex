@@ -1,16 +1,16 @@
 # Ship from Repo: Platform Eng decision brief
 
-**Ask:** answer **H-6** so aya-flux work can start. Then settle the pilot items H-1 to H-5, H-7 and H-8.
-**Feature:** a user with limited platform knowledge picks a GitHub repo and branch in the portal. The platform builds it with Cloud Native Buildpacks, scans it with Wiz, pushes a semver image to `sharedwus3acr2`, and opens the aya-flux config PR with a preview URL.
-**State:** the portal and backend slice is built, but the feature is off (`features.shipFromRepo=false`) and every ship fails closed. Nothing exists in aya-flux yet.
+**Ask:** answer **H-6** so flux-config work can start. Then settle the pilot items H-1 to H-5, H-7 and H-8.
+**Feature:** a user with limited platform knowledge picks a GitHub repo and branch in the portal. The platform builds it with Cloud Native Buildpacks, scans it with Wiz, pushes a semver image to `exampleregistry`, and opens the flux-config config PR with a preview URL.
+**State:** the portal and backend slice is built, but the feature is off (`features.shipFromRepo=false`) and every ship fails closed. Nothing exists in flux-config yet.
 **Pilot scope:** devsand only. Direction from the product owner: keep it simple and reuse what exists.
 
 **Source of truth:** `docs/architecture/ship-from-repo-spec.md` on PR #143 (branch `feature/ship-from-repo-prd`).
-**Full aya-flux work brief for your agent:** the spec's §3.4 (workflow contract), §5.2 (file list) and §6 (identities).
+**Full flux-config work brief for your agent:** the spec's §3.4 (workflow contract), §5.2 (file list) and §6 (identities).
 
-## 1. H-6: the one decision that blocks all aya-flux work
+## 1. H-6: the one decision that blocks all flux-config work
 
-Do you approve these **additive** changes in `Aya-DevOpsTeam/aya-flux`? Nothing merges until you answer.
+Do you approve these **additive** changes in `organization/flux-config`? Nothing merges until you answer.
 
 | # | Change | Risk |
 |---|---|---|
@@ -22,12 +22,12 @@ Do you approve these **additive** changes in `Aya-DevOpsTeam/aya-flux`? Nothing 
 | 6 | `ship-fixtures-ci.yaml` plus ~14 private `ship-fixture-*` repos and a read-only `ship-ci-bot`. | Low |
 
 **Design points to review**
-- **Untrusted code runs only on `ubuntu-latest`.** The build job has `permissions: {}` and no secrets. It never runs on `aya-devops-rs`.
-- **`aya-devops-rs` runs two jobs, `prepare` and `publish`.** These touch attacker-controlled bytes (a repo clone and an image tar). Compensating controls are a scrubbed environment (`env -i`, git config disabled, token via a file) and tar validation. The pool's ambient credentials remain. The product owner has accepted this risk for the devsand pilot (R-A6).
-- **Registry:** the existing `sharedwus3acr2`. The `publish` job can only push to `selfserve/<validated-app>`. The code enforces this, but the OIDC identity has registry-wide AcrPush. The product owner accepted that for the pilot (R-A7). ACR repository-scoped ABAC is a post-pilot follow-up.
+- **Untrusted code runs only on `ubuntu-latest`.** The build job has `permissions: {}` and no secrets. It never runs on `ubuntu-latest`.
+- **`ubuntu-latest` runs two jobs, `prepare` and `publish`.** These touch attacker-controlled bytes (a repo clone and an image tar). Compensating controls are a scrubbed environment (`env -i`, git config disabled, token via a file) and tar validation. The pool's ambient credentials remain. The product owner has accepted this risk for the devsand pilot (R-A6).
+- **Registry:** the existing `exampleregistry`. The `publish` job can only push to `selfserve/<validated-app>`. The code enforces this, but the OIDC identity has registry-wide AcrPush. The product owner accepted that for the pilot (R-A7). ACR repository-scoped ABAC is a post-pilot follow-up.
 - **GitHub Apps:** no new App. It reuses the Code App, with a token scoped to one repo, plus the Infrastructure App with `Checks: read` added.
 
-**Needed from you:** `Approved`, `Approved with changes: <list>`, or `Rejected: <reason>`, plus the owner who will review the aya-flux PRs.
+**Needed from you:** `Approved`, `Approved with changes: <list>`, or `Rejected: <reason>`, plus the owner who will review the flux-config PRs.
 
 ## 2. Pilot decisions (H-1 to H-5, H-7). Proposed answers, please confirm or override
 
@@ -37,8 +37,8 @@ Do you approve these **additive** changes in `Aya-DevOpsTeam/aya-flux`? Nothing 
 | **H-2** | How does an Entra user map to a GitHub login? | **Option A**, GitHub App user-to-server authorization. It is the only option that meets the repo-picker call budget. It needs a small spec addition and one more architecture review pass before the pilot. If you want to avoid that for now, say so, and Architect will propose B or C. | Architect, Security, Platform Eng |
 | **H-3** | Can the backend read ACR (network path and AcrPull on `selfserve/*`) to pre-check app ownership? | **Waive for the pilot.** Ownership is still enforced in `prepare`, about 1 to 2 minutes into the run. The only loss is an instant HTTP 403 from the API. The waiver needs the Security reviewer and the Platform Eng lead to both sign it. | Platform Eng and SRE, plus the two signers |
 | **H-4** | Which Entra app role or group object ID identifies platform-team members? They can see and manage other users' ships. | Name the role (preferred) or group ID. If left empty, nobody qualifies, which is a safe default. | Platform Eng |
-| **H-5** | Run the ship workflow from a dedicated protected ref, or from `main`? | **Use `main` for the pilot** (`SHIP_ALLOW_DEFAULT_REF=true`) with the `no-actions-cache` lint and CODEOWNERS. No aya-flux workflow on `main` uses `actions/cache` today. Security signs off after gate V-11 passes. A dedicated ref is post-pilot. | Security, Platform Eng |
-| **H-7** | Which GitHub orgs may users ship from, and which orgs is the Code App installed on? | Proposed: `Aya-DevOpsTeam` only for the pilot. Confirm the org list and the installation scope. | Platform Eng |
+| **H-5** | Run the ship workflow from a dedicated protected ref, or from `main`? | **Use `main` for the pilot** (`SHIP_ALLOW_DEFAULT_REF=true`) with the `no-actions-cache` lint and CODEOWNERS. No flux-config workflow on `main` uses `actions/cache` today. Security signs off after gate V-11 passes. A dedicated ref is post-pilot. | Security, Platform Eng |
+| **H-7** | Which GitHub orgs may users ship from, and which orgs is the Code App installed on? | Proposed: `organization` only for the pilot. Confirm the org list and the installation scope. | Platform Eng |
 
 ## 3. H-8: PM / product owner
 
@@ -52,7 +52,7 @@ Do you approve these **additive** changes in `Aya-DevOpsTeam/aya-flux`? Nothing 
 
 ## 5. Order of work after your answers
 
-1. **Phase 1, aya-flux:** workflow, scripts, environments, identities, fixtures. Needs H-6.
+1. **Phase 1, flux-config:** workflow, scripts, environments, identities, fixtures. Needs H-6.
 2. **Evidence:** run gates V-1 to V-12 and record them in `docs/SHIP-FROM-REPO-RUNBOOK.md`. A gate fails closed. A failure needs an Architect spec change, not a workaround.
 3. **Pilot:** needs H-1 to H-5 and H-7, the V-gates, and the Wiz container-image scan. The flag then flips on devsand.
 

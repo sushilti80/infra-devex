@@ -11,7 +11,7 @@ const cjsRequire = createRequire(import.meta.url)
 const githubService = cjsRequire('../../../services/githubService')
 const logger = cjsRequire('../../../utils/logger')
 
-const REPO = 'Aya-DevOpsTeam/infra-workflows'
+const REPO = 'organization/infra-workflows'
 const CID = '0194a000-0000-7000-8000-000000000001'
 const notFound = () => { const e: any = new Error('Not Found'); e.status = 404; throw e }
 let impl: Record<string, (a: any) => any>

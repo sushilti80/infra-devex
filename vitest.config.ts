@@ -22,6 +22,7 @@ export default defineConfig({
         test: {
           name: 'node',
           environment: 'node',
+          setupFiles: ['tests/setup-env.ts'],
           include: ['tests/smoke/**/*.spec.ts', 'tests/integration/**/*.spec.ts'],
           exclude: sharedExclude,
           globals: true,
@@ -36,6 +37,7 @@ export default defineConfig({
         test: {
           name: 'jsdom',
           environment: 'jsdom',
+          setupFiles: ['tests/setup-env.ts'],
           include: ['srcV2/**/*.spec.ts'],
           exclude: sharedExclude,
           globals: true,

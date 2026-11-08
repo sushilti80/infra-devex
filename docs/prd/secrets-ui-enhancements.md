@@ -10,7 +10,7 @@
 | Date         | 2026-08-01                                                                           |
 | Status       | `approved` (Challenger R2 passed)                                                   |
 | Stakeholders | Platform Engineering, Application Developers, Security/Compliance Team               |
-| Repository   | `Aya-DevOpsTeam/self-service-infra`                                                  |
+| Repository   | `organization/self-service-infra`                                                  |
 
 ---
 

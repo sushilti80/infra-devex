@@ -10,7 +10,7 @@
 | Date         | 2026-07-22                                                                          |
 | Status       | `draft`                                                                             |
 | Stakeholders | Platform Engineering, API Platform Team, Application Developers (API producers and consumers) |
-| Repository   | `Aya-DevOpsTeam/self-service-infra`                                                 |
+| Repository   | `organization/self-service-infra`                                                 |
 
 ---
 
@@ -18,7 +18,7 @@
 
 ### Current Pain
 
-Application developers at Aya who own or consume APIs must go through manual, ticket-driven processes
+Application developers at Example who own or consume APIs must go through manual, ticket-driven processes
 to perform routine Kong Konnect gateway operations: registering a new service, adding a route, attaching
 a plugin (e.g., rate-limiting, JWT authentication, request-transformation), or registering a Dev Portal
 application. Because the organisation already operates Kong Konnect Enterprise, these operations have a
@@ -382,7 +382,7 @@ New metadata file per Kong Service:
   "plugins": [
     { "name": "rate-limiting", "config": { "minute": 100 } }
   ],
-  "owner": "team-payments@aya.com",
+  "owner": "team-payments@example.com",
   "status": "active",
   "kongServiceId": "uuid-from-konnect",
   "createdAt": "2026-07-22T00:00:00Z",

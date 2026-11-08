@@ -7,11 +7,11 @@ const { v7 } = require('uuid');
 
 const OID = '11111111-2222-3333-4444-555555555555';
 const OTHER_OID = '99999999-2222-3333-4444-555555555555';
-const REPO = 'AyaHealthcare/my-svc';
+const REPO = 'organization/my-svc';
 const SHA = 'a'.repeat(40);
 const DIGEST = 'sha256:' + 'b'.repeat(64);
 const TAR = 'c'.repeat(64);
-const REGISTRY = 'sharedwus3acr2.azurecr.io';
+const REGISTRY = 'exampleregistry.azurecr.io';
 
 const PUBLISH_STEPS = ['Publish: guard', 'Publish: verify image', 'Publish: version', 'Publish: push'];
 const CONFIG_STEPS = ['Config PR: decide', 'Config PR: guard', 'Config PR: dispatch', 'Config PR: wait'];
@@ -41,10 +41,10 @@ function envelope(stage, run, ok = true) {
 const inputs = { branch: 'main', env: 'devsand', app: 'my-app', namespace: 'my-app', teamLabel: 'software-engineering', port: 8080, healthPath: '/healthz', bump: 'patch' };
 
 const payloads = {
-  prepare: (run, o = {}) => ({ ...envelope('prepare', run), mode: run.mode || 'full', sha: SHA, shortSha: SHA.slice(0, 7), repoUrl: 'https://github.com/AyaHealthcare/my-svc', builderRef: 'paketobuildpacks/ubuntu-noble-builder@sha256:' + 'd'.repeat(8), appState: 'new', effective: { port: 8080, healthPath: '/healthz' }, skipConfig: false, inputs, ...o }),
+  prepare: (run, o = {}) => ({ ...envelope('prepare', run), mode: run.mode || 'full', sha: SHA, shortSha: SHA.slice(0, 7), repoUrl: 'https://github.com/organization/my-svc', builderRef: 'paketobuildpacks/ubuntu-noble-builder@sha256:' + 'd'.repeat(8), appState: 'new', effective: { port: 8080, healthPath: '/healthz' }, skipConfig: false, inputs, ...o }),
   scan: (run, o = {}) => ({ ...envelope('scan', run), scanId: 'scan-123', tarSha256: TAR, ...o }),
   publish: (run, o = {}) => ({ ...envelope('publish', run), version: '1.2.3', imageRef: `${REGISTRY}/selfserve/${run.app || 'my-app'}:1.2.3`, digest: DIGEST, shaTag: 'sha-' + SHA.slice(0, 7), scanId: 'scan-123', tarSha256: TAR, ...o }),
-  config: (run, o = {}) => ({ ...envelope('config', run), rollout: 'preview_pr', prNumber: 7, prUrl: 'https://github.com/Aya-DevOpsTeam/aya-flux/pull/7', ...o }),
+  config: (run, o = {}) => ({ ...envelope('config', run), rollout: 'preview_pr', prNumber: 7, prUrl: 'https://github.com/organization/flux-config/pull/7', ...o }),
 };
 
 /**
@@ -52,7 +52,7 @@ const payloads = {
  */
 function buildRun(w, { cid, id, createdAt, mode = 'full', status = 'completed', conclusion = 'success', failAt = null, app = 'my-app', oid = OID, annOverrides = {}, publishSteps, configSteps, emit = {}, dropAnn = [] }) {
   const run = { id, cid, attempt: 1, mode, app };
-  w.runs.push({ id, run_attempt: 1, display_title: runName({ cid, app, mode, oid, retryBy: mode === 'config_only' ? 'platform@x.com' : '-' }), created_at: createdAt, run_started_at: createdAt, updated_at: new Date(Date.parse(createdAt) + 10 * 60000).toISOString(), status, conclusion: status === 'completed' ? conclusion : null, html_url: `https://github.com/Aya-DevOpsTeam/aya-flux/actions/runs/${id}` });
+  w.runs.push({ id, run_attempt: 1, display_title: runName({ cid, app, mode, oid, retryBy: mode === 'config_only' ? 'platform@x.com' : '-' }), created_at: createdAt, run_started_at: createdAt, updated_at: new Date(Date.parse(createdAt) + 10 * 60000).toISOString(), status, conclusion: status === 'completed' ? conclusion : null, html_url: `https://github.com/organization/flux-config/actions/runs/${id}` });
   const jobs = [];
   const anns = {};
   const ok = (stage) => failAt !== stage;

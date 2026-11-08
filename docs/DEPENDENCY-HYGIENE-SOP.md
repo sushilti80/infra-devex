@@ -228,7 +228,7 @@ For major version bumps (e.g., Vue 3 → 4, Vite 7 → 8):
    npm test                           # All Vitest specs pass
    npm run test:e2e                   # Playwright E2E passes
    ```
-2. **Sand deployment validation**: Deploy to sand and run the full E2E suite against `https://self-service.sand.k8s.com/`.
+2. **Sand deployment validation**: Deploy to sand and run the full E2E suite against `https://self-service.example.com/`.
 3. **Manual smoke test** in sand: provision infrastructure, check installed-apps, verify AKS deploy flow.
 
 ---

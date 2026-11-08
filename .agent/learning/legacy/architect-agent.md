@@ -45,7 +45,7 @@ linuxVMs, windowsVMs, eventGridTopics*, **aiFoundry**  (* = supportsMultiInstanc
 
 ### Key API Endpoints
 - `POST /api/label` → triggers `UpdateMetadataLive.yaml` (Infrastructure App)
-- `POST /api/add-code-repo` → triggers `create-app.yml` in `AyaHealthcare/self-service-catalog` (Code App)
+- `POST /api/add-code-repo` → triggers `create-app.yml` in `organization/self-service-catalog` (Code App)
 - `POST /api/agent-change` → triggers `agent-dispatch` in infra-live repo (Infrastructure App)
 - `POST /api/feedback` → creates GitHub Issue; types: `bug`, `feature-request`, `agent-request`
 - `GET /api/aks-status-by-correlation/:correlationId` — new status lookup path for AKS
@@ -59,7 +59,7 @@ agent_name, pool_name, allow_update, workload_identity_grants, correlationId, tr
 ### Workflows (verified)
 - Service-catalog (Infra App): `create-infrastructure.yaml`, `delete-infrastructure.yaml`,
   `move-to-infralive.yaml`, `UpdateMetadataLive.yaml`
-- Code catalog `AyaHealthcare/self-service-catalog` (Code App): `create-app.yml`
+- Code catalog `organization/self-service-catalog` (Code App): `create-app.yml`
 - Infra-live (Infra App): `agent-dispatch`
 
 ## Patterns to Apply in All Specs

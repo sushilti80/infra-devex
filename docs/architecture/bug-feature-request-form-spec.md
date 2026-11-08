@@ -14,7 +14,7 @@
 ## 1. Context
 
 ### Why This Feature?
-Users of the Self-Service Infra Catalog currently have no in-app way to report bugs, request features, or propose new AI agent capabilities. Feedback loops are informal and scattered (Slack, email). This feature closes that gap by embedding a structured feedback form directly into the application and automating GitHub Issue creation in `Aya-DevOpsTeam/self-service-infra`.
+Users of the Self-Service Infra Catalog currently have no in-app way to report bugs, request features, or propose new AI agent capabilities. Feedback loops are informal and scattered (Slack, email). This feature closes that gap by embedding a structured feedback form directly into the application and automating GitHub Issue creation in `organization/self-service-infra`.
 
 ### User Value
 - **Zero context switching**: users submit feedback without leaving the portal
@@ -51,7 +51,7 @@ This feature follows all five critical system patterns without exception:
 
 | Pattern | How It Applies |
 |---------|---------------|
-| **GitHub as Database** | Issues created in `Aya-DevOpsTeam/self-service-infra` — GitHub is the record store |
+| **GitHub as Database** | Issues created in `organization/self-service-infra` — GitHub is the record store |
 | **Multi-GitHub-App** | Issue creation uses the **Infrastructure App** (`this.octokit`) — no code app involvement |
 | **Correlation ID Tracking** | `req.correlationId` threaded through route → service → GitHub issue body → all log lines |
 | **SPA Navigation** | `'feedback'` added to `PageId` union; `navigateToPage('feedback')` in SharedHeader; `v-else-if` branch in App.vue |
@@ -318,7 +318,7 @@ Apply `sanitize()` to every user-supplied field before inserting into the issue 
 ```json
 {
   "success": true,
-  "issueUrl": "https://github.com/Aya-DevOpsTeam/self-service-infra/issues/42",
+  "issueUrl": "https://github.com/organization/self-service-infra/issues/42",
   "issueNumber": 42,
   "correlationId": "550e8400-e29b-41d4-a716-446655440000"
 }
@@ -517,7 +517,7 @@ sequenceDiagram
 4. Fill required fields
 5. Click **Submit Feedback**
 6. Assert: `[data-testid="feedback-success-banner"]` visible
-7. Assert: `[data-testid="feedback-issue-url"]` href matches `github.com/Aya-DevOpsTeam/self-service-infra/issues/`
+7. Assert: `[data-testid="feedback-issue-url"]` href matches `github.com/organization/self-service-infra/issues/`
 8. Assert: axe-core reports zero critical violations
 
 ---

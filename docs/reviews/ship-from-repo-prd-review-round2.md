@@ -29,7 +29,7 @@ None.
 
 ## Round Context
 Round 1 Blocking items:
-- **B-1 Untrusted-code isolation — RESOLVED.** FR-004 splits `prepare` (trusted, `aya-devops-rs`) from `build` (GitHub-hosted, `permissions: {}`, no secrets/OIDC/environment, fresh VM,
+- **B-1 Untrusted-code isolation — RESOLVED.** FR-004 splits `prepare` (trusted, `ubuntu-latest`) from `build` (GitHub-hosted, `permissions: {}`, no secrets/OIDC/environment, fresh VM,
   no checkout credential, timeouts and size caps) (AC-004-6/-7/-8). `scan` and `publish` run no user code (AC-006-1, AC-007-2). Provenance labels are re-applied by `publish`
   (AC-007-3). NFR-005 now has a named six-case negative-test matrix with a hostile-repo measurement.
 - **B-2 Authorization — RESOLVED.** New FR-016: the requester's own GitHub access is checked at list time, ship time and again in `prepare` (AC-016-2). Ownership is bound to the

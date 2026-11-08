@@ -174,8 +174,8 @@ describe('secretsService.resolveKeyVaults — repo-level cache', () => {
     ])
   })
 
-  // TS-042: a literal `shared` segment is a real sibling environment (like ayaApplications'
-  // ayaCoreServices/keyvaults/shared, alongside dev/prod/sand), not an env-agnostic wildcard —
+  // TS-042: a literal `shared` segment is a real sibling environment (like exampleApplications'
+  // exampleCoreServices/keyvaults/shared, alongside dev/prod/sand), not an env-agnostic wildcard —
   // it must only resolve when `shared` itself is the requested environment.
   it('TS-042: resolveKeyVaults treats `shared` as its own environment, not a wildcard', async () => {
     const entries = [

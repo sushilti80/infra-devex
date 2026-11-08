@@ -5,13 +5,13 @@
 - **Feature name**: `vault-resolution-override`
 - **Author/date**: Product Manager Agent, 2026-08-12
 - **Status**: Reviewed — PRD Challenger round 2 complete, pending Architect handoff
-- **Stakeholders**: Self-Service Infra platform team, Secrets Page users (app owners resolving Key Vault names for IDM/azureDatabricks/ayaApplications and other apps with unresolved vault names)
+- **Stakeholders**: Self-Service Infra platform team, Secrets Page users (app owners resolving Key Vault names for IDM/azureDatabricks/exampleApplications and other apps with unresolved vault names)
 
 ## 2. Problem Statement
 
 The Secrets page resolves a Key Vault's display name via a live Terragrunt-parsing resolver
 (`terragruntLocalsResolver.resolveName()`/`resolveResourceGroup()`) at request time. For a known
-set of apps — IDM sub-apps under `_idmapplications`, `azureDatabricks`, and `ayaApplications`'s
+set of apps — IDM sub-apps under `_idmapplications`, `azureDatabricks`, and `exampleApplications`'s
 `shared` vault — this resolver cannot always parse the vault's name (e.g. Terragrunt `include`
 blocks with deep merge, per [secrets-keyvault-pattern-analysis.md](../../.github/skills/service-catalog-metadata/SKILL.md)
 prior findings), so the UI shows "Key Vault name unavailable" with no way for a user to correct it.
@@ -118,12 +118,12 @@ takes permanent priority once set.
      `terragruntLocalsResolver.resolveName()`/`resolveResourceGroup()`; when present, the live
      resolver is not invoked for that vault.
   4. Only `githubService.octokit` (Infrastructure App) is used — never `codeOctokit`.
-  5. The sidecar is always read from `config.github.serviceRepo` (`Aya-DevOpsTeam/service-catalog`),
+  5. The sidecar is always read from `config.github.serviceRepo` (`organization/service-catalog`),
      regardless of the `target` value (`'sand'`/`'live'`) passed into `resolveKeyVaults()`. Unlike
      `resolveKeyVaults()`, `getSecretsList()`, and `submitSecretViaGitOps()`, `loadVaultOverrides()`
      must NOT call `mapRepo(target)` — the override store is one central location independent of
      which repo (`service-catalog` vs `infrastructure-live`) a given vault was discovered in, so an
-     override set while resolving a `target='live'` vault (e.g. `ayaApplications`, `azureDatabricks`)
+     override set while resolving a `target='live'` vault (e.g. `exampleApplications`, `azureDatabricks`)
      is still found on the next read.
 - **Dependencies**: FR-001 (schema).
 
@@ -246,7 +246,7 @@ takes permanent priority once set.
      (`infrastructure/idm/_idmapplications/notif/dev/keyvault`) resolved purely via override, with
      no dependency on the live resolver succeeding.
   5. A regression test exists asserting that an override set while resolving a `target='live'`
-     vault (e.g. `ayaApplications`/`azureDatabricks`, discovered against
+     vault (e.g. `exampleApplications`/`azureDatabricks`, discovered against
      `config.github.infrastructureLiveRepo`) round-trips correctly through `loadVaultOverrides()`,
      which always reads/writes `config.github.serviceRepo` regardless of `target` (FR-002 AC5).
   6. All new and existing tests in the touched spec files pass (`npx vitest run --project jsdom

@@ -190,7 +190,7 @@ describe('ReDoS: the 0-7 backslash quantifier next to the other quantifiers stay
 })
 
 describe('O-7: githubService.findPullRequestForBranch emits github_api_call', () => {
-  const REPO = 'Aya-DevOpsTeam/aya-flux'
+  const REPO = 'organization/flux-config'
   const CID = '0194a000-0000-7000-8000-0000000000a7'
   let impl: ((a: any) => any) | undefined
   let listArgs: any[]
@@ -219,7 +219,7 @@ describe('O-7: githubService.findPullRequestForBranch emits github_api_call', ()
 
   it('request arguments are unchanged: owner/repo split, head=<owner>:<branch>, requested state, per_page 1', async () => {
     await githubService.findPullRequestForBranch(REPO, 'auto/gen-dev-app', 'open', CID)
-    expect(listArgs).toEqual([{ owner: 'Aya-DevOpsTeam', repo: 'aya-flux', head: 'Aya-DevOpsTeam:auto/gen-dev-app', state: 'open', per_page: 1 }])
+    expect(listArgs).toEqual([{ owner: 'organization', repo: 'flux-config', head: 'organization:auto/gen-dev-app', state: 'open', per_page: 1 }])
   })
 
   it('the default state is still "all" when only 3 arguments are passed (existing callers: aksService, shipStatusService)', async () => {

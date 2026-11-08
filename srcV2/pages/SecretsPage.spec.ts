@@ -729,7 +729,7 @@ describe('SecretsPage', () => {
 
   describe('grouped Application selector with nested qualifiers', () => {
     // idm: 4 qualifiers (mixed with an unqualified 'shared' entry -> root-only option expected).
-    // ayaApplications: qualified-only (no root-only option expected). webapp01: flat (unqualified).
+    // exampleApplications: qualified-only (no root-only option expected). webapp01: flat (unqualified).
     const groupedApps = [
       { name: 'idm', environment: 'cint', qualifier: 'autobk', tier: 'non-production' as const },
       { name: 'idm', environment: 'dev', qualifier: 'autobk', tier: 'non-production' as const },
@@ -738,7 +738,7 @@ describe('SecretsPage', () => {
       { name: 'idm', environment: 'cint', qualifier: 'idmprtl', tier: 'non-production' as const },
       { name: 'idm', environment: 'cint', qualifier: 'allctmpr', tier: 'non-production' as const },
       { name: 'idm', environment: 'shared', tier: 'non-production' as const },
-      { name: 'ayaApplications', environment: 'dev', qualifier: 'core', tier: 'non-production' as const },
+      { name: 'exampleApplications', environment: 'dev', qualifier: 'core', tier: 'non-production' as const },
       { name: 'webapp01', environment: 'dev', tier: 'non-production' as const }
     ]
 
@@ -781,7 +781,7 @@ describe('SecretsPage', () => {
       await flushPromises()
       await switchToAllEnvironmentsTab(wrapper)
 
-      expect(wrapper.find('option[value="ayaApplications::"]').exists()).toBe(false)
+      expect(wrapper.find('option[value="exampleApplications::"]').exists()).toBe(false)
     })
 
     it('scopes the environment list to the selected qualifier synchronously, without an API round-trip', async () => {
@@ -892,7 +892,7 @@ describe('SecretsPage', () => {
       { name: 'idm', environment: 'cint', qualifier: 'allctmpr' },
       { name: 'idm', environment: 'dev' }
     ]
-    const ayaFixture = [{ name: 'ayaApplications', environment: 'dev', qualifier: 'shared' }]
+    const exampleFixture = [{ name: 'exampleApplications', environment: 'dev', qualifier: 'shared' }]
     const flatFixture = [{ name: 'webapp01', environment: 'dev', tier: 'non-production' as const }]
 
     it('renders one option per qualifier under a single optgroup (4 IDM qualifiers)', async () => {
@@ -925,14 +925,14 @@ describe('SecretsPage', () => {
       expect(wrapper.find('option[value="idm::"]').exists()).toBe(true)
     })
 
-    it('renders no root-only option for a root app with only qualified entries (ayaApplications)', async () => {
-      ;(apiService.getSecretApps as Mock).mockResolvedValue({ success: true, data: ayaFixture })
+    it('renders no root-only option for a root app with only qualified entries (exampleApplications)', async () => {
+      ;(apiService.getSecretApps as Mock).mockResolvedValue({ success: true, data: exampleFixture })
       const wrapper = mount(SecretsPage)
       await flushPromises()
       await switchToAllEnvironmentsTab(wrapper)
 
-      expect(wrapper.find('option[value="ayaApplications::"]').exists()).toBe(false)
-      expect(wrapper.find('option[value="ayaApplications::shared"]').exists()).toBe(true)
+      expect(wrapper.find('option[value="exampleApplications::"]').exists()).toBe(false)
+      expect(wrapper.find('option[value="exampleApplications::shared"]').exists()).toBe(true)
     })
 
     it('selecting a qualifier option scopes the environment selector to that exact {app, qualifier}', async () => {

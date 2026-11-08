@@ -194,7 +194,7 @@
 
 ### Major Features
 
-- **Archie AI Integration**
+- **Architecture AI Integration**
   - Intelligent infrastructure recommendations and automation.
   - AI-driven suggestions for module selection and configuration.
 

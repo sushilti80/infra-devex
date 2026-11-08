@@ -9,7 +9,7 @@ const cjsRequire = createRequire(import.meta.url)
 const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'))
 
 describe('environment catalog', () => {
-  it('assigns a unique environment ID and subscription to DataOps Sand', () => {
+  it('uses unique environment IDs and leaves subscription defaults unconfigured', () => {
     const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'))
     const ids = catalog.environments.map((environment: { id: string }) => environment.id)
     const dataOps = catalog.environments.find(
@@ -19,10 +19,12 @@ describe('environment catalog', () => {
     expect(new Set(ids).size).toBe(ids.length)
     expect(dataOps).toMatchObject({
       displayName: 'DataOps Sandbox (dataopssand)',
-      subscriptionId: '24fadfb5-071d-447d-b7d6-49c25321c319',
+      subscriptionId: '',
       enabled: true,
       features: { customInfra: true, templates: true, aks: false }
     })
+    expect(catalog.defaultSubscriptionId).toBe('')
+    expect(catalog.environments.every((environment: { subscriptionId: string }) => environment.subscriptionId === '')).toBe(true)
   })
 
   it('includes DataOps Sand in the sand secret bundle', () => {

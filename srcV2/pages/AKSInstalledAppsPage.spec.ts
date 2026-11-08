@@ -18,14 +18,14 @@ describe('AKS Installed Apps — Kong endpoint', () => {
           imageName: 'hashicorp/http-echo', imageTag: '1.0.0',
           owner: 'tester', deployedAt: '2026-10-22T21:38:36Z', status: 'deployed',
           exposureMode: 'private-gateway',
-          exposureUrl: 'https://testk.private.devsand.ayahealthcare.com',
+          exposureUrl: 'https://testk.private.devsand.example.com',
           postgresDatabase: {
             enabled: true, database_name: 'testkdb1', parent_server: 'devsand-wus3-psql-1',
             parent_resource_group: 'devsand-wus3-psql-rg-1', managed_by: 'aso',
             reconcile_policy: 'detach-on-delete', deletion_policy: 'retain-until-approved'
           },
           gitops: {
-            repository: 'Aya-DevOpsTeam/aya-flux', cluster: 'devsand-wus3-aks-1',
+            repository: 'organization/flux-config', cluster: 'devsand-wus3-aks-1',
             namespace: 'testk', namespaceOwned: true, appPath: 'clusters/devsand/testk',
             owners: [{ name: 'app-testk', manifest: 'app-testk.yaml', path: 'apps/testk',
               role: 'workload', prune: true }]
@@ -44,7 +44,7 @@ describe('AKS Installed Apps — Kong endpoint', () => {
       global: { plugins: [createPinia()] }
     })
     await flushPromises()
-    const link = wrapper.get('a[href="https://testk.private.devsand.ayahealthcare.com"]')
+    const link = wrapper.get('a[href="https://testk.private.devsand.example.com"]')
     expect(link.attributes('target')).toBe('_blank')
     expect(link.attributes('rel')).toBe('noopener noreferrer')
     expect(wrapper.text()).toContain('Access depends on rollout readiness and approved network')

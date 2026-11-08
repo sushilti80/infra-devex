@@ -150,18 +150,6 @@ function scrollToSection(sectionId: string) {
                 Existing Infra
               </a>
               <a
-                href="#archie-ai"
-                :class="[
-                  'block px-3 py-2 rounded-lg text-sm transition-colors',
-                  activeSection === 'archie-ai'
-                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                ]"
-                @click.prevent="scrollToSection('archie-ai')"
-              >
-                Consult Archie AI
-              </a>
-              <a
                 href="#feedback"
                 :class="[
                   'block px-3 py-2 rounded-lg text-sm transition-colors',
@@ -304,28 +292,6 @@ function scrollToSection(sectionId: string) {
                 <span class="material-symbols-outlined text-3xl text-purple-600">construction</span>
                 Custom Infrastructure
               </h2>
-
-              <div class="mb-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                <div class="flex items-start gap-3">
-                  <span class="material-symbols-outlined text-purple-600 dark:text-purple-400 text-2xl">play_circle</span>
-                  <div class="flex-1">
-                    <h4 class="font-semibold text-purple-900 dark:text-purple-200 mb-2">📹 Video Walkthrough (5 minutes)</h4>
-                    <p class="text-sm text-purple-800 dark:text-purple-300 mb-3">
-                      Watch a complete step-by-step demonstration of building Azure custom infrastructure with Self-Service Catalog.
-                    </p>
-                    <a
-                      href="https://ayadev.atlassian.net/wiki/spaces/DevSecOps/pages/4976377995/Build+Azure+Custom+Infrastructure+with+Self+Service"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors font-medium text-sm"
-                    >
-                      <span class="material-symbols-outlined text-lg">smart_display</span>
-                      Watch Demo Video
-                      <span class="material-symbols-outlined text-lg">open_in_new</span>
-                    </a>
-                  </div>
-                </div>
-              </div>
 
               <p class="text-gray-700 dark:text-gray-300 mb-6">
                 Build custom infrastructure solutions by composing reusable Terraform modules. This feature generates Terraform infrastructure code based on your selections and creates a GitHub Pull Request for review and approval.
@@ -530,19 +496,19 @@ notifications</span>
                   <div>
                     <h4 class="font-semibold text-blue-900 dark:text-blue-200 mb-1">Deployment Philosophy</h4>
                     <p class="text-sm text-blue-800 dark:text-blue-300">
-                      <strong>Bring Your Own Container:</strong> Publish your containerized application to the <strong>AYA Container Registry</strong>, then deploy your image to AKS through this platform. We handle the Kubernetes manifests (Kustomization), deployment, and service configuration automatically.
+                      <strong>Bring Your Own Container:</strong> Publish your containerized application to the <strong>EXAMPLE Container Registry</strong>, then deploy your image to AKS through this platform. We handle the Kubernetes manifests (Kustomization), deployment, and service configuration automatically.
                     </p>
                   </div>
                 </div>
               </div>
 
               <p class="text-gray-700 dark:text-gray-300 mb-6">
-                Deploy containerized applications to Azure Kubernetes Service (AKS) in the sandbox environment. Simply provide your container image details from AYA Container Registry, and the platform generates Kubernetes manifests and handles deployment automatically.
+                Deploy containerized applications to Azure Kubernetes Service (AKS) in the sandbox environment. Simply provide your container image details from EXAMPLE Container Registry, and the platform generates Kubernetes manifests and handles deployment automatically.
               </p>
 
               <p class="mb-6">
                 <a
-                  href="https://github.com/Aya-DevOpsTeam/self-service-infra/blob/main/docs/AKS-PLAYGROUND-GUIDE.md"
+                  href="https://github.com/organization/self-service-infra/blob/main/docs/AKS-PLAYGROUND-GUIDE.md"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="inline-flex items-center gap-2 text-sm font-medium text-indigo-700 dark:text-indigo-300 hover:underline"
@@ -559,9 +525,9 @@ notifications</span>
                     <span class="text-indigo-600 dark:text-indigo-400 font-bold">1</span>
                   </div>
                   <div>
-                    <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Publish to AYA Container Registry</h4>
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Publish to EXAMPLE Container Registry</h4>
                     <p class="text-sm text-gray-600 dark:text-gray-400">
-                      Build and push your containerized application to the <strong>AYA Container Registry (ACR)</strong>. Note your image name and tag (e.g., <code class="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">sharedwus3acr2.azurecr.io/myapp:v1.0</code>).
+                      Build and push your containerized application to the <strong>EXAMPLE Container Registry (ACR)</strong>. Note your image name and tag (e.g., <code class="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">exampleregistry.azurecr.io/myapp:v1.0</code>).
                     </p>
                   </div>
                 </div>
@@ -623,7 +589,7 @@ notifications</span>
                 <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                   <h4 class="font-semibold text-green-900 dark:text-green-200 mb-2">Prerequisites</h4>
                   <ul class="space-y-1 text-sm text-green-800 dark:text-green-300">
-                    <li>✓ Container image in AYA ACR</li>
+                    <li>✓ Container image in EXAMPLE ACR</li>
                     <li>✓ Use specific image tags (not :latest)</li>
                     <li>✓ Choose deployment type (app or agent)</li>
                     <li>✓ Have namespace &amp; app name ready</li>
@@ -861,132 +827,6 @@ notifications</span>
               </div>
             </section>
 
-            <!-- Archie AI Assistant Section -->
-            <section id="archie-ai" class="mb-12 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-lg shadow-sm border border-blue-200 dark:border-blue-800 p-8">
-              <div class="flex items-center gap-3 mb-6">
-                <div class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
-                  <span class="material-symbols-outlined text-3xl text-white">smart_toy</span>
-                </div>
-                <div>
-                  <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-                    Consult Archie AI
-                  </h2>
-                  <p class="text-sm text-blue-600 dark:text-blue-400 font-medium">Azure Architecture Assistant</p>
-                </div>
-              </div>
-
-              <div class="mb-6">
-                <p class="text-gray-700 dark:text-gray-300 mb-4">
-                  Archie is your AI-powered Azure Architecture Assistant—a friendly cloud companion that helps you navigate Azure infrastructure design with confidence and best practices.
-                </p>
-
-                <a
-                  href="https://archie.ayahealthcare.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm"
-                >
-                  <span class="material-symbols-outlined">launch</span>
-                  Launch Archie AI Assistant
-                </a>
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <!-- What Archie Does -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-blue-600">psychology</span>
-                    What Archie Does
-                  </h3>
-                  <ul class="space-y-3 text-gray-700 dark:text-gray-300">
-                    <li class="flex items-start gap-2">
-                      <span class="material-symbols-outlined text-blue-600 text-sm mt-1">check_circle</span>
-                      <span>Design cloud architectures tailored to your needs</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                      <span class="material-symbols-outlined text-blue-600 text-sm mt-1">check_circle</span>
-                      <span>Recommend Azure services based on requirements</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                      <span class="material-symbols-outlined text-blue-600 text-sm mt-1">check_circle</span>
-                      <span>Provide security, scalability, and cost optimization best practices</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                      <span class="material-symbols-outlined text-blue-600 text-sm mt-1">check_circle</span>
-                      <span>Answer Azure configuration and deployment questions</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                      <span class="material-symbols-outlined text-blue-600 text-sm mt-1">check_circle</span>
-                      <span>Troubleshoot architecture challenges and compare solutions</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <!-- How to Get the Best Results -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
-                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-green-600">lightbulb</span>
-                    How to Get the Best Results
-                  </h3>
-                  <p class="text-sm text-gray-700 dark:text-gray-300 mb-3">
-                    Share detailed context about your requirements for well-architected solutions:
-                  </p>
-                  <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
-                    <p class="text-xs font-semibold text-green-900 dark:text-green-200 mb-2">✅ Good Example:</p>
-                    <p class="text-xs text-green-800 dark:text-green-300 italic">
-                      "I need a web application for customer order management. Internal use for 500 employees across 3 regions. Requirements: high availability, integrate with on-prem SQL, SSO with Entra ID, 1000 transactions/day, budget-conscious."
-                    </p>
-                  </div>
-                  <p class="text-xs text-gray-600 dark:text-gray-400 mt-3">
-                    Archie will consider: App Service with zone redundancy, Managed Identity + Entra ID, right-sized tier, and cost optimization recommendations.
-                  </p>
-                </div>
-              </div>
-
-              <!-- Important Notice -->
-              <div class="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-5 border border-amber-200 dark:border-amber-800">
-                <div class="flex items-start gap-3">
-                  <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-2xl mt-0.5">warning</span>
-                  <div>
-                    <h4 class="font-semibold text-amber-900 dark:text-amber-200 mb-2">Human Review Required</h4>
-                    <p class="text-sm text-amber-800 dark:text-amber-300 mb-3">
-                      While Archie provides recommendations based on Azure best practices and your organization's service catalog, all designs and configurations must be reviewed and approved by:
-                    </p>
-                    <ul class="space-y-2 text-sm text-amber-800 dark:text-amber-300">
-                      <li class="flex items-start gap-2">
-                        <span class="text-amber-600">•</span>
-                        <span><strong>Solution Architects</strong> - For architectural patterns, scalability, and design decisions</span>
-                      </li>
-                      <li class="flex items-start gap-2">
-                        <span class="text-amber-600">•</span>
-                        <span><strong>DevSecOps Team</strong> - For security compliance, governance, and operational requirements</span>
-                      </li>
-                      <li class="flex items-start gap-2">
-                        <span class="text-amber-600">•</span>
-                        <span><strong>Your Organization's Review Process</strong> - Following internal approval workflows</span>
-                      </li>
-                    </ul>
-                    <p class="text-sm text-amber-800 dark:text-amber-300 mt-3 font-medium">
-                      Archie accelerates your design process but does not replace human expertise and governance.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Data Sources -->
-              <div class="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-5 border border-blue-200 dark:border-blue-800">
-                <div class="flex items-start gap-3">
-                  <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-2xl">verified</span>
-                  <div>
-                    <h4 class="font-semibold text-blue-900 dark:text-blue-200 mb-2">Grounded in Official Documentation</h4>
-                    <p class="text-sm text-blue-800 dark:text-blue-300">
-                      Archie's recommendations are grounded in the latest Microsoft Azure documentation and best practices. All recommendations include citations and references to official sources, ensuring accuracy and reducing AI hallucination.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </section>
-
             <!-- Support Section -->
             <section class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-800 p-8">\n              <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">\n                <span class="material-symbols-outlined text-3xl text-blue-600">support_agent</span>
                 Need Help?
@@ -996,17 +836,17 @@ notifications</span>
               </p>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <a
-                  href="https://archie.ayahealthcare.com/"
+                  href="https://learn.microsoft.com/azure/architecture/"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-800 hover:shadow-lg transition-shadow"
                 >
                   <div class="flex items-center gap-3 mb-2">
                     <span class="material-symbols-outlined text-2xl text-blue-600">smart_toy</span>
-                    <h3 class="font-semibold text-gray-900 dark:text-white">Consult Archie</h3>
+                    <h3 class="font-semibold text-gray-900 dark:text-white">Azure Architecture Center</h3>
                   </div>
                   <p class="text-sm text-gray-600 dark:text-gray-400">
-                    Ask our AI assistant for instant help and guidance
+                    Reference architectures and Azure design guidance
                   </p>
                 </a>
                 <div class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -1052,7 +892,7 @@ notifications</span>
               </div>
 
               <p class="text-gray-700 dark:text-gray-300 mb-6">
-                Click <strong>"Request Feature/Bugfix"</strong> in the top-right navigation to open the feedback form. Your Entra ID email is pre-filled automatically. On submission a GitHub issue is created in <code class="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">Aya-DevOpsTeam/self-service-infra</code> and you receive a direct link to track it.
+                Click <strong>"Request Feature/Bugfix"</strong> in the top-right navigation to open the feedback form. Your Entra ID email is pre-filled automatically. On submission a GitHub issue is created in <code class="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">organization/self-service-infra</code> and you receive a direct link to track it.
               </p>
 
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -33,7 +33,7 @@ feature's single highest-risk unknown.
 The task that produced this spec carries an explicit stakeholder clarification: **the external
 PR-review/CODEOWNERS controls referenced by OQ-001 are now stated to be configured in both
 `infrastructure-live` and `service-catalog`.** This Architect independently re-attempted the same
-verification the PM Agent performed (`gh api repos/Aya-DevOpsTeam/infrastructure-live` and the
+verification the PM Agent performed (`gh api repos/organization/infrastructure-live` and the
 equivalent GitHub MCP `get_file_contents` call against both `infrastructure-live` and
 `service-catalog`) and got the **same `404 Not Found`** result — this workspace's credentials still
 cannot inspect either target repo's CODEOWNERS file or branch-protection ruleset directly. This spec
@@ -943,7 +943,7 @@ regression test: a well-formed bundle-mode request (`bundleId`+`environmentSecre
   "correlationId": "...",
   "bundleId": "release",
   "prNumber": 145,
-  "prUrl": "https://github.com/Aya-DevOpsTeam/infrastructure-live/pull/145",
+  "prUrl": "https://github.com/organization/infrastructure-live/pull/145",
   "includedEnvironments": ["prod", "cint", "hot"],
   "excludedEnvironments": [{ "environment": "demo", "reason": "VAULT_AMBIGUOUS", "vaults": [] }],
   "secretCount": 3
@@ -1220,7 +1220,7 @@ exact mechanism — each is traceable to a specific FR and does not add new user
 - **Stakeholder-asserted**: PR-review/CODEOWNERS controls for release-bundle paths are now configured
   in both `infrastructure-live` and `service-catalog`.
 - **Architecture-verified**: not yet possible from this workspace. This Architect re-ran the identical
-  check the PM Agent performed (`gh api repos/Aya-DevOpsTeam/infrastructure-live`, and the equivalent
+  check the PM Agent performed (`gh api repos/organization/infrastructure-live`, and the equivalent
   GitHub MCP `get_file_contents` call against both repos' `CODEOWNERS` files) and received the same
   `404 Not Found` for both repos — no change in this workspace's access since the PRD was authored.
 - **Recommended Definition-of-Done evidence before Phase 3 rollout** (in addition to what the PRD

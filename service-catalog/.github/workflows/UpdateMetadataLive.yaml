@@ -1,0 +1,94 @@
+name: Update Metadata Live Status
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_name:
+        description: 'Prefix of metadata JSON files to update'
+        required: true
+        type: string
+      correlation_id:
+        description: "Unique Correlation ID (for tracking runs in logs)"
+        required: false
+        default: "none"
+      triggered_by:
+        description: "Triggered by the self-service portal (if available)"
+        required: false
+
+jobs:
+  update-metadata:
+    runs-on: ubuntu-latest
+    steps:
+      # 1) Checkout the repo with full history
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2) Generate a unique branch off main
+      - name: Generate branch name and switch
+        id: gen_branch
+        run: |
+          branch="update-${{ github.event.inputs.app_name }}-metadata-$(date +'%Y%m%d%H%M%S')"
+          echo "branch_name=$branch" >> $GITHUB_OUTPUT
+          git fetch origin main
+          git checkout -b "$branch" origin/main
+
+      # 3) Find & update all matching JSON files
+      - name: Find and replace Experimental→Live
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=( docs/metadata/${{ github.event.inputs.app_name }}*.json )
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::No metadata files found in docs/metadata with prefix '${{ github.event.inputs.app_name }}'"
+            exit 1
+          fi
+          for file in "${files[@]}"; do
+            echo "Updating $file"
+            # replace any value "Experimental" → "Live"
+            sed -i 's/"Experimental"/"Live"/g' "$file"
+          done
+
+      # 4) Commit the changes
+      - name: Commit changes
+        id: commit_changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add docs/metadata/${{ github.event.inputs.app_name }}*.json
+          if git diff --cached --quiet; then
+            echo "no_changes=true" >> "$GITHUB_OUTPUT"
+            echo "No metadata updates detected; skipping commit, push, and PR creation."
+            exit 0
+          fi
+          git commit -m "Update metadata status to Live for ${{ github.event.inputs.app_name }}"
+          echo "no_changes=false" >> "$GITHUB_OUTPUT"
+      # for tracking purpose on UI
+      - name: Print Correlation ID
+        if: ${{ github.event.inputs.correlation_id != 'none' }}
+        run: |
+          echo "🔗 Correlation ID: ${{ github.event.inputs.correlation_id }}"
+      # 5) Push the branch
+      - name: Push branch
+        if: ${{ steps.commit_changes.outputs.no_changes != 'true' }}
+        run: |
+          git push --set-upstream origin ${{ steps.gen_branch.outputs.branch_name }}
+
+      # 6) Create a pull request
+      - name: Create Pull Request
+        if: ${{ steps.commit_changes.outputs.no_changes != 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # build a one-off file for the PR body
+          echo "Replaced \"Experimental\" with \"Live\" in metadata JSON files for **${{ github.event.inputs.app_name }}**. **Triggered by:** ${{ inputs.triggered_by }}" > pr_body.md
+          echo "" >> pr_body.md
+          echo "Please review and merge when ready." >> pr_body.md
+
+          # create the PR using that file
+          gh pr create \
+            --base main \
+            --head ${{ steps.gen_branch.outputs.branch_name }} \
+            --title "Metadata Live status for ${{ github.event.inputs.app_name }}" \
+            --body-file pr_body.md

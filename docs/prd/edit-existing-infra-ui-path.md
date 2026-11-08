@@ -9,7 +9,7 @@
 | Date         | 2026-06-03                                                             |
 | Status       | `draft`                                                                |
 | Stakeholders | Platform Engineering, DevOps Team, App Owners (Self-Service consumers) |
-| Repository   | `Aya-DevOpsTeam/self-service-infra`                                    |
+| Repository   | `organization/self-service-infra`                                    |
 
 ---
 

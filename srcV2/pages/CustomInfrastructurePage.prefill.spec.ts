@@ -44,7 +44,7 @@ const MOCK_METADATA: AppMetadata = {
   name: 'jobplc',
   environment: 'devsand',
   description: 'jobplc service',
-  owner: 'Vijay Batham',
+  owner: 'Example User',
   lifecycle: 'experimental',
   modules: ['functionAppSvcWindows', 'keyvault'],
   rbacPairs: [

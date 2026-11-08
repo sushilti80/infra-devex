@@ -151,7 +151,7 @@ describe('FR-002 — GET /api/app-metadata/:appName/:environment', () => {
         name: 'jobplc',
         environment: 'devsand',
         description: 'jobplc',
-        owner: 'Vijay Batham',
+        owner: 'Example User',
         lifecycle: 'Live',
         modules: ['functionAppSvcWindows'],
         costCenter: 'self-service',

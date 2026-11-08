@@ -11,7 +11,7 @@ export function stages(states: Partial<Record<ShipStageId, ShipStageState>> = {}
 
 export function status(over: Partial<ShipStatus> = {}): ShipStatus {
   return {
-    correlationId: CID, app: 'my-app', env: 'devsand', repo: 'Aya-DevOpsTeam/my-app', startedAt: '2026-01-01T00:00:00Z',
+    correlationId: CID, app: 'my-app', env: 'devsand', repo: 'organization/my-app', startedAt: '2026-01-01T00:00:00Z',
     state: 'running', terminal: false, attempt: 1, queuedBehind: false, runResolved: true,
     stages: stages({ queued: 'succeeded', prepare: 'running' }), preview: { state: 'pending' }, ...over
   }
@@ -20,7 +20,7 @@ export function status(over: Partial<ShipStatus> = {}): ShipStatus {
 export const succeeded = (over: Partial<ShipStatus> = {}) => status({
   state: 'succeeded', terminal: true, durationSec: 192, version: '0.1.3', sha: 'a'.repeat(40), shortSha: 'aaaaaaa',
   imageRef: 'registry.example/selfserve/my-app:0.1.3', digest: 'sha256:' + 'b'.repeat(64), rollout: 'preview_pr',
-  stages: stages({}, 'succeeded'), pr: { number: 17, url: 'https://github.com/Aya-DevOpsTeam/aya-flux/pull/17', state: 'open' },
+  stages: stages({}, 'succeeded'), pr: { number: 17, url: 'https://github.com/organization/flux-config/pull/17', state: 'open' },
   preview: { state: 'available', url: 'https://pr-17-my-app.preview.example' }, settings: { branch: 'main', namespace: 'my-app', teamLabel: 'software-engineering', port: 8080, healthPath: '/healthz', bump: 'patch' },
   ...over
 })

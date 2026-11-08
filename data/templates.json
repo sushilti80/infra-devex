@@ -1,7 +1,7 @@
 [
   {
-    "name": "rulesEng",
-    "description": "Aya starter 1 [window app service+ storage+ app config + msi + RBAC]",
+    "name": "webapp-storage",
+    "description": "Example starter 1 [window app service+ storage+ app config + msi + RBAC]",
     "version": "1.0.0",
     "category": "starter",
     "modules": [
@@ -13,8 +13,8 @@
     ]
   },
   {
-    "name": "leadscoring",
-    "description": "Aya starter 2 [window app service + app config + msi + rbac]",
+    "name": "webapp-basic",
+    "description": "Example starter 2 [window app service + app config + msi + rbac]",
     "version": "1.0.0",
     "category": "starter",
     "modules": [

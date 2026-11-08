@@ -75,7 +75,7 @@ Successfully implemented dynamic environment management for the Self-Service Inf
 {
   "id": "devsand",                          // Dropdown value
   "displayName": "Dev Sandbox (devsand)",   // UI label  
-  "subscriptionId": "11844065-...",         // Azure Portal links
+  "subscriptionId": "00000000-...",         // Azure Portal links
   "description": "Dev sandbox environment", // Optional tooltip
   "enabled": true,                          // Show/hide globally
   "features": {                             // Per-screen visibility

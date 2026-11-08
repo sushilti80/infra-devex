@@ -128,7 +128,7 @@ Home (Landing)
 **Assets**: docs/screens/template-deploy.html (193 lines), template-deploy.png (52KB)
 
 **Features Delivered**:
-- Template dropdown (Aya starter 1, Aya starter 2, Custom)
+- Template dropdown (Example starter 1, Example starter 2, Custom)
 - Project details form: Name (8 chars), Description, Environment (Select/sand/devsand)
 - Metadata fields: Owner, Jira/CR (optional), Project Life (3 days/1 month/3 months)
 - Template description preview area
@@ -237,7 +237,7 @@ Home (Landing)
 - **3-Section Layout**:
   - **Left**: Logo (fa-cubes #2563eb) + "InfraProvision" (18px, weight 600)
   - **Center**: Home | Custom Infra* | Templates | AKS Deploy | Installed Apps
-  - **Right**: User avatar ("ST") + "Sushil Tiwari" + chevron + dropdown
+  - **Right**: User avatar ("ST") + "Alex Smith" + chevron + dropdown
 - **Active State**: #2563eb color + 3px bottom border (Custom Infra shown active)
 - **User Dropdown**: Profile | Settings | [divider] | Logout (red #dc2626)
 - **Dimensions**: 64px height, sticky position, #ffffff bg, #e2e8f0 border
@@ -346,7 +346,7 @@ Modern, minimalistic landing page serving as the welcoming entry point to Self S
 **Header** (Shared, 64px, sticky):
 - Logo: fas fa-cubes (#2563eb) + **"Self Service Catalog"** text ✅ CORRECT BRANDING
 - Navigation: Home (active, blue underline) | Custom Infra | Templates | AKS Deploy | Installed Apps
-- User: Avatar "ST" + "Sushil Tiwari"
+- User: Avatar "ST" + "Alex Smith"
 
 **Hero Section** (Full width, gradient background):
 - **Title**: **"Self Service Catalog"** (2.5rem, bold, #1e293b) ✅ CORRECT BRANDING

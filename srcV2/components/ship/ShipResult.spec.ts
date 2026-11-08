@@ -13,7 +13,7 @@ describe('ShipResult (FT-09)', () => {
     expect(w.text()).toContain('3 min 12 s')
     const pr = w.get('[data-testid="ship-pr"] a')
     expect(pr.text()).toContain('Request production deploy via this PR')
-    expect(pr.attributes('href')).toBe('https://github.com/Aya-DevOpsTeam/aya-flux/pull/17')
+    expect(pr.attributes('href')).toBe('https://github.com/organization/flux-config/pull/17')
     expect(pr.attributes('rel')).toContain('noopener')
   })
 
@@ -73,7 +73,7 @@ describe('ShipResult (FT-09)', () => {
     expect(toggle.attributes('aria-expanded')).toBe('false')
     await toggle.trigger('click')
     const t = w.get('[data-testid="ship-tech"]').text()
-    expect(t).toContain('Aya-DevOpsTeam/my-app@aaaaaaa')
+    expect(t).toContain('organization/my-app@aaaaaaa')
     expect(t).toContain('registry.example/selfserve/my-app:0.1.3')
     expect(t).toContain('sha256:')
   })

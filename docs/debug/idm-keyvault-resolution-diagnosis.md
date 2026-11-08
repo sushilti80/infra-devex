@@ -1,15 +1,15 @@
 # Bug Diagnosis: idm-keyvault-resolution
 
 ## Report
-- Observed behavior: `terragruntLocalsResolver.js` returns `null` for `keyvaultname`/`resource_group_name` on every Key Vault directory under the `idm` application (top-level `infrastructure/idm/<env>/keyvault` and all `_idmapplications` sub-apps: `idmprtl`, `allctmpr`, `autobk`, `notif`), even after the just-merged multi-hop/ternary/`lookup()` fix that resolved `ayaApplications`.
-- Expected behavior: `resolveName`/`resolveResourceGroup` return the real, unique Key Vault name and resource group for every IDM vault directory, matching the `ayaApplications` fix's outcome.
-- Environment: local diagnosis against real `Aya-DevOpsTeam/infrastructure-live` (branch `main`), via `services/secretsService.js`/`services/terragruntLocalsResolver.js` on branch `feat/terragruntresolver` (commit `8b8e2a5`, not pushed).
+- Observed behavior: `terragruntLocalsResolver.js` returns `null` for `keyvaultname`/`resource_group_name` on every Key Vault directory under the `idm` application (top-level `infrastructure/idm/<env>/keyvault` and all `_idmapplications` sub-apps: `idmprtl`, `allctmpr`, `autobk`, `notif`), even after the just-merged multi-hop/ternary/`lookup()` fix that resolved `exampleApplications`.
+- Expected behavior: `resolveName`/`resolveResourceGroup` return the real, unique Key Vault name and resource group for every IDM vault directory, matching the `exampleApplications` fix's outcome.
+- Environment: local diagnosis against real `organization/infrastructure-live` (branch `main`), via `services/secretsService.js`/`services/terragruntLocalsResolver.js` on branch `feat/terragruntresolver` (commit `8b8e2a5`, not pushed).
 - Correlation ID: unavailable (local `node -e` repro, not a routed request).
 
 ## Evidence
 - Reproduction: `node -e "require('./services/secretsService').resolveKeyVaults('idm','devsand','live','manual-check')..."` returned `vaultName: null, resourceGroup: null` for all 5 IDM vault entries (top-level + 4 qualifiers).
-- Existing contract: FR-003(i) header docstring in `services/terragruntLocalsResolver.js` — the resolver's documented grammar (alias hops, ternaries, `lookup()`) — plus the 8 passing regression tests in `srcV2/services/terragruntLocalsResolver.spec.ts` that the prior `ayaApplications` fix added.
-- Affected paths: `infrastructure/idm/devsand/env.hcl`, `infrastructure/idm/_idmapplications/*/devsand/env.hcl`, and each sub-app's `keyvault/terragrunt.hcl` in `Aya-DevOpsTeam/infrastructure-live`.
+- Existing contract: FR-003(i) header docstring in `services/terragruntLocalsResolver.js` — the resolver's documented grammar (alias hops, ternaries, `lookup()`) — plus the 8 passing regression tests in `srcV2/services/terragruntLocalsResolver.spec.ts` that the prior `exampleApplications` fix added.
+- Affected paths: `infrastructure/idm/devsand/env.hcl`, `infrastructure/idm/_idmapplications/*/devsand/env.hcl`, and each sub-app's `keyvault/terragrunt.hcl` in `organization/infrastructure-live`.
 
 ## Classification
 - Classification: confirmed_bug

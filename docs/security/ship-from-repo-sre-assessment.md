@@ -33,7 +33,7 @@ Metrics are `logger.logMetric(event, fields)` → Winston JSON log lines (`event
 | `ship_run_lookup_pages` (alert p95>3 / page 5) | `:140` field `pages`; `level=warn` at page 5; cache-miss lookups only | ✅ |
 | `[correlationId]` prefix + `requestId` | start/dispatch-error/route-error/cancel/retry/watchdog-failed logs all pass `{requestId}`; route passes `req.correlationId` into status, logs, cancel, retry | ✅ (O-3 fixed) |
 | Per-correlation GitHub call counts (`github_api_call`) | `githubService.js:1760 _infraCall` wraps `listWorkflowRuns`, `listJobsForRun`, `listJobAnnotations`, `downloadJobLogs`, `cancelWorkflowRun`; fields `operation, repo, duration_ms, success, correlation_id, status_code`; level `warn` for 4xx, `error` for 5xx/network; callers pass the real `cid` (`shipStatusService.js:131,152,156,674,724`, `shipService.js:285`) | ✅ (O-1 fixed, residual below) |
-| Workflow-side correlation (run-name, OCI label, PR body) | aya-flux, outside this repo | not assessed |
+| Workflow-side correlation (run-name, OCI label, PR body) | flux-config, outside this repo | not assessed |
 | Log redaction | `utils/logRedactor.js` on the logs endpoint (`redactText`) and failure-classifier lines (`redactLine`); QA round 3 verified QA-009/010/011 fixed; residual QA-012 | ✅ with open LOW QA-012 |
 | Health/readiness | No ship code touches `/health` or the container `HEALTHCHECK`; ship config is read at call time and fails closed | no impact |
 
@@ -89,7 +89,7 @@ Caveat for R10: `github_api_call` is a pre-existing event also emitted by other 
 Rollback (spec §11): set `features.shipFromRepo=false` in `data/environments.json` / config; existing images, PRs and apps are unaffected.
 
 ## 4. Pipeline and Docker impact
-- **New: `.github/workflows/wiz-scan.yml`** (SRE-added, commits `56ad1ca`, `4fa6f58`, `6bc72af`): minimal Wiz directory scan. Triggers: `workflow_dispatch` and `pull_request` on `services/** routes/** srcV2/** utils/** package*.json Dockerfile` (no `pull_request_target`; fork PRs are skipped because they get no secrets). `permissions: contents: read`; `actions/checkout` pinned to the full SHA `3d3c42e5…` (v7.0.1); wizcli 1.77.0 downloaded from `downloads.wiz.io` and verified against sha256 `609ce7bb…` (same pin as `docker-infra-live`); `wizcli auth` and `wizcli scan dir .` with credentials only via masked env; a non-gating AUDIT pass lists warn hits; nothing is uploaded (JSON stays in `/tmp`). The job fails on a Wiz BLOCK policy hit. Policy choice: no `--policy` flag, so the service account's default CI/CD policies apply (this run evaluated `aya-iac-cicd`, `aya-eol-policy-deny`, `aya-vb-policy-deny` and the Default policies). Policy `e8ef1254-673e-4761-9e85-303ff6a37f17` is the `docker-infra-live` template policy used with `wizcli docker scan` (container-image type); it is the reference for a future image-scan job, not applied to a directory scan. Image scan is not included.
+- **New: `.github/workflows/wiz-scan.yml`** (SRE-added, commits `56ad1ca`, `4fa6f58`, `6bc72af`): minimal Wiz directory scan. Triggers: `workflow_dispatch` and `pull_request` on `services/** routes/** srcV2/** utils/** package*.json Dockerfile` (no `pull_request_target`; fork PRs are skipped because they get no secrets). `permissions: contents: read`; `actions/checkout` pinned to the full SHA `3d3c42e5…` (v7.0.1); wizcli 1.77.0 downloaded from `downloads.wiz.io` and verified against sha256 `609ce7bb…` (same pin as `docker-infra-live`); `wizcli auth` and `wizcli scan dir .` with credentials only via masked env; a non-gating AUDIT pass lists warn hits; nothing is uploaded (JSON stays in `/tmp`). The job fails on a Wiz BLOCK policy hit. Policy choice: no `--policy` flag, so the service account's default CI/CD policies apply (this run evaluated `example-iac-cicd`, `example-eol-policy-deny`, `example-vb-policy-deny` and the Default policies). Policy `e8ef1254-673e-4761-9e85-303ff6a37f17` is the `docker-infra-live` template policy used with `wizcli docker scan` (container-image type); it is the reference for a future image-scan job, not applied to a directory scan. Image scan is not included.
 - `Dockerfile`: unchanged; release stage already copies `routes/ services/ middleware/ utils/ data/ config.js`; no new npm dependency (`uuid ^11.1.1` already declared, lock 11.1.1); no new build args.
 - `.pipeline/self-service.yaml`: push-trigger path filters already cover every changed product path; PR trigger is Dockerfile-only (pre-existing). No edit made.
 - New `SHIP_*` runtime vars (documented in `.env.example`, no secrets) have fail-closed defaults; `features.shipFromRepo` is `false` in `data/environments.json`, so the deploy is inert until enabled.
@@ -101,15 +101,15 @@ The credentials ARE available to Actions: `WIZ_CLIENT_ID`/`WIZ_CLIENT_SECRET` ar
 
 | Run | Head | Result |
 |---|---|---|
-| https://github.com/Aya-DevOpsTeam/self-service-infra/actions/runs/39813443894 | `56ad1ca` | success, `Verdict: WARN_BY_POLICY` (default BLOCK-only output: "No results found", filtered: Libraries 4, Sensitive data 1, Secrets 2) |
-| https://github.com/Aya-DevOpsTeam/self-service-infra/actions/runs/39813679187 | `4fa6f58` | failure — my workflow defect (`--by-policy-hits=BLOCK,AUDIT` invalid; value must be one of `DISABLED|BLOCK|AUDIT`); wizcli exited before scanning; fixed once in `6bc72af` |
-| https://github.com/Aya-DevOpsTeam/self-service-infra/actions/runs/39813950967 | `6bc72af` | success, exit 0, `WARN_BY_POLICY`; AUDIT pass lists: Secrets HIGH "Git Credentials" in `tests/integration/service/shipUtils.spec.ts` (synthetic redaction-test fixture, false positive); Sensitive data INFO PII/Name in `docs/readiness/ship-from-repo-dev-status.json` |
+| https://github.com/organization/self-service-infra/actions/runs/39813443894 | `56ad1ca` | success, `Verdict: WARN_BY_POLICY` (default BLOCK-only output: "No results found", filtered: Libraries 4, Sensitive data 1, Secrets 2) |
+| https://github.com/organization/self-service-infra/actions/runs/39813679187 | `4fa6f58` | failure — my workflow defect (`--by-policy-hits=BLOCK,AUDIT` invalid; value must be one of `DISABLED|BLOCK|AUDIT`); wizcli exited before scanning; fixed once in `6bc72af` |
+| https://github.com/organization/self-service-infra/actions/runs/39813950967 | `6bc72af` | success, exit 0, `WARN_BY_POLICY`; AUDIT pass lists: Secrets HIGH "Git Credentials" in `tests/integration/service/shipUtils.spec.ts` (synthetic redaction-test fixture, false positive); Sensitive data INFO PII/Name in `docs/readiness/ship-from-repo-dev-status.json` |
 
 ### Re-scan at `068ba28` (2026-10-22, after Dev `0268ff6` and QA `068ba28`)
 | Run | Trigger | Result |
 |---|---|---|
-| https://github.com/Aya-DevOpsTeam/self-service-infra/actions/runs/39823792502 | `pull_request` (PR #143 head) | success, exit 0, `WARN_BY_POLICY`; Secrets: "No results found"; Sensitive data: 1 INFO PII/Name in `docs/readiness/ship-from-repo-dev-status.json`; Libraries 4 filtered. PR check `Wiz directory scan` = pass |
-| https://github.com/Aya-DevOpsTeam/self-service-infra/actions/runs/39823849217 | `workflow_dispatch` (`gh workflow run wiz-scan.yml --ref feature/ship-from-repo-prd`; accepted, no error) | identical result |
+| https://github.com/organization/self-service-infra/actions/runs/39823792502 | `pull_request` (PR #143 head) | success, exit 0, `WARN_BY_POLICY`; Secrets: "No results found"; Sensitive data: 1 INFO PII/Name in `docs/readiness/ship-from-repo-dev-status.json`; Libraries 4 filtered. PR check `Wiz directory scan` = pass |
+| https://github.com/organization/self-service-infra/actions/runs/39823849217 | `workflow_dispatch` (`gh workflow run wiz-scan.yml --ref feature/ship-from-repo-prd`; accepted, no error) | identical result |
 
 The HIGH "Git Credentials" in `shipUtils.spec.ts` is **gone**, and QA's `shipQaRedaction.spec.ts` / `shipQaRound2Redaction.spec.ts` produce **no** Secrets match (no PEM/userinfo/JWT-shaped hit). The workflow's generic jq tally still prints `HIGH:2`; it is a known artifact of nested metadata (it prints the same in the clean runs) and is not used for the gate.
 
@@ -120,11 +120,11 @@ Earlier-run history (superseded): run `39813950967` (`6bc72af`) listed the HIGH 
 ## 6. Not assessable now (`not_assessed`)
 | Item | Why | Owner |
 |---|---|---|
-| V-8 aya-flux ACR write-guard (DD-16/WT-09b) and `ship-publish` OIDC | aya-flux workflow/ACR outside this repo | Platform Eng lead (aya-flux) + Security |
-| V-12 Z2 hygiene canary on `aya-devops-rs` | needs the workflow and runner pod | Security + Platform Eng |
-| A-3 `aya-devops-rs` pool headroom (publish + nested config run) | needs runner-pool capacity metrics | SRE + runner-pool owner |
-| H-1 devsand preview DNS suffix/scheme | decision not recorded (backend returns `not_configured`) | Platform Eng (aya-flux) |
-| V-7 pinned `wizcli` behaviour in the aya-flux ship `scan` job | the job is in aya-flux; this repo's workflow shows wizcli 1.77.0 exits 0 on WARN_BY_POLICY and `--by-policy-hits` takes one value | SRE + Security |
+| V-8 flux-config ACR write-guard (DD-16/WT-09b) and `ship-publish` OIDC | flux-config workflow/ACR outside this repo | Platform Eng lead (flux-config) + Security |
+| V-12 Z2 hygiene canary on `ubuntu-latest` | needs the workflow and runner pod | Security + Platform Eng |
+| A-3 `ubuntu-latest` pool headroom (publish + nested config run) | needs runner-pool capacity metrics | SRE + runner-pool owner |
+| H-1 devsand preview DNS suffix/scheme | decision not recorded (backend returns `not_configured`) | Platform Eng (flux-config) |
+| V-7 pinned `wizcli` behaviour in the flux-config ship `scan` job | the job is in flux-config; this repo's workflow shows wizcli 1.77.0 exits 0 on WARN_BY_POLICY and `--by-policy-hits` takes one value | SRE + Security |
 | V-10 cold-cache timings, `BUILD_TIMEOUT` derivation | needs the workflow on the runner pool | SRE |
 | Wiz container-image scan | not executed; workflow is `scan dir` only | SRE + Security |
 | Datadog log-based metrics/alerts for `ship_*` and `github_api_call` | no Datadog API access / sand validation here | SRE (needs `DD_API_KEY`/`DD_APP_KEY`) |

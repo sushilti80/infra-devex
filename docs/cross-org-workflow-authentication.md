@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-When a GitHub Actions workflow needs to clone a private repository from another organization (e.g., `AyaHealthcare/ApiTemplate`), it encounters authentication issues because the default `GITHUB_TOKEN` only has access to the repository where the workflow is running.
+When a GitHub Actions workflow needs to clone a private repository from another organization (e.g., `organization/ApiTemplate`), it encounters authentication issues because the default `GITHUB_TOKEN` only has access to the repository where the workflow is running.
 
 ### Error Example
 ```
@@ -73,7 +73,7 @@ Use a **GitHub App** to generate installation access tokens that can be used acr
 - Uses libsodium (tweetnacl) for encryption
 - Updates existing secret or creates new one
 - Parameters:
-  - `repo`: Target repository (e.g., `AyaHealthcare/self-service-catalog`)
+  - `repo`: Target repository (e.g., `organization/self-service-catalog`)
   - `secretName`: Name of the secret (e.g., `CODE_DEPLOYMENT_TOKEN`)
   - `secretValue`: The installation token
   - `useCodeApp`: Whether to use code deployment app (default: true)
@@ -91,7 +91,7 @@ const installationToken = await githubService.generateInstallationToken(true);
 
 // Step 2: Store token as repository secret
 await githubService.createOrUpdateRepoSecret(
-  'AyaHealthcare/self-service-catalog',
+  'organization/self-service-catalog',
   'CODE_DEPLOYMENT_TOKEN',
   installationToken,
   true
@@ -103,7 +103,7 @@ await githubService.triggerWorkflow(...);
 
 ### Workflow Changes
 
-Update the `create-app.yml` workflow in `AyaHealthcare/self-service-catalog`:
+Update the `create-app.yml` workflow in `organization/self-service-catalog`:
 
 #### Key Changes:
 
@@ -212,19 +212,19 @@ curl -X POST http://localhost:3001/api/add-code-repo \
   -d '{
     "projectName": "test-app",
     "environment": "dev",
-    "templateRepo": "AyaHealthcare/ApiTemplate",
+    "templateRepo": "organization/ApiTemplate",
     "jiraNumber": "PROJ-123"
   }'
 ```
 
 ### Verify Secret Created
-1. Go to `https://github.com/AyaHealthcare/self-service-catalog/settings/secrets/actions`
+1. Go to `https://github.com/organization/self-service-catalog/settings/secrets/actions`
 2. Verify `CODE_DEPLOYMENT_TOKEN` exists
 3. Check "Updated" timestamp matches workflow trigger time
 
 ### Test Workflow
 1. Trigger workflow from UI
-2. Monitor workflow run: `https://github.com/AyaHealthcare/self-service-catalog/actions`
+2. Monitor workflow run: `https://github.com/organization/self-service-catalog/actions`
 3. Check "Clone template repository" step succeeds
 4. Verify template contents copied to new folder
 

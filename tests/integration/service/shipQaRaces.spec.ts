@@ -14,7 +14,7 @@ const h = createHarness()
 const { config, githubService, ship, fx } = h
 
 const MIN = 60_000
-const good = { repo: 'AyaHealthcare/my-svc', branch: 'main', app: 'my-app', env: 'devsand' }
+const good = { repo: 'organization/my-svc', branch: 'main', app: 'my-app', env: 'devsand' }
 const tick = () => new Promise((r) => setTimeout(r, 5))
 let env: ReturnType<typeof h.wire>
 let w: any

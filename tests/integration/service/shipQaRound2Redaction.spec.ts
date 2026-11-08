@@ -216,7 +216,7 @@ describe('false-positive sanity: ordinary build output is untouched', () => {
     'secrets-manager enabled', 'secretive behaviour', 'tokens issued per minute = see dashboard', 'no_token_here', 'sig=short', 'success rate: 100%',
     'GET /api/tokens 200 12ms', 'step 3/10 : RUN npm ci --omit=dev', 'npm WARN deprecated left-pad@1.3.0: use String.prototype.padStart()',
     'Authorization header present', 'Bearer', 'curl -u user:pw123@host', 'cache key: build-linux-x64-abc', 'eyJ not a token', 'ghp_short', 'AKIAshort', 'xox-',
-    '2026-10-22T14:06:00.1234567Z ##[group]Run actions/checkout@v4', 'https://github.com/AyaHealthcare/my-svc/actions/runs/123', 'docker.io/library/node:20-alpine@sha256:' + 'a'.repeat(64),
+    '2026-10-22T14:06:00.1234567Z ##[group]Run actions/checkout@v4', 'https://github.com/organization/my-svc/actions/runs/123', 'docker.io/library/node:20-alpine@sha256:' + 'a'.repeat(64),
     '[2/4] Linking dependencies...', 'Compiled successfully in 12.3s', '  at Object.<anonymous> (/workspace/src/index.js:10:5)',
   ]
   for (const l of benign) it(JSON.stringify(l.length > 60 ? l.slice(0, 57) + '…' : l), () => { expect(redactText(l)).toBe(l) })

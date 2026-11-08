@@ -211,7 +211,7 @@ class InfrastructureService {
   }
 
   /**
-   * Get AKS deployed applications by reading files from selfserve-metadata/ in the aya-flux repo.
+   * Get AKS deployed applications by reading files from selfserve-metadata/ in the flux-config repo.
    * Mirrors how getInstalledApps() reads from docs/metadata/ in service-catalog.
    */
   async getAKSInstalledApps() {
@@ -236,7 +236,7 @@ class InfrastructureService {
         contents = response.data;
       } catch (err) {
         if (err.status === 404) {
-          logger.info('selfserve-metadata folder not found in aya-flux — no AKS apps yet');
+          logger.info('selfserve-metadata folder not found in flux-config — no AKS apps yet');
           return [];
         }
         throw err;
@@ -262,10 +262,7 @@ class InfrastructureService {
           // Derive URLs only for approved private-gateway environments.
           // Metadata alone does not prove the Flux exposure rollout is Ready.
           const appName = meta.appname || r.project || '';
-          const privateZoneByEnv = {
-            devsand: 'private.devsand.ayahealthcare.com',
-            sand: 'private.sand.ayahealthcare.com'
-          };
+          const privateZoneByEnv = config.aks.privateZones || {};
           const privateZone = Object.prototype.hasOwnProperty.call(privateZoneByEnv, r.environment)
             ? privateZoneByEnv[r.environment] : null;
           const privateGateway = meta.exposure_mode === 'private-gateway' &&
@@ -273,7 +270,7 @@ class InfrastructureService {
             appName === meta.namespace &&
             /^[a-z0-9](?:[a-z0-9-]{0,40}[a-z0-9])?$/.test(appName);
 
-          // Normalise the aya-flux selfserve-metadata schema into the UI shape
+          // Normalise the flux-config selfserve-metadata schema into the UI shape
           return {
             project:               r.project || meta.appname || '',
             appname:               meta.appname || r.project || '',

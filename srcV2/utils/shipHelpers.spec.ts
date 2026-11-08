@@ -43,7 +43,7 @@ describe('shipHelpers', () => {
   })
 
   it('parseRepoInput accepts org/name and github URLs only', () => {
-    expect(parseRepoInput('Aya-DevOpsTeam/my.repo')).toBe('Aya-DevOpsTeam/my.repo')
+    expect(parseRepoInput('organization/my.repo')).toBe('organization/my.repo')
     expect(parseRepoInput('https://github.com/org/name.git')).toBe('org/name')
     expect(parseRepoInput('https://github.com/org/name/')).toBe('org/name')
     for (const bad of ['', 'org', 'org/', 'a/b/c', 'http://github.com/o/r', 'https://evil.com/o/r', 'o/r;rm', '../x/y']) {

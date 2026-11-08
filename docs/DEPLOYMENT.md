@@ -65,10 +65,10 @@ npm ci --legacy-peer-deps
 npm run build:client
 
 # 4. Build Docker image
-docker build -t sharedwus3acr2.azurecr.io/self-service-infra:v2 .
+docker build -t exampleregistry.azurecr.io/self-service-infra:v2 .
 
 # 5. Push to ACR
-docker push sharedwus3acr2.azurecr.io/self-service-infra:v2
+docker push exampleregistry.azurecr.io/self-service-infra:v2
 
 # 6. Deploy to AKS
 kubectl apply -f kubernetes/
@@ -90,7 +90,7 @@ git push origin main
 # Go to: https://github.com/<org>/<repo>/actions
 
 # 4. Verify deployment
-curl https://self-service.sand.k8s.com/health
+curl https://self-service.example.com/health
 ```
 
 ---
@@ -112,7 +112,7 @@ vim .env.production
 **Required Variables**:
 ```bash
 # API Configuration
-VITE_API_BASE_URL=https://self-service.sand.k8s.com/api
+VITE_API_BASE_URL=https://self-service.example.com/api
 NODE_ENV=production
 USE_VUE=true
 
@@ -127,13 +127,13 @@ GITHUB_CODE_INSTALLATION_ID=<your-code-installation-id>
 GITHUB_CODE_PRIVATE_KEY_PATH=/app/secrets/github-code-key.pem
 
 # Azure Configuration
-AZURE_SUBSCRIPTION_IDS='{"devsand":"11844065-...","sand":"552bdc54-..."}'
-AZURE_DEFAULT_SUBSCRIPTION=11844065-...
+AZURE_SUBSCRIPTION_IDS='{"devsand":"00000000-...","sand":"00000000-..."}'
+AZURE_DEFAULT_SUBSCRIPTION=00000000-...
 
 # Repository Configuration
-GITHUB_SERVICE_REPO=Aya-DevOpsTeam/service-catalog
-GITHUB_MODULES_REPO=Aya-DevOpsTeam/terraform-modules
-AKS_FLUX_REPO=Aya-DevOpsTeam/aya-flux
+GITHUB_SERVICE_REPO=organization/service-catalog
+GITHUB_MODULES_REPO=organization/terraform-modules
+AKS_FLUX_REPO=organization/flux-config
 
 # Webhook Secret
 GITHUB_WEBHOOK_SECRET=<your-webhook-secret>
@@ -166,7 +166,7 @@ kubectl create secret generic github-code-app-secrets \
 
 # Create ACR pull secret
 kubectl create secret docker-registry acr-secret \
-  --docker-server=sharedwus3acr2.azurecr.io \
+  --docker-server=exampleregistry.azurecr.io \
   --docker-username=<acr-username> \
   --docker-password=<acr-password> \
   -n self-service-test
@@ -232,13 +232,13 @@ curl http://localhost:3000
 
 ```bash
 # Build image with Vue.js
-docker build -t sharedwus3acr2.azurecr.io/self-service-infra:v2 .
+docker build -t exampleregistry.azurecr.io/self-service-infra:v2 .
 
 # Test image locally
 docker run -p 3000:3000 \
   -e USE_VUE=true \
   -e NODE_ENV=production \
-  sharedwus3acr2.azurecr.io/self-service-infra:v2
+  exampleregistry.azurecr.io/self-service-infra:v2
 
 # Verify in browser
 curl http://localhost:3000/health
@@ -253,20 +253,20 @@ docker logs <container-id>
 
 ```bash
 # Login to ACR
-docker login sharedwus3acr2.azurecr.io \
+docker login exampleregistry.azurecr.io \
   -u <acr-username> \
   -p <acr-password>
 
 # Tag image
 docker tag self-service-infra:v2 \
-  sharedwus3acr2.azurecr.io/self-service-infra:v2
+  exampleregistry.azurecr.io/self-service-infra:v2
 
 docker tag self-service-infra:v2 \
-  sharedwus3acr2.azurecr.io/self-service-infra:latest
+  exampleregistry.azurecr.io/self-service-infra:latest
 
 # Push to registry
-docker push sharedwus3acr2.azurecr.io/self-service-infra:v2
-docker push sharedwus3acr2.azurecr.io/self-service-infra:latest
+docker push exampleregistry.azurecr.io/self-service-infra:v2
+docker push exampleregistry.azurecr.io/self-service-infra:latest
 
 # Verify push
 docker images | grep self-service-infra
@@ -317,15 +317,15 @@ kubectl logs -f deployment/self-service-infra -n self-service-test
 
 ```bash
 # Test health endpoint
-curl https://self-service.sand.k8s.com/health
+curl https://self-service.example.com/health
 # Expected: {"status":"ok","timestamp":"..."}
 
 # Test home page
-curl -I https://self-service.sand.k8s.com
+curl -I https://self-service.example.com
 # Expected: HTTP/1.1 200 OK
 
 # Test API endpoints
-curl https://self-service.sand.k8s.com/api/health
+curl https://self-service.example.com/api/health
 # Expected: {"status":"ok","timestamp":"..."}
 ```
 
@@ -400,7 +400,7 @@ curl https://self-service.sand.k8s.com/api/health
 - Port: 80 → 3000
 
 **Ingress**:
-- Host: self-service.sand.k8s.com
+- Host: self-service.example.com
 - TLS: Enabled with cert-manager
 - Class: nginx
 
@@ -412,7 +412,7 @@ curl https://self-service.sand.k8s.com/api/health
 
 ```bash
 # Application health
-curl https://self-service.sand.k8s.com/health
+curl https://self-service.example.com/health
 
 # Expected response:
 {
@@ -480,7 +480,7 @@ kubectl rollout status deployment/self-service-infra -n self-service-test
 ```bash
 # Update image to previous version
 kubectl set image deployment/self-service-infra \
-  self-service-infra=sharedwus3acr2.azurecr.io/self-service-infra:v1 \
+  self-service-infra=exampleregistry.azurecr.io/self-service-infra:v1 \
   -n self-service-test
 
 # Verify rollback
@@ -524,7 +524,7 @@ kubectl logs <pod-name> -n self-service-test
    
    # Recreate if needed
    kubectl create secret docker-registry acr-secret \
-     --docker-server=sharedwus3acr2.azurecr.io \
+     --docker-server=exampleregistry.azurecr.io \
      --docker-username=<username> \
      --docker-password=<password> \
      -n self-service-test
@@ -588,7 +588,7 @@ kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- \
 3. **DNS not resolving**:
    ```bash
    # Verify DNS record
-   nslookup self-service.sand.k8s.com
+   nslookup self-service.example.com
    
    # Update DNS if needed
    ```
@@ -623,8 +623,8 @@ kubectl exec -it <pod-name> -n self-service-test -- ls -la /app/dist
    ```bash
    # Rebuild Docker image
    npm run build:client
-   docker build -t sharedwus3acr2.azurecr.io/self-service-infra:v2 .
-   docker push sharedwus3acr2.azurecr.io/self-service-infra:v2
+   docker build -t exampleregistry.azurecr.io/self-service-infra:v2 .
+   docker push exampleregistry.azurecr.io/self-service-infra:v2
    
    # Redeploy
    kubectl rollout restart deployment/self-service-infra -n self-service-test
@@ -642,7 +642,7 @@ kubectl exec -it <pod-name> -n self-service-test -- ls -la /app/dist
 kubectl logs deployment/self-service-infra -n self-service-test | grep ERROR
 
 # Test API endpoints
-curl https://self-service.sand.k8s.com/api/installed-apps
+curl https://self-service.example.com/api/installed-apps
 ```
 
 **Common Causes & Solutions**:

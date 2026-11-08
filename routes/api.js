@@ -1861,7 +1861,7 @@ router.get('/aks-status/:workflowId', async (req, res) => {
 
 
 
-// Add code repository - triggers create-app.yml workflow in AyaHealthcare/self-service-catalog
+// Add code repository - triggers create-app.yml workflow in organization/self-service-catalog
 router.post('/add-code-repo', [
   check('projectName').notEmpty().withMessage('Project name is required'),
   check('templateRepo').notEmpty().withMessage('Template repository is required')
@@ -1889,21 +1889,21 @@ router.post('/add-code-repo', [
     const codeAppToken = await githubService.getInstallationAccessToken(true);
 
     // Step 2: Create/update the CODE_DEPLOYMENT_TOKEN secret in the target repository
-    logger.info(`[${req.correlationId}] Creating CODE_DEPLOYMENT_TOKEN secret in AyaHealthcare/self-service-catalog...`);
+    logger.info(`[${req.correlationId}] Creating CODE_DEPLOYMENT_TOKEN secret in organization/self-service-catalog...`);
     await githubService.createOrUpdateRepoSecret(
-      'AyaHealthcare/self-service-catalog',
+      config.github.codeServiceRepo,
       'CODE_DEPLOYMENT_TOKEN',
       codeAppToken,
       true // Use code deployment app to create the secret
     );
 
-    // Step 3: Trigger create-app.yml workflow in AyaHealthcare/self-service-catalog repository
+    // Step 3: Trigger create-app.yml workflow in organization/self-service-catalog repository
     // Use the separate code deployment GitHub App
     let workflowResult;
 
     try {
       workflowResult = await githubService.triggerWorkflow(
-        'AyaHealthcare/self-service-catalog',
+        config.github.codeServiceRepo,
         'create-app.yml',
         'main',
         {
@@ -1919,7 +1919,7 @@ router.post('/add-code-repo', [
       if (error.message.includes('Not Found')) {
         logger.info(`[${req.correlationId}] Workflow create-app.yml not found, trying create-app.yaml`);
         workflowResult = await githubService.triggerWorkflow(
-          'AyaHealthcare/self-service-catalog',
+          config.github.codeServiceRepo,
           'create-app.yaml',
           'main',
           {
@@ -1940,7 +1940,7 @@ router.post('/add-code-repo', [
     res.json({
       success: true,
       message: 'Code repository workflow triggered successfully',
-      workflowUrl: `https://github.com/AyaHealthcare/self-service-catalog/actions`,
+      workflowUrl: `https://github.com/${config.github.codeServiceRepo}/actions`,
       correlationId: req.correlationId
     });
 
@@ -1978,16 +1978,16 @@ router.get('/debug/installations', async (req, res) => {
   }
 });
 
-// Debug endpoint: Test GitHub App access to AyaHealthcare/self-service-catalog
+// Debug endpoint: Test GitHub App access to organization/self-service-catalog
 router.get('/debug/github-access', async (req, res) => {
   try {
-    logger.info(`[${req.correlationId}] Testing code deployment GitHub App access to AyaHealthcare/self-service-catalog`);
+    logger.info(`[${req.correlationId}] Testing code deployment GitHub App access to organization/self-service-catalog`);
 
-    const accessTest = await githubService.testRepositoryAccess('AyaHealthcare/self-service-catalog', true); // Use code app
+    const accessTest = await githubService.testRepositoryAccess(config.github.codeServiceRepo, true); // Use code app
 
     res.json({
       success: true,
-      repository: 'AyaHealthcare/self-service-catalog',
+      repository: config.github.codeServiceRepo,
       usingCodeApp: true,
       access: accessTest,
       correlationId: req.correlationId
@@ -2003,16 +2003,16 @@ router.get('/debug/github-access', async (req, res) => {
   }
 });
 
-// Debug endpoint: List available workflows in AyaHealthcare/self-service-catalog
+// Debug endpoint: List available workflows in organization/self-service-catalog
 router.get('/debug/workflows', async (req, res) => {
   try {
-    logger.info(`[${req.correlationId}] Listing workflows in AyaHealthcare/self-service-catalog`);
+    logger.info(`[${req.correlationId}] Listing workflows in organization/self-service-catalog`);
 
-    const workflows = await githubService.listWorkflows('AyaHealthcare/self-service-catalog');
+    const workflows = await githubService.listWorkflows(config.github.codeServiceRepo);
 
     res.json({
       success: true,
-      repository: 'AyaHealthcare/self-service-catalog',
+      repository: config.github.codeServiceRepo,
       workflows: workflows,
       correlationId: req.correlationId
     });

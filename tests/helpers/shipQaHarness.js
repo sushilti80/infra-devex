@@ -82,15 +82,15 @@ function createHarness() {
     const dispatched = [];
     identity.registerProvider('test', createTestProvider({
       links: { [ID.sam]: 'octocat', [ID.reader]: 'reader-login', [ID.admin]: 'admin-login', [ID.bob]: 'bob-login' },
-      repos: { octocat: [{ fullName: 'AyaHealthcare/my-svc', org: 'AyaHealthcare', name: 'my-svc', defaultBranch: 'main', private: true }] },
-      permissions: { 'octocat:AyaHealthcare/my-svc': 'admin', 'reader-login:AyaHealthcare/my-svc': 'read', 'admin-login:AyaHealthcare/my-svc': 'write', 'bob-login:AyaHealthcare/my-svc': 'write' },
+      repos: { octocat: [{ fullName: 'organization/my-svc', org: 'organization', name: 'my-svc', defaultBranch: 'main', private: true }] },
+      permissions: { 'octocat:organization/my-svc': 'admin', 'reader-login:organization/my-svc': 'read', 'admin-login:organization/my-svc': 'write', 'bob-login:organization/my-svc': 'write' },
     }));
     githubService.codeAppGetRepo = async () => ({ defaultBranch: 'main', private: true, fork: false });
     githubService.codeAppBranchExists = async () => true;
     githubService.triggerWorkflow = async (repo, wf, ref, inputs) => { dispatched.push({ repo, wf, ref, inputs }); return { success: true }; };
     aksService.getAppState = async () => ({ appState: 'new' });
     Object.assign(config.ship, {
-      allowedOrgs: ['AyaHealthcare'], supportedShipEnvironments: ['devsand'], workflowRef: 'ship/v1', allowDefaultRef: false,
+      allowedOrgs: ['organization'], supportedShipEnvironments: ['devsand'], workflowRef: 'ship/v1', allowDefaultRef: false,
       annotationsVerified: true, queueSignalsVerified: false, platformRoles: ['Platform.Admin'], platformGroupIds: [],
       identityProvider: 'none', previewHosts: {}, reservedNamespaces: [],
     });

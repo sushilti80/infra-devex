@@ -14,9 +14,10 @@ function read(path) {
 }
 
 function trackedFiles() {
-  return execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' })
-    .split(/\r?\n/)
+  return [...new Set(execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { cwd: ROOT, encoding: 'utf8' })
+    .split('\0'))]
     .filter(Boolean)
+    .filter((path) => existsSync(join(ROOT, path)))
     .filter((path) => path !== '.ai/ai-repo.md')
     .sort();
 }
@@ -53,7 +54,7 @@ function render() {
   const composables = directFiles(files, 'srcV2/composables', ['.ts']);
   const frontendServices = directFiles(files, 'srcV2/services', ['.ts']);
   const dataCatalogs = directFiles(files, 'data', ['.json']);
-  const externalRepos = [...new Set(config.match(/Aya-DevOpsTeam\/[A-Za-z0-9._-]+/g) || [])].sort();
+  const externalRepos = [...new Set(config.match(/(?:GITHUB_[A-Z_]*_REPO|AKS_FLUX_REPO)/g) || [])].sort();
   const graphTracked = files.includes('graphify-out/graph.json');
 
   const lines = [
@@ -85,6 +86,7 @@ function render() {
     '| `.github/agents/` | Agent role definitions |',
     '| `.github/skills/` | Reusable task procedure and validation |',
     '| `.github/workflows/` | GitHub Actions workflows |',
+    '| `service-catalog/` | Sanitized workflow starter for a separate infrastructure catalog repository |',
     '| `.pipeline/` | Azure DevOps build/release pipeline definition |',
     '| `routes/` | Express HTTP routes |',
     '| `services/` | Backend domain and integration services |',
@@ -101,7 +103,7 @@ function render() {
     '| Need | First location |',
     '| --- | --- |',
     '| Repository orientation | `.ai/ai-repo.md` |',
-    '| Agent governance enrollment | `.agent/governance.yaml` and `.github/workflows/agent-governance.yml` |',
+    '| Public source validation | `scripts/check-public-source.mjs` and `.github/workflows/public-source-check.yml` |',
     '| Pipeline operational state | `.agent/state/project-state.md` |',
     '| LearningRecord candidates | `.agent/learning/candidates/` |',
     '| Repository behavioral eval catalog | `.agent/evals/` |',
@@ -175,7 +177,7 @@ function render() {
     '',
     ...bullets(dataCatalogs),
     '',
-    '## External Aya repositories referenced by config',
+    '## External repository configuration variables',
     '',
     ...externalRepos.map((name) => '- `' + name + '`'),
     '',

@@ -218,7 +218,7 @@ special-cased probes.
 
 ## Verification of `service-catalog` independently (not taken on PRD's word)
 
-I ran targeted GitHub code search against `Aya-DevOpsTeam/service-catalog` rather than trusting the
+I ran targeted GitHub code search against `organization/service-catalog` rather than trusting the
 PRD's "both repos share the same layout" assertion.
 
 - **Directory depth**: every live (non-`recycle-bin`) example found — `dey`, `delt`, `hr`, `tpms`,

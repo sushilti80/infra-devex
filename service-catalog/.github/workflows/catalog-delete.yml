@@ -1,0 +1,110 @@
+name: "Prepare Destroy - Create PR"
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_name:
+        description: "Project Name to Destroy"
+        required: true
+      environment:
+        description: "Environment to Destroy"
+        required: true
+      correlation_id:
+        description: "Unique Correlation ID (for tracking runs in logs)"
+        required: false
+        default: "none"
+      triggered_by:
+        description: "Triggered by the self-service portal (if available)"
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create_destroy_pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Move Application Folder to Recycle Bin
+        run: |
+          PROJECT_NAME=$(echo "${{ github.event.inputs.project_name }}" | tr '[:upper:]' '[:lower:]')
+          ENVIRONMENT=$(echo "${{ github.event.inputs.environment }}" | tr '[:upper:]' '[:lower:]')
+
+          SOURCE_FOLDER="infrastructure/${PROJECT_NAME}/${ENVIRONMENT}"
+          TARGET_FOLDER="recycle-bin/${PROJECT_NAME}/${ENVIRONMENT}"
+
+          if [ -d "$SOURCE_FOLDER" ]; then
+            echo "Found source folder: $SOURCE_FOLDER"
+            mkdir -p "$(dirname "$TARGET_FOLDER")"
+            git mv "$SOURCE_FOLDER" "$TARGET_FOLDER"
+            echo "Moved $SOURCE_FOLDER to $TARGET_FOLDER"
+          else
+            echo "Source folder $SOURCE_FOLDER not found"
+          fi
+
+      - name: Remove metadata file and update index
+        run: |
+          PROJECT_NAME=$(echo "${{ github.event.inputs.project_name }}" | tr '[:upper:]' '[:lower:]')
+          ENVIRONMENT=$(echo "${{ github.event.inputs.environment }}" | tr '[:upper:]' '[:lower:]')
+          METADATA_FILE="docs/metadata/${PROJECT_NAME}-${ENVIRONMENT}.json"
+          INDEX_FILE="docs/metadata/index.json"
+
+          if [ -f "$METADATA_FILE" ]; then
+            git rm "$METADATA_FILE"
+            echo "Deleted $METADATA_FILE"
+          else
+            echo "Metadata file $METADATA_FILE does not exist, skipping delete"
+          fi
+
+          if [ -f "$INDEX_FILE" ]; then
+            node -e "
+              const fs = require('fs');
+              const filePath = '$INDEX_FILE';
+              const entryToRemove = '${PROJECT_NAME}-${ENVIRONMENT}.json';
+              const index = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+              const updated = index.filter(f => f !== entryToRemove);
+              fs.writeFileSync(filePath, JSON.stringify(updated, null, 2));
+            "
+            git add "$INDEX_FILE"
+            echo "Updated metadata/index.json"
+          else
+            echo "No metadata/index.json found"
+          fi
+
+      - name: Commit Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Prepare to destroy ${{ github.event.inputs.project_name }} in ${{ github.event.inputs.environment }} by moving folder and removing metadata"
+          fi
+
+      - name: Print Correlation ID
+        if: ${{ github.event.inputs.correlation_id != 'none' }}
+        run: |
+          echo "🔗 Correlation ID: ${{ github.event.inputs.correlation_id }}"
+
+      - name: Create new branch for PR
+        id: create_branch
+        run: |
+          NEW_BRANCH="destroy-${{ github.run_id }}"
+          git checkout -b $NEW_BRANCH
+          git push origin $NEW_BRANCH
+          echo "::set-output name=branch::$NEW_BRANCH"
+
+      - name: Create Pull Request using GitHub CLI
+        run: |
+          gh pr create \
+            --base main \
+            --head "${{ steps.create_branch.outputs.branch }}" \
+            --title "Destroy ${{ github.event.inputs.project_name }} (${{ github.event.inputs.environment }}) - Approval Required" \
+            --body "This PR moves the infrastructure folder for **${{ github.event.inputs.project_name }}** in **${{ github.event.inputs.environment }}** to the recycle-bin and removes the corresponding metadata file.\n\nOnce approved and merged, the destroy pipeline can proceed.\n\n**Triggered by:** ${{ github.actor }}\n**Requested by (input):** ${{ github.event.inputs.triggered_by }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

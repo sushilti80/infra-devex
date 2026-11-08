@@ -83,7 +83,7 @@ Successfully completed all critical deployment preparation tasks for the Vue.js 
 - Fixed service name reference (`self-service-infra`)
 - Added TLS configuration with cert-manager
 - Updated ingress class to `nginx`
-- Configured host: `self-service.sand.k8s.com`
+- Configured host: `self-service.example.com`
 
 **Status**: ✅ **COMPLETE**
 
@@ -266,15 +266,15 @@ git push origin main
 ```bash
 # Build and push
 npm run build:client
-docker build -t sharedwus3acr2.azurecr.io/self-service-infra:v2 .
-docker push sharedwus3acr2.azurecr.io/self-service-infra:v2
+docker build -t exampleregistry.azurecr.io/self-service-infra:v2 .
+docker push exampleregistry.azurecr.io/self-service-infra:v2
 
 # Deploy to AKS
 kubectl apply -f kubernetes/
 kubectl rollout status deployment/self-service-infra -n self-service-test
 
 # Verify
-curl https://self-service.sand.k8s.com/health
+curl https://self-service.example.com/health
 ```
 
 ---
