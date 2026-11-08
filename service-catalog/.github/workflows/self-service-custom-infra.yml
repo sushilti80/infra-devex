@@ -52,14 +52,28 @@ permissions:
 
 env:
   MODULES_REPO: ${{ vars.TERRAFORM_MODULES_REPO }}
+  TERRAFORM_MODULES_REPO: ${{ vars.TERRAFORM_MODULES_REPO }}
+  CATALOG_CONFIG_JSON: ${{ vars.CATALOG_CONFIG_JSON }}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Create catalog automation token
+        id: catalog-app
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ steps.catalog-app.outputs.token }}
 
       - name: Configure Git Authentication for Push
         run: |
@@ -71,6 +85,9 @@ jobs:
       - name: Capture Source Commit
         id: source
         run: echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare shared Terragrunt entrypoint
+        run: cp infrastructure/root.hcl infrastructure/terragrunt.hcl
 
       - name: Print Correlation ID
         if: ${{ github.event.inputs.correlation_id != 'none' }}
@@ -191,7 +208,7 @@ jobs:
             parentdir      = "\${get_terragrunt_dir()}/../"
             prefix         = lower(basename(dirname(local.parentdir)))
             currentsubID   = local.common_vars.locals.subscriptions[local.envName]
-            module_version = "1.0.399"
+            module_version = "${{ github.event.inputs.terraform_branch }}"
             location       = local.common_vars.locals.location
             alias          = local.common_vars.locals.alias
 
@@ -334,6 +351,7 @@ jobs:
           CR: ${{ github.event.inputs.cr }}
           MODULES: ${{ github.event.inputs.modules }}
           REMOVED_MODULES: ${{ steps.reconcile.outputs.removed_modules }}
+          GH_TOKEN: ${{ steps.catalog-app.outputs.token }}
           RBAC_PAIRS: ${{ github.event.inputs.rbac_pairs }}
           OWNER: ${{ github.event.inputs.owner }}
           TRIGGERED_BY: ${{ github.event.inputs.triggered_by }}

@@ -1,0 +1,9 @@
+remote_state:
+  common:
+    resource_group_name: REPLACE_WITH_YOUR_VALUE
+    storage_account_name: REPLACE_WITH_YOUR_VALUE
+    container_name: tfstate
+  dr:
+    resource_group_name: REPLACE_WITH_YOUR_VALUE
+    storage_account_name: REPLACE_WITH_YOUR_VALUE
+    container_name: tfstate

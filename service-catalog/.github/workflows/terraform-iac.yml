@@ -1,0 +1,146 @@
+name: Terraform plan and apply
+
+on:
+  pull_request:
+    paths: ['infrastructure/**', 'recycle-bin/**', '.github/workflows/terraform-iac.yml', '.github/workflows/scripts/*terraform*', '.github/workflows/scripts/select_iac_stacks.mjs']
+  push:
+    branches: [main]
+    paths: ['infrastructure/**', 'recycle-bin/**']
+  workflow_dispatch:
+    inputs:
+      operation:
+        type: choice
+        options: [plan, apply, destroy]
+        default: plan
+        required: true
+      directory:
+        description: 'Stack directory, for example infrastructure/myapp/devsand'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: catalog-terraform
+  cancel-in-progress: false
+
+jobs:
+  select:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      stacks: ${{ steps.stacks.outputs.stacks }}
+      count: ${{ steps.stacks.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: stacks
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          MANUAL_DIRECTORY: ${{ inputs.directory }}
+        run: node .github/workflows/scripts/select_iac_stacks.mjs
+
+  terraform:
+    needs: select
+    if: needs.select.outputs.count != '0' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        stack: ${{ fromJSON(needs.select.outputs.stacks) }}
+    environment:
+      name: ${{ (github.event_name == 'pull_request' || inputs.operation == 'plan') && 'terraform-plan' || (matrix.stack.retired || inputs.operation == 'destroy' || toJSON(matrix.stack.removals) != '[]') && 'terraform-destroy' || 'terraform-apply' }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TF_IN_AUTOMATION: 'true'
+      TF_INPUT: 'false'
+      ARM_USE_OIDC: 'true'
+      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      CATALOG_CONFIG_JSON: ${{ vars.CATALOG_CONFIG_JSON }}
+      TERRAFORM_MODULES_REPO: ${{ vars.TERRAFORM_MODULES_REPO }}
+      TERRAFORM_MODULE_REF: ${{ vars.TERRAFORM_MODULE_REF || 'main' }}
+      STACK_DIRECTORY: ${{ matrix.stack.directory }}
+      STACK_RETIRED: ${{ matrix.stack.retired }}
+      REMOVAL_REQUESTS: ${{ toJSON(matrix.stack.removals) }}
+      OPERATION: ${{ github.event_name == 'pull_request' && 'plan' || inputs.operation || 'apply' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-environment
+        with:
+          install-miller: 'false'
+          install-azure-cli: 'false'
+          ssh-private-key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          ssh-known-hosts: ${{ vars.SSH_KNOWN_HOSTS }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.11.4'
+          terraform_wrapper: false
+      - name: Install Terragrunt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v0.77.22 --repo gruntwork-io/terragrunt \
+            --pattern terragrunt_linux_amd64 --pattern SHA256SUMS --dir "$RUNNER_TEMP/terragrunt-install"
+          cd "$RUNNER_TEMP/terragrunt-install"
+          grep ' terragrunt_linux_amd64$' SHA256SUMS | sha256sum --check --strict
+          chmod +x terragrunt_linux_amd64
+          mv terragrunt_linux_amd64 terragrunt
+          echo "$PWD" >> "$GITHUB_PATH"
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Prepare shared configuration
+        run: |
+          echo "PLAN_OUTPUT_ROOT=$RUNNER_TEMP/terraform-plans" >> "$GITHUB_ENV"
+          cp infrastructure/root.hcl infrastructure/terragrunt.hcl
+          if [ "$STACK_RETIRED" = true ]; then
+            cp infrastructure/root.hcl recycle-bin/root.hcl
+            cp infrastructure/root.hcl recycle-bin/terragrunt.hcl
+            cp infrastructure/common.hcl infrastructure/remote_state.yml recycle-bin/
+          fi
+      - name: Terraform plan
+        env:
+          OPERATION: plan
+        run: bash .github/workflows/scripts/run_terraform.sh
+      - name: Wiz IaC security gate
+        if: vars.WIZ_IAC_REQUIRED != 'false'
+        env:
+          WIZ_CLIENT_ID: ${{ secrets.WIZ_CLIENT_ID }}
+          WIZ_CLIENT_SECRET: ${{ secrets.WIZ_CLIENT_SECRET }}
+        run: |
+          test -n "$WIZ_CLIENT_ID" && test -n "$WIZ_CLIENT_SECRET" || {
+            echo "::error::Configure Wiz credentials or an approved alternative security gate"
+            exit 1
+          }
+          curl -fsSL -o "$RUNNER_TEMP/wizcli" https://downloads.wiz.io/v1/wizcli/1.77.0/wizcli-linux-amd64
+          echo "609ce7bb2faf755e336553dbc0c15bdbe9717c617db572ee5b5f765154a8dca3  $RUNNER_TEMP/wizcli" | sha256sum --check --status
+          chmod +x "$RUNNER_TEMP/wizcli"
+          "$RUNNER_TEMP/wizcli" auth --id "$WIZ_CLIENT_ID" --secret "$WIZ_CLIENT_SECRET"
+          "$RUNNER_TEMP/wizcli" scan dir "$PLAN_OUTPUT_ROOT" --name "catalog-${GITHUB_RUN_ID}" \
+            --no-color --no-style --json-output-file "$RUNNER_TEMP/wiz-iac.json"
+      - name: Refuse stale write operations
+        if: env.OPERATION != 'plan'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$(gh api "repos/$REPO/commits/main" --jq .sha)" || {
+            echo "::error::main advanced; rerun the workflow on the current main commit"
+            exit 1
+          }
+      - name: Run approved Terraform write
+        if: env.OPERATION != 'plan'
+        run: bash .github/workflows/scripts/run_terraform.sh

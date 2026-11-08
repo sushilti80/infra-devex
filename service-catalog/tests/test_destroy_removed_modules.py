@@ -10,7 +10,7 @@ from pathlib import Path
 
 SCRIPT = (
     Path(__file__).parents[1]
-    / ".pipelines/infrastructure/deploy/destroy_removed_modules.sh"
+    / ".github/workflows/scripts/destroy_removed_modules.sh"
 )
 
 
@@ -99,7 +99,7 @@ class DestroyRemovedModulesTests(unittest.TestCase):
         self.assertTrue(log_lines[0].endswith("/infrastructure/testapp/devsand"))
         self.assertEqual(
             "run --all --non-interactive --parallelism 1 --queue-strict-include "
-            "--queue-include-dir ./storagev2 -- destroy -lock=false",
+            "--queue-include-dir ./storagev2 -- destroy -auto-approve -input=false -lock-timeout=5m",
             log_lines[1],
         )
         self.assertEqual([], list(self.repository.parent.glob("module-destroy.*")))

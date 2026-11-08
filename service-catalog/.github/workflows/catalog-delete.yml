@@ -26,8 +26,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Create catalog automation token
+        id: catalog-app
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          token: ${{ steps.catalog-app.outputs.token }}
 
       - name: Move Application Folder to Recycle Bin
         run: |
@@ -100,11 +112,11 @@ jobs:
           echo "::set-output name=branch::$NEW_BRANCH"
 
       - name: Create Pull Request using GitHub CLI
+        env:
+          GH_TOKEN: ${{ steps.catalog-app.outputs.token }}
         run: |
           gh pr create \
             --base main \
             --head "${{ steps.create_branch.outputs.branch }}" \
             --title "Destroy ${{ github.event.inputs.project_name }} (${{ github.event.inputs.environment }}) - Approval Required" \
             --body "This PR moves the infrastructure folder for **${{ github.event.inputs.project_name }}** in **${{ github.event.inputs.environment }}** to the recycle-bin and removes the corresponding metadata file.\n\nOnce approved and merged, the destroy pipeline can proceed.\n\n**Triggered by:** ${{ github.actor }}\n**Requested by (input):** ${{ github.event.inputs.triggered_by }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

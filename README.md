@@ -1,4 +1,4 @@
-# Self-Service Infrastructure Catalog - Vue 3 Edition
+# Self-Service Azure Infrastructure Catalog
 
 [![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](./VERSION)
 [![Node](https://img.shields.io/badge/node-20+-green.svg)](https://nodejs.org)
@@ -17,6 +17,53 @@ settings for your installation. No organization-specific runtime defaults are su
 
 Before publishing, complete the [public release checklist](docs/OPEN-SOURCE-SETUP.md).
 This working-tree cleanup does not sanitize Git history or approve licensing.
+
+### Repositories
+
+| Repository | Purpose |
+| --- | --- |
+| This repository | Vue portal, Express API, authentication, and GitHub orchestration |
+| Your `service-catalog` repository | Generated IaC, metadata, templates, and GitHub plan/apply workflows |
+| Your Terraform modules repository | Compatible modules and Terragrunt scaffolding templates |
+
+The included [service-catalog starter](service-catalog/README.md) contains shared
+Terragrunt configuration, sanitized application templates, workflow helpers, and
+offline regression tests. Copy its contents, including `.github/`, to the root of
+your separate catalog repository. Nested workflows do not execute in this portal
+repository. Deployed metadata, credentials, and Terraform state are not included.
+
+### GitHub delivery flow
+
+1. The portal dispatches a custom or template generation workflow in your catalog.
+2. Generation creates an Infrastructure-App-authenticated PR containing IaC and metadata.
+3. [Terraform plan and apply](service-catalog/.github/workflows/terraform-iac.yml)
+   selects affected application/environment stacks and plans the PR changes.
+4. After review and merge, the workflow re-plans, runs the configured security gate,
+   and applies only after protected-environment approval.
+5. Retired applications and recorded module removals require separate destroy approval.
+
+Configure your Azure subscription map, module repository/ref, remote-state backend,
+Entra OIDC identities, and protected GitHub environments before enabling writes.
+State locking remains enabled. Disable the previous Azure DevOps plan/apply pipelines
+before enabling the GitHub replacement to avoid duplicate deployments.
+
+### Integration boundaries
+
+- Core provisioning requires Azure, Entra ID, an Infrastructure GitHub App, and
+  compatible Terraform modules. It does not require an AI assistant or model API.
+- The organization-specific assistant and AI-assisted deployment workflow are removed.
+  No Infracost runtime integration is included.
+- Code bootstrap and AKS/Flux deployment are separate integrations; code deployment
+  uses its own GitHub App and repository configuration.
+- Jira references and Datadog observability remain available where configured.
+- The catalog's Wiz security gate is currently enabled by default. Configure it, or
+  provide an approved alternative before explicitly disabling it. Wiz is not an
+  organization-specific Azure provisioning requirement, but this default must be
+  addressed before running the workflow.
+
+See [catalog configuration](service-catalog/README.md#github-planapply-configuration)
+for identity, approval, backend, and security settings. Local tests do not certify
+live Azure deployments or publication readiness.
 
 ---
 
@@ -38,10 +85,10 @@ The manual "Load from existing app" picker inside the Custom Infrastructure wiza
 
 ### Prerequisites
 
-- **Node.js**: 18+ (20+ recommended)
+- **Node.js**: 24 LTS recommended (matches the container and workflow toolchain)
 - **npm**: 8+
 - **Podman** or **Docker**: For containerized deployment
-- **GitHub Apps**: Two GitHub Apps configured (Infrastructure + Code Deployment)
+- **GitHub App**: Infrastructure App installed on your catalog repository; a separate Code Deployment App is needed only for code-deployment features
 - **Azure**: Active Azure subscription with appropriate permissions
 - **Microsoft Entra ID**: App registration for authentication (see [Authentication Setup](#authentication-setup))
 
@@ -61,7 +108,11 @@ cp .env.example .env
 # Configure your credentials in .env:
 # GitHub Apps:
 # - GITHUB_APP_ID, GITHUB_INSTALLATION_ID, GITHUB_PRIVATE_KEY_PATH
-# - GITHUB_CODE_APP_ID, GITHUB_CODE_INSTALLATION_ID, GITHUB_CODE_APP_PRIVATE_KEY_PATH
+# Optional code deployment:
+# - GITHUB_CODE_APP_ID, GITHUB_CODE_INSTALLATION_ID, GITHUB_CODE_PRIVATE_KEY_PATH
+# Repository names:
+# - GITHUB_SERVICE_REPO, GITHUB_MODULES_REPO, GITHUB_SELF_SERVICE_REPO
+# Configure subscription IDs and feature flags in data/environments.json.
 #
 # Entra ID Authentication:
 # - AZURE_AD_CLIENT_ID, AZURE_AD_TENANT_ID
@@ -109,7 +160,7 @@ npm run build:client
 # Creates production-optimized dist/ folder
 
 # Step 2: Start Express with production build
-USE_VUE=true npm start
+npm start
 # Serves built Vue app from dist/ on http://localhost:3000
 
 # Open browser at: http://localhost:3000
