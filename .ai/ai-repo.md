@@ -96,8 +96,11 @@
 - `.github/workflows/ai-repo-check.yml`
 - `.github/workflows/catalog-tests.yml`
 - `.github/workflows/deploy-dashboards.yml`
+- `.github/workflows/iac-generation-tests.yml`
 - `.github/workflows/public-source-check.yml`
 - `.github/workflows/qa-pipeline.yml`
+- `.github/workflows/self-service-custom-infra.yml`
+- `.github/workflows/terraform-iac.yml`
 
 ## Backend modules
 
