@@ -43,10 +43,8 @@ including the hidden `.github/` directory, into your own
 | `iac-generation-tests.yml` | Test generation and operation routing without cloud credentials |
 
 **A successful scaffolding workflow does not mean Azure resources were applied.**
-The GitHub workflow replaces the Azure DevOps plan/apply path. Disable the old
-Azure DevOps pipelines before enabling GitHub writes; files under `.pipelines/`
-are historical references and are not used by the GitHub workflow. No Azure DevOps
-agent pool, service connection, or variable group is required for the new path.
+GitHub Actions is the supported plan/apply path. No Azure DevOps agent pool,
+service connection, or variable group is required.
 
 ## GitHub plan/apply configuration
 
@@ -93,11 +91,11 @@ through the named settings in `infrastructure/common.hcl`.
 - Terraform state locking remains enabled. Workflow operations are serialized;
    no state files or binary plans are uploaded as GitHub artifacts.
 
-The inherited Wiz gate is enabled by default. Configure secrets `WIZ_CLIENT_ID`
-and `WIZ_CLIENT_SECRET` and equivalent blocking IaC policies in your Wiz organization.
-The GitHub job uses the pinned, checksum-verified Wiz CLI to scan generated plans.
-An installation without Wiz must supply an approved alternative gate before explicitly
-setting `WIZ_IAC_REQUIRED=false`; this is not an automatic equivalent-policy certification.
+The Wiz scan is optional and disabled by default. To enable it, set the repository
+variable `WIZ_IAC_REQUIRED=true`, configure `WIZ_CLIENT_ID` and `WIZ_CLIENT_SECRET`,
+and configure blocking IaC policies in Wiz. The job uses a pinned, checksum-verified
+Wiz CLI. If Wiz is not enabled, the workflow has no built-in IaC security scan;
+configure a security gate appropriate to your installation before deployment.
 Use a private deployment repository: plan logs and metadata can contain sensitive details.
 
 This starter uses a new relative state-key layout. Do not point it at existing

@@ -116,7 +116,7 @@ jobs:
           OPERATION: plan
         run: bash .github/workflows/scripts/run_terraform.sh
       - name: Wiz IaC security gate
-        if: vars.WIZ_IAC_REQUIRED != 'false'
+        if: vars.WIZ_IAC_REQUIRED == 'true'
         env:
           WIZ_CLIENT_ID: ${{ secrets.WIZ_CLIENT_ID }}
           WIZ_CLIENT_SECRET: ${{ secrets.WIZ_CLIENT_SECRET }}

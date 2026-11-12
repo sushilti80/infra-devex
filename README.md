@@ -38,14 +38,13 @@ repository. Deployed metadata, credentials, and Terraform state are not included
 2. Generation creates an Infrastructure-App-authenticated PR containing IaC and metadata.
 3. [Terraform plan and apply](service-catalog/.github/workflows/terraform-iac.yml)
    selects affected application/environment stacks and plans the PR changes.
-4. After review and merge, the workflow re-plans, runs the configured security gate,
+4. After review and merge, the workflow re-plans, runs Wiz if enabled,
    and applies only after protected-environment approval.
 5. Retired applications and recorded module removals require separate destroy approval.
 
 Configure your Azure subscription map, module repository/ref, remote-state backend,
 Entra OIDC identities, and protected GitHub environments before enabling writes.
-State locking remains enabled. Disable the previous Azure DevOps plan/apply pipelines
-before enabling the GitHub replacement to avoid duplicate deployments.
+State locking remains enabled. GitHub Actions is the supported deployment path.
 
 ### Integration boundaries
 
@@ -56,10 +55,8 @@ before enabling the GitHub replacement to avoid duplicate deployments.
 - Code bootstrap and AKS/Flux deployment are separate integrations; code deployment
   uses its own GitHub App and repository configuration.
 - Jira references and Datadog observability remain available where configured.
-- The catalog's Wiz security gate is currently enabled by default. Configure it, or
-  provide an approved alternative before explicitly disabling it. Wiz is not an
-  organization-specific Azure provisioning requirement, but this default must be
-  addressed before running the workflow.
+- Wiz scanning is optional and disabled by default. Configure it or another security
+  gate for your installation; the starter does not scan IaC plans by default.
 
 See [catalog configuration](service-catalog/README.md#github-planapply-configuration)
 for identity, approval, backend, and security settings. Local tests do not certify
@@ -848,7 +845,7 @@ spec:
 ## 📊 Project Status
 
 **Current Version:** 2.0.0  
-**Status:** ✅ Production Ready (Vue 3)  
+**Status:** In development; the included deployment workflow has not been validated in a live Azure installation.  
 **Last Updated:** February 4, 2026
 
 ### Feature Status
