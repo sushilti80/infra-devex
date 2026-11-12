@@ -6,7 +6,7 @@ immutable Git commit, license, input origins, outputs, and dependencies. The
 generator emits one Terragrunt configuration per module and automatically adds
 the resource group required by storage. Both modules disable optional telemetry.
 
-For local generation from the root of a copied catalog repository:
+For local generation from the root of this repository:
 
 ```sh
 PROJECT_NAME=demo ENVIRONMENT=dev MODULES=storageV2 node catalog/generate.mjs

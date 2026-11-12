@@ -47,7 +47,8 @@ on:
         required: false
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
 env:
   MODULES_REPO: ${{ vars.TERRAFORM_MODULES_REPO }}
@@ -67,20 +68,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Create catalog automation token
-        id: catalog-app
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: ${{ github.event.repository.name }}
-          permission-contents: write
-          permission-pull-requests: write
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          token: ${{ steps.catalog-app.outputs.token }}
 
       - name: Set Branch Name
         run: echo "BRANCH_NAME=deploy-${{ github.run_id }}" >> $GITHUB_ENV
@@ -164,7 +153,7 @@ jobs:
           CR: ${{ github.event.inputs.cr }}
           MODULES: ${{ github.event.inputs.modules }}
           REMOVED_MODULES: ${{ steps.reconcile.outputs.removed_modules }}
-          GH_TOKEN: ${{ steps.catalog-app.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
           RBAC_PAIRS: ${{ github.event.inputs.rbac_pairs }}
           OWNER: ${{ github.event.inputs.owner }}
           TRIGGERED_BY: ${{ github.event.inputs.triggered_by }}

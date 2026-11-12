@@ -39,6 +39,7 @@ if (process.env.DD_TRACE_ENABLED !== 'false') {
   }
 }
 
+const config = require('./config');
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -149,7 +150,11 @@ app.get('/health', async (req, res) => {
   // Check GitHub connectivity (non-blocking)
   try {
     if (githubService.initialized && githubService.octokit) {
-      await githubService.octokit.rest.apps.getAuthenticated();
+      if (config.github.personalAccessToken) {
+        await githubService.octokit.rest.users.getAuthenticated();
+      } else {
+        await githubService.octokit.rest.apps.getAuthenticated();
+      }
       healthData.services.github.status = 'connected';
       healthData.services.github.initialized = true;
     } else {

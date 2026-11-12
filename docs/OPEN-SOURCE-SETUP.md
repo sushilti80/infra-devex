@@ -1,31 +1,12 @@
 # Prepare a public installation
 
-## Configure the portal
-
-1. Install dependencies with `npm ci --legacy-peer-deps` and copy `.env.example`
-   to `.env`. Never commit the populated file or GitHub private keys.
-2. Configure `GITHUB_APP_ID`, `GITHUB_INSTALLATION_ID`, and
-   `GITHUB_PRIVATE_KEY_PATH` for your Infrastructure GitHub App.
-3. Configure `GITHUB_SERVICE_REPO`, `GITHUB_SELF_SERVICE_REPO`, and optional
-   `GITHUB_INFRA_LIVE_REPO` with your
-   `OWNER/REPOSITORY` values. Set up the separate repository using
-   [the catalog guide](../service-catalog/README.md). The initial Azure Verified
-   Module catalog uses public sources; a separate modules repository is not needed.
-4. Replace the example environments and empty subscription IDs in
-   `data/environments.json` with your own environments. Configure feature flags,
-   `data/environmentTiers.json`, and `data/secretBundles.json` consistently.
-   The runtime reads the JSON catalog; legacy `AZURE_SUBSCRIPTION_IDS` variables
-   are only a fallback when the catalog is unavailable.
-5. Configure Microsoft Entra ID using [AUTHENTICATION-GUIDE.md](AUTHENTICATION-GUIDE.md).
-   Set the frontend client ID, tenant ID, and authority and backend validation
-   settings. Keep authentication enabled on hosted installations.
-6. Optional AKS integration needs `AKS_FLUX_REPO`, `AKS_DEFAULT_REGISTRY`,
-   `AKS_PRIVATE_ZONES` (a JSON environment-to-DNS-zone map), and your own Flux
-   workflows. Code bootstrap needs `GITHUB_CODE_SERVICE_REPO` and a separate Code
-   GitHub App using `GITHUB_CODE_PRIVATE_KEY_PATH`. Neither is the infrastructure
-   service-catalog repository.
-7. Configure optional Jira, observability, SOPS, CI service connections, and secrets
-   for your own installation. Replace placeholder CODEOWNERS with your maintainers.
+Infra DevEx uses one repository for the portal, workflow, catalog, generated IaC,
+and metadata. Follow the [README](../README.md) for local or GitHub Actions
+generation without Azure credentials. The portal can use a repository-scoped
+fine-grained personal access token or an optional GitHub App; it currently uses
+Entra ID for portal user sign-in. Configure the customer subscription, remote
+state, deployment identities and protected environments only if enabling Azure
+execution; see [deployment setup](CATALOG-SETUP.md).
 
 ## Check locally
 

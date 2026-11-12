@@ -25,6 +25,7 @@ class GitHubService {
   async initialize() {
     try {
       logger.info('Initializing GitHub clients...', {
+        hasPersonalAccessToken: !!config.github.personalAccessToken,
         hasAppId: !!config.github.appId,
         hasInstallationId: !!config.github.installationId,
         privateKeyPath: config.github.privateKeyPath,
@@ -33,7 +34,13 @@ class GitHubService {
         nodeEnv: process.env.NODE_ENV
       });
 
-      // In test mode, allow server to start without GitHub credentials
+      if (config.github.personalAccessToken) {
+        this.octokit = new Octokit({ auth: config.github.personalAccessToken });
+        this._trackRateLimit(this.octokit, 'infra');
+        await this.octokit.rest.users.getAuthenticated();
+        logger.info('GitHub personal access token authentication initialized successfully');
+      } else {
+        // In test mode, allow server to start without GitHub credentials
       if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
         if (!config.github.appId || !config.github.installationId) {
           logger.warn('GitHub App credentials not configured - running in test mode without GitHub integration');
@@ -82,6 +89,7 @@ class GitHubService {
       // Test the connection
       await this.octokit.rest.apps.getAuthenticated();
       logger.info('Main GitHub App authentication initialized successfully');
+      }
 
       // Initialize code deployment GitHub App (if configured)
       if (config.github.codeApp.appId && config.github.codeApp.installationId && config.github.codeApp.privateKeyPath) {
@@ -135,7 +143,7 @@ class GitHubService {
   ensureInitialized() {
     if (!this.initialized || !this.octokit) {
       const message = process.env.NODE_ENV === 'test' || process.env.CI === 'true'
-        ? 'GitHub client not initialized - running in test mode. Configure GitHub App credentials for full functionality.'
+        ? 'GitHub client not initialized - running in test mode. Configure a GitHub token or App credentials for full functionality.'
         : 'GitHub client not initialized';
       throw new Error(message);
     }
