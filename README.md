@@ -107,7 +107,8 @@ cp .env.example .env
 # Optional code deployment:
 # - GITHUB_CODE_APP_ID, GITHUB_CODE_INSTALLATION_ID, GITHUB_CODE_PRIVATE_KEY_PATH
 # Repository names:
-# - GITHUB_SERVICE_REPO, GITHUB_MODULES_REPO, GITHUB_SELF_SERVICE_REPO
+# - GITHUB_SERVICE_REPO, GITHUB_SELF_SERVICE_REPO
+# - GITHUB_MODULES_REPO is only used by legacy templates
 # Configure subscription IDs and feature flags in data/environments.json.
 #
 # Entra ID Authentication:
@@ -393,7 +394,7 @@ GITHUB_CODE_APP_PRIVATE_KEY_PATH=/app/secrets/github-code-app.pem
 
 # GitHub Repositories
 GITHUB_SERVICE_REPO=organization/service-catalog
-GITHUB_MODULES_REPO=organization/terraform-modules
+GITHUB_MODULES_REPO=organization/terraform-modules  # legacy template integration only
 GITHUB_INFRA_LIVE_REPO=organization/infrastructure-live
 AKS_FLUX_REPO=organization/flux-config
 

@@ -6,10 +6,11 @@
    to `.env`. Never commit the populated file or GitHub private keys.
 2. Configure `GITHUB_APP_ID`, `GITHUB_INSTALLATION_ID`, and
    `GITHUB_PRIVATE_KEY_PATH` for your Infrastructure GitHub App.
-3. Configure `GITHUB_SERVICE_REPO`, `GITHUB_MODULES_REPO`,
-   `GITHUB_SELF_SERVICE_REPO`, and optional `GITHUB_INFRA_LIVE_REPO` with your
+3. Configure `GITHUB_SERVICE_REPO`, `GITHUB_SELF_SERVICE_REPO`, and optional
+   `GITHUB_INFRA_LIVE_REPO` with your
    `OWNER/REPOSITORY` values. Set up the separate repository using
-   [the catalog guide](../service-catalog/README.md).
+   [the catalog guide](../service-catalog/README.md). The initial Azure Verified
+   Module catalog uses public sources; a separate modules repository is not needed.
 4. Replace the example environments and empty subscription IDs in
    `data/environments.json` with your own environments. Configure feature flags,
    `data/environmentTiers.json`, and `data/secretBundles.json` consistently.
