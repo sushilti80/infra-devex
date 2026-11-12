@@ -18,5 +18,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node --test tests/generate-iac.test.mjs tests/catalog.test.mjs tests/deployment-config.test.mjs
+      - run: node --test tests/generate-iac.test.mjs tests/catalog.test.mjs tests/deployment-config.test.mjs tests/generate-request.test.mjs tests/clean-install.test.mjs tests/github-token.test.cjs
       - run: python3 -m unittest discover -s tests -p 'test_*.py'

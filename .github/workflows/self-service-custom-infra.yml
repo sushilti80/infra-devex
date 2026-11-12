@@ -1,0 +1,177 @@
+name: "Deploy Custom Infrastructure"
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_name:
+        description: "Enter Project Name (e.g., MyApp)"
+        required: true
+      environment:
+        description: "Select Environment"
+        required: true
+        type: string
+      modules:
+        description: "Enter Modules (comma-separated, e.g., storageV2,keyvault,rbac)"
+        required: true
+      owner:
+        description: "Enter the Owner Name (for tagging)"
+        required: true
+      cr:
+        description: "Enter the Jira CR Number (for tracking)"
+        required: false
+      age:
+        description: "Select project life"
+        required: true
+        type: choice
+        options:
+          - "3 days"
+          - "1 month"
+          - "3 months"
+      terraform_branch:
+        description: "Enter Terraform Module Branch (e.g., test-branch)"
+        required: false
+        default: "main"
+      correlation_id:
+        description: "Unique Correlation ID (for tracking runs in logs)"
+        required: false
+        default: "none"
+      rbac_pairs:       # Add this block
+        required: false
+        type: string
+        description: "Comma-separated RBAC pairs in format source|target|role"
+      project_desc:
+        description: "Enter Project description Name (e.g., app description)"
+        required: false
+      triggered_by:
+        description: "Triggered by the self-service portal (if available)"
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  MODULES_REPO: ${{ vars.TERRAFORM_MODULES_REPO }}
+  TERRAFORM_MODULES_REPO: ${{ vars.TERRAFORM_MODULES_REPO }}
+  CATALOG_CONFIG_JSON: ${{ vars.CATALOG_CONFIG_JSON }}
+  PROJECT_NAME: ${{ inputs.project_name }}
+  ENVIRONMENT: ${{ inputs.environment }}
+  MODULES: ${{ inputs.modules }}
+  OWNER: ${{ inputs.owner }}
+  PROJECT_DESC: ${{ inputs.project_desc }}
+  MODULE_VERSION: ${{ inputs.terraform_branch }}
+  RBAC_PAIRS: ${{ inputs.rbac_pairs }}
+  CORRELATION_ID: ${{ inputs.correlation_id }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set Branch Name
+        run: echo "BRANCH_NAME=deploy-${{ github.run_id }}" >> $GITHUB_ENV
+
+      - name: Capture Source Commit
+        id: source
+        run: echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare shared Terragrunt entrypoint
+        run: cp infrastructure/root.hcl infrastructure/terragrunt.hcl
+
+      - name: Print Correlation ID
+        if: ${{ github.event.inputs.correlation_id != 'none' }}
+        run: |
+          printf "Correlation ID: %s\n" "$CORRELATION_ID"
+
+      - name: Generate catalog modules
+        env:
+          PROJECT_NAME: ${{ inputs.project_name }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          MODULES: ${{ inputs.modules }}
+        run: node catalog/generate.mjs
+
+      - name: Reconcile Removed Modules
+        id: reconcile
+        env:
+          PROJECT_NAME: ${{ github.event.inputs.project_name }}
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
+          MODULES: ${{ github.event.inputs.modules }}
+          SOURCE_COMMIT: ${{ steps.source.outputs.commit }}
+          CORRELATION_ID: ${{ github.event.inputs.correlation_id }}
+        run: |
+          python3 .github/workflows/scripts/reconcile_custom_infra.py \
+            --project "$PROJECT_NAME" \
+            --environment "$ENVIRONMENT" \
+            --modules "$MODULES" \
+            --source-commit "$SOURCE_COMMIT" \
+            --run-id "${{ github.run_id }}" \
+            --correlation-id "$CORRELATION_ID" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Inject RBAC into terragrunt.hcl
+        env:
+          PROJECT_NAME: ${{ github.event.inputs.project_name }}
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
+          RBAC_PAIRS: ${{ github.event.inputs.rbac_pairs }}
+        run: |
+          project=$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]')
+          environment=$(echo "$ENVIRONMENT" | tr '[:upper:]' '[:lower:]')
+          if [[ -f "infrastructure/${project}/${environment}/rbac/terragrunt.hcl" ]]; then
+            bash .github/workflows/scripts/generate_rbac.sh \
+              "$PROJECT_NAME" \
+              "$ENVIRONMENT" \
+              "$RBAC_PAIRS"
+          elif [[ -n "$RBAC_PAIRS" ]]; then
+            echo "RBAC relationships require the RBAC module in the desired state." >&2
+            exit 1
+          else
+            echo "RBAC module is not in the desired state; skipping generation."
+          fi
+
+      - name: Generate environment configuration and metadata
+        run: node .github/workflows/scripts/generate_request.mjs
+
+      - name: Commit & Push Changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git checkout -b "$BRANCH_NAME"
+          git add -A -- infrastructure docs/metadata
+          git diff --cached --quiet && exit 0
+          git commit -m "Generate infrastructure for $PROJECT_NAME"
+          git push --set-upstream origin "$BRANCH_NAME"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Pull Request
+        env:
+          PROJECT_NAME: ${{ github.event.inputs.project_name }}
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
+          CR: ${{ github.event.inputs.cr }}
+          MODULES: ${{ github.event.inputs.modules }}
+          REMOVED_MODULES: ${{ steps.reconcile.outputs.removed_modules }}
+          GH_TOKEN: ${{ github.token }}
+          RBAC_PAIRS: ${{ github.event.inputs.rbac_pairs }}
+          OWNER: ${{ github.event.inputs.owner }}
+          TRIGGERED_BY: ${{ github.event.inputs.triggered_by }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cat > pr-body.md <<EOF
+          Auto-generated deployment PR for:
+          - **Project:** ${PROJECT_NAME}
+          - **Environment:** ${ENVIRONMENT}
+          - **Desired modules:** ${MODULES:-none}
+          - **Removed modules:** ${REMOVED_MODULES:-none}
+          - **Desired RBAC relationships:** ${RBAC_PAIRS:-none}
+          - **Owner:** ${OWNER}
+          - **Triggered by:** ${GITHUB_ACTOR}
+          - **Requested by:** ${TRIGGERED_BY:-unknown}
+          EOF
+          gh pr create \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --title "Deploy ${PROJECT_NAME} to ${ENVIRONMENT} (${CR})" \
+            --body-file pr-body.md
