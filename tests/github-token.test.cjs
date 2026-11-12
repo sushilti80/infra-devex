@@ -34,3 +34,17 @@ test('personal token can initialize GitHub and dispatch in the same repository w
       { owner: 'owner', repo: 'infra-devex', workflow: 'self-service-custom-infra.yml', ref: 'main' });
   } finally { Module._load = load; }
 });
+
+test('one repository setting is used for both service and portal catalog reads', () => {
+  const { spawnSync } = require('node:child_process');
+  const script = [
+    "const Module = require('node:module');",
+    "const load = Module._load;",
+    "Module._load = function(request, parent, isMain) { if (request === 'dotenv') return { config() {} }; return load.call(this, request, parent, isMain); };",
+    "process.env.GITHUB_SERVICE_REPO='owner/infra-devex'; delete process.env.GITHUB_SELF_SERVICE_REPO;",
+    "const config = require('./config');",
+    "if (config.github.selfServiceRepo !== 'owner/infra-devex' || config.github.serviceRepo !== 'owner/infra-devex') process.exit(1);"
+  ].join(' ');
+  const result = spawnSync(process.execPath, ['-e', script], { cwd: require('node:path').resolve(__dirname, '..'), encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+});
