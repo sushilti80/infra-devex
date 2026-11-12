@@ -131,8 +131,6 @@ jobs:
     name: '🔗 Integration Tests (API Contracts)'
     runs-on: ubuntu-latest
     needs: unit-tests
-    outputs:
-      failures: ${{ steps.integration.outputs.failures }}
     timeout-minutes: 15
     steps:
       - name: Checkout code
@@ -161,13 +159,7 @@ jobs:
           timeout 30 bash -c 'until curl -f http://localhost:3001/health; do sleep 1; done'
 
       - name: Run integration tests
-        id: integration
-        run: |
-          set +e
-          npm run test:integration -- --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/integration.json"
-          result=$?
-          node -e 'const fs=require("fs"); let x; try {x=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));} catch {x={testResults:[]}}; const a=x.testResults.flatMap(f=>f.assertionResults.filter(t=>t.status==="failed").map(t=>(f.name.split("/").slice(-1)[0]+": "+t.title).slice(0,150))); fs.appendFileSync(process.env.GITHUB_OUTPUT,"failures="+JSON.stringify(a)+"\n");' "$RUNNER_TEMP/integration.json"
-          exit "$result"
+        run: npm run test:integration
         env:
           API_URL: http://localhost:3001
           CI: true
@@ -186,18 +178,6 @@ jobs:
           name: integration-test-results
           path: test-results/
           retention-days: 30
-
-  integration-failure-details:
-    name: "Failed test: ${{ matrix.test }}"
-    needs: integration-tests
-    if: failure() && needs.integration-tests.outputs.failures != '' && needs.integration-tests.outputs.failures != '[]'
-    strategy:
-      fail-fast: false
-      matrix:
-        test: ${{ fromJSON(needs.integration-tests.outputs.failures) }}
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "See the integration job for the assertion details"
 
   # ====================================
   # NOTE: E2E Tests moved to separate workflow
