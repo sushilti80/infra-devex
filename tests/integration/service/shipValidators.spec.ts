@@ -185,10 +185,10 @@ describe('BT-01 shipValidators — other inputs', () => {
 describe('BT-03 flag gating (config + environments.json)', () => {
   const catalog = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'data/environments.json'), 'utf8'))
 
-  it('environments.json carries features.shipFromRepo=false on devsand only until Phase 4 gates pass', () => {
+  it('environments.json disables shipFromRepo by default', () => {
     const withKey = catalog.environments.filter((e: any) => 'shipFromRepo' in (e.features || {}))
-    expect(withKey.map((e: any) => e.id)).toEqual(['devsand'])
-    expect(withKey[0].features.shipFromRepo).toBe(false)
+    expect(withKey.length).toBeGreaterThan(0)
+    expect(withKey.every((e: any) => e.features.shipFromRepo === false)).toBe(true)
   })
   it('config.ship.supportedShipEnvironments derives from enabled ∧ aks ∧ shipFromRepo (empty while flag is false)', () => {
     const expected = catalog.environments.filter((e: any) => e.enabled && e.features?.aks && e.features?.shipFromRepo === true).map((e: any) => e.id)

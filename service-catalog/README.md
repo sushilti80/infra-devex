@@ -43,10 +43,8 @@ including the hidden `.github/` directory, into your own
 | `iac-generation-tests.yml` | Test generation and operation routing without cloud credentials |
 
 **A successful scaffolding workflow does not mean Azure resources were applied.**
-The GitHub workflow replaces the Azure DevOps plan/apply path. Disable the old
-Azure DevOps pipelines before enabling GitHub writes; files under `.pipelines/`
-are historical references and are not used by the GitHub workflow. No Azure DevOps
-agent pool, service connection, or variable group is required for the new path.
+GitHub Actions is the supported plan/apply path. No Azure DevOps agent pool,
+service connection, or variable group is required.
 
 ## GitHub plan/apply configuration
 
@@ -79,8 +77,9 @@ Example configuration, with all deployment values supplied by the operator:
 ```
 
 Windows application templates need compatible existing networking and module inputs.
-Shared Key Vault, logging, diagnostics, and provider-alias subscriptions can be set
-through the named settings in `infrastructure/common.hcl`.
+Shared Key Vault, logging, and diagnostics settings can be configured in
+`infrastructure/common.hcl`. The starter generates one default Azure provider;
+modules requiring provider aliases need installation-specific configuration.
 
 - Same-repository PRs select changed application/environment stacks and run plans.
    Fork PRs do not receive cloud credentials; run the credential-free tests instead.
@@ -93,15 +92,16 @@ through the named settings in `infrastructure/common.hcl`.
 - Terraform state locking remains enabled. Workflow operations are serialized;
    no state files or binary plans are uploaded as GitHub artifacts.
 
-The inherited Wiz gate is enabled by default. Configure secrets `WIZ_CLIENT_ID`
-and `WIZ_CLIENT_SECRET` and equivalent blocking IaC policies in your Wiz organization.
-The GitHub job uses the pinned, checksum-verified Wiz CLI to scan generated plans.
-An installation without Wiz must supply an approved alternative gate before explicitly
-setting `WIZ_IAC_REQUIRED=false`; this is not an automatic equivalent-policy certification.
+The workflow uses open-source Checkov to scan each generated Terraform JSON plan.
+It blocks on failed checks or when no plan files are found. Review scan findings
+and configure documented, justified exceptions for your own policy requirements.
+Plan data and scanner output may contain sensitive infrastructure details.
 Use a private deployment repository: plan logs and metadata can contain sensitive details.
 
-This starter uses a new relative state-key layout. Do not point it at existing
-infrastructure and apply without an approved state migration and reviewed plan.
+All environments use the same configured backend, with separate keys by stack path.
+For an existing installation that previously used a separate `dr` backend, this
+changes the backend location. Migrate state explicitly and review a plan before apply;
+otherwise Terraform may see existing resources as new. Never apply against an empty state.
 
 ## Optional integrations
 

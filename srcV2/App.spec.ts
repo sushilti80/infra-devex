@@ -49,10 +49,10 @@ beforeEach(() => {
 })
 
 describe('App — ship home card and page gate (FT-01)', () => {
-  it('the card and page are hidden by default: the real data/environments.json has shipFromRepo=false on devsand', async () => {
+  it('the card and page are hidden by default: the real data/environments.json has shipFromRepo=false on dev', async () => {
     const file = environmentsFile as { environments: EnvironmentConfig[] }
-    const devsand = file.environments.find(e => e.id === 'devsand')!
-    expect(devsand.features.shipFromRepo).toBe(false)
+    const dev = file.environments.find(e => e.id === 'dev')!
+    expect(dev.features.shipFromRepo).toBe(false)
     expect(file.environments.filter(e => e.features.shipFromRepo === true)).toEqual([])
 
     signedIn(true)

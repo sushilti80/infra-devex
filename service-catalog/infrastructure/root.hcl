@@ -11,15 +11,12 @@ locals {
   alias                      = local.config.locals.alias
   common_remote_state_rgname = local.rscfg.remote_state.common.resource_group_name
   common_remote_state_name   = local.rscfg.remote_state.common.storage_account_name
-  dr_remote_state_rgname     = local.rscfg.remote_state.dr.resource_group_name
-  dr_remote_state_name       = local.rscfg.remote_state.dr.storage_account_name
 }
 
 generate "backend" {
   path      = "backend.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-  %{if local.envName != "dr"}
     terraform {
       backend "azurerm" {
         key = "${path_relative_to_include()}/terraform.tfstate"
@@ -29,18 +26,6 @@ generate "backend" {
         use_azuread_auth     = true
       }
     }
-  %{endif}
-  %{if local.envName == "dr"}
-    terraform {
-      backend "azurerm" {
-        key = "${path_relative_to_include()}/terraform.tfstate"
-        resource_group_name  = "${local.dr_remote_state_rgname}"
-        storage_account_name = "${local.dr_remote_state_name}"
-        container_name       =  "${local.rscfg.remote_state.dr.container_name}"
-        use_azuread_auth     =  true
-      }
-    }
-  %{endif}
 EOF
 }
 
@@ -53,25 +38,8 @@ generate "versions" {
       subscription_id = "${local.currentsubID}"
       storage_use_azuread = true
     }
-    provider "azurerm" {
-      # to access diag storage account
-      features {}
-      alias           = "sharedsvcsub"
-      subscription_id = "${local.common_vars.locals.sharedsvcsub}"
-    }
 
-    provider "azurerm" {
-      # Microsoft Azure Enterprise - to register private dns
-      features {}
-      alias           = "ms_ent_sub"
-      subscription_id = "${local.common_vars.locals.ms_ent_sub}"
-    }
-    provider "azurerm" {
-      # Microsoft Azure Enterprise - to register private dns
-      features {}
-      alias           = "security_sub"
-      subscription_id = "${local.common_vars.locals.security_sub}"
-    }
+
 EOF
 }
 

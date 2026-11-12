@@ -49,7 +49,6 @@ if (sourceRepo) {
     entry.path === 'infrastructure/remote_state.yml'
   ) : (
     /^\.github\/(workflows|actions|scripts)\//.test(entry.path) ||
-    /^\.pipelines\//.test(entry.path) ||
     /^tests\/test_.*\.py$/.test(entry.path) ||
     /^(terragrunt|root|common|global)\.hcl$/.test(entry.path)
   )) && !/(__pycache__|\.pyc$)/.test(entry.path));

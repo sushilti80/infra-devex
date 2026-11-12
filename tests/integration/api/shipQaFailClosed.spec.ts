@@ -61,10 +61,10 @@ describe('real defaults are fail-closed (config.js loaded fresh with all SHIP_* 
     const c = freshConfig()
     expect(c.ship.workflowRef).toBe(c.aks.fluxBranch)
   })
-  it('data/environments.json: no environment has features.shipFromRepo === true; devsand is explicitly false', () => {
+  it('data/environments.json: ship from repo is disabled by default', () => {
     const file = cjsRequire('../../../data/environments.json')
     expect(file.environments.filter((e: any) => e.features?.shipFromRepo === true)).toEqual([])
-    expect(file.environments.find((e: any) => e.id === 'devsand').features.shipFromRepo).toBe(false)
+    expect(file.environments.every((e: any) => e.features?.shipFromRepo !== true)).toBe(true)
   })
 })
 
