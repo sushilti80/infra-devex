@@ -24,7 +24,7 @@ This working-tree cleanup does not sanitize Git history or approve licensing.
 | --- | --- |
 | This repository | Vue portal, Express API, authentication, and GitHub orchestration |
 | Your `service-catalog` repository | Generated IaC, metadata, templates, and GitHub plan/apply workflows |
-| Your Terraform modules repository | Compatible modules and Terragrunt scaffolding templates |
+| Public module sources | Pinned Azure Verified Modules, described in the included catalog |
 
 The included [service-catalog starter](service-catalog/README.md) contains shared
 Terragrunt configuration, sanitized application templates, workflow helpers, and
@@ -42,14 +42,14 @@ repository. Deployed metadata, credentials, and Terraform state are not included
    and applies only after protected-environment approval.
 5. Retired applications and recorded module removals require separate destroy approval.
 
-Configure your Azure subscription map, module repository/ref, remote-state backend,
+Configure your Azure subscription map, remote-state backend,
 Entra OIDC identities, and protected GitHub environments before enabling writes.
 State locking remains enabled. GitHub Actions is the supported deployment path.
 
 ### Integration boundaries
 
 - Core provisioning requires Azure, Entra ID, an Infrastructure GitHub App, and
-  compatible Terraform modules. It does not require an AI assistant or model API.
+  the included module catalog. It does not require an AI assistant or model API.
 - The organization-specific assistant and AI-assisted deployment workflow are removed.
   No Infracost runtime integration is included.
 - Code bootstrap and AKS/Flux deployment are separate integrations; code deployment

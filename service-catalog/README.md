@@ -14,19 +14,14 @@ including the hidden `.github/` directory, into your own
    Set secrets `APP_ID` and `APP_PRIVATE_KEY` for the Infrastructure App. Generation
    and deletion PRs use its scoped token so they trigger the Terraform PR workflow;
    PRs created with the default `GITHUB_TOKEN` do not trigger other workflows.
-3. Set repository variable `TERRAFORM_MODULES_REPO` to `OWNER/terraform-modules`.
-   That repository must contain compatible Terragrunt scaffolding templates under
-   `azure/<module-type>`, including the mandatory `resourceGroups` module.
-4. Set secret `ACTIONS_DEPLOY_KEY` to a read-only SSH key for the module repository.
-   Keep private keys and credentials out of source control.
-5. Set repository variable `CATALOG_CONFIG_JSON` with your `subscriptions` map,
+3. The included `catalog/modules.json` pins public Azure Verified Modules for resource groups and storage. No separate modules repository or SSH key is required for these offerings. See [the module catalog guide](catalog/README.md).
+4. Set repository variable `CATALOG_CONFIG_JSON` with your `subscriptions` map,
    `location`, `alias`, optional `network` settings, and module `inputs`. The copied
-   `infrastructure/common.hcl` reads this JSON. Set `TERRAFORM_MODULE_REF` to a
-   compatible module ref (default `main`). Customize `infrastructure/remote_state.yml`
+   `infrastructure/common.hcl` reads this JSON. Customize `infrastructure/remote_state.yml`
    with your pre-existing state resource group, storage account, and blob container.
    `infrastructure/root.hcl` generates the backend and provider configuration.
    Never copy another installation's state identifiers or credentials.
-6. Set `GITHUB_SERVICE_REPO=OWNER/service-catalog` and `SERVICE_CATALOG_BRANCH=main`
+5. Set `GITHUB_SERVICE_REPO=OWNER/service-catalog` and `SERVICE_CATALOG_BRANCH=main`
    in the portal. Configure its environment catalog with your subscription IDs.
 
 ## Workflow behavior
@@ -56,9 +51,8 @@ Use a least-privilege read/plan identity and separately scoped write identities.
 The plan identity also needs the backend access needed to acquire state locks.
 
 Set environment variables `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and
-`AZURE_SUBSCRIPTION_ID` for each identity. Set `CATALOG_CONFIG_JSON` and
-`TERRAFORM_MODULES_REPO` where the protected jobs can read them. Module sources use
-SSH, so configure secret `ACTIONS_DEPLOY_KEY` and variable `SSH_KNOWN_HOSTS` for access.
+`AZURE_SUBSCRIPTION_ID` for each identity. Set `CATALOG_CONFIG_JSON` where the protected jobs can read it. The initial public
+module catalog uses HTTPS and does not require an SSH deploy key.
 
 Example configuration, with all deployment values supplied by the operator:
 

@@ -75,10 +75,6 @@ jobs:
         with:
           token: ${{ steps.catalog-app.outputs.token }}
 
-      - name: Configure Git Authentication for Push
-        run: |
-          git config --global url."https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
-
       - name: Set Branch Name
         run: echo "BRANCH_NAME=deploy-${{ github.run_id }}" >> $GITHUB_ENV
 
@@ -94,59 +90,12 @@ jobs:
         run: |
           echo "🔗 Correlation ID: ${{ github.event.inputs.correlation_id }}"
 
-      - name: Set Up Terragrunt
-        run: |
-          sudo apt-get update && sudo apt-get install -y unzip
-          curl -L "https://github.com/gruntwork-io/terragrunt/releases/latest/download/terragrunt_linux_amd64" \
-            -o /usr/local/bin/terragrunt
-          chmod +x /usr/local/bin/terragrunt
-          terragrunt --version
-
-      - name: Process Modules
-        run: |
-          [[ "$MODULES_REPO" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || { echo "::error::Set TERRAFORM_MODULES_REPO to owner/repository"; exit 1; }
-          MODULE_LIST="resourceGroups,${{ github.event.inputs.modules }}"
-
-          mkdir -p ~/.ssh
-          echo "${{ secrets.ACTIONS_DEPLOY_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-          git config --global url."git@github.com:".insteadOf "https://github.com/"
-
-          IFS=',' read -r -a MODULE_ARRAY <<< "$MODULE_LIST"
-          for module_instance in "${MODULE_ARRAY[@]}"; do
-            # Trim leading and trailing whitespace from the module instance
-            module_instance=$(echo "$module_instance" | xargs)
-
-            # Extract the base module name (before the first dash)
-            # e.g., "AppService-primary" -> modulename="AppService", folder="appservice-primary"
-            modulename=$(echo "$module_instance" | sed 's/-.*$//')
-
-            # Create lowercase folder name for the instance
-            folder=$(echo "$module_instance" | tr '[:upper:]' '[:lower:]')
-
-            PROJECT_NAME=$(echo "${{ github.event.inputs.project_name }}" | tr '[:upper:]' '[:lower:]')
-            ENVIRONMENT=$(echo "${{ github.event.inputs.environment }}" | tr '[:upper:]' '[:lower:]')
-
-            MODULE_DIR="infrastructure/${PROJECT_NAME}/${ENVIRONMENT}/${folder}"
-            mkdir -p "$MODULE_DIR"
-            cd "$MODULE_DIR"
-
-            echo "Running Terragrunt scaffolding for module: $modulename (instance: $module_instance)..."
-            terragrunt scaffold "git::ssh://git@github.com/${MODULES_REPO}.git//azure/${modulename}?ref=${{ github.event.inputs.terraform_branch }}" || {
-              echo "❌ Error: Terragrunt scaffolding failed for $modulename (instance: $module_instance)!"
-              exit 1
-            }
-
-            [[ ! -f "terragrunt.hcl" ]] && {
-              echo "❌ Error: terragrunt.hcl not generated for $modulename (instance: $module_instance)!"
-              exit 1
-            }
-
-            cd -
-          done
+      - name: Generate catalog modules
+        env:
+          PROJECT_NAME: ${{ inputs.project_name }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          MODULES: ${{ inputs.modules }}
+        run: node catalog/generate.mjs
 
       - name: Reconcile Removed Modules
         id: reconcile

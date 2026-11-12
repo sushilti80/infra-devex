@@ -1,135 +1,16 @@
 [
   {
+    "name": "resourceGroups",
+    "description": "Azure resource group (Azure Verified Module)",
+    "version": "0.5.0",
+    "category": "foundation",
+    "supportsMultiInstance": false
+  },
+  {
     "name": "storageV2",
     "description": "Azure Storage Account V2",
-    "version": "1.0.0",
+    "version": "0.11.0",
     "category": "storage",
-    "supportsMultiInstance": false
-  },
-  {
-    "name": "keyvault",
-    "description": "Azure Key Vault for secrets management",
-    "version": "1.0.0",
-    "category": "security",
-    "supportsMultiInstance": false
-  },
-  {
-    "name": "RBAC",
-    "description": "Role-Based Access Control",
-    "version": "1.0.0",
-    "category": "security",
-    "supportsMultiInstance": false
-  },
-  {
-    "name": "UserAssignMSI",
-    "description": "User-Assigned Managed Service Identity",
-    "version": "1.0.0",
-    "category": "security",
-    "supportsMultiInstance": true
-  },
-  {
-    "name": "appServiceWindows",
-    "description": "Azure App Service for Windows",
-    "version": "1.0.0",
-    "category": "compute",
-    "supportsMultiInstance": true
-  },
-  {
-    "name": "functionAppSvcWindows",
-    "description": "Azure Function App Service for Windows",
-    "version": "1.0.0",
-    "category": "compute",
-    "supportsMultiInstance": true
-  },
-  {
-    "name": "appServiceLinux",
-    "description": "Azure App Service for Linux",
-    "version": "1.0.0",
-    "category": "compute",
-    "supportsMultiInstance": true
-  },
-  {
-    "name": "functionAppSvcLinux",
-    "description": "Azure Function App Service for Linux",
-    "version": "1.0.0",
-    "category": "compute",
-    "supportsMultiInstance": true
-  },
-  {
-    "name": "durableTaskScheduler",
-    "description": "Azure Durable Task Scheduler backend for Azure Functions",
-    "version": "1.0.0",
-    "category": "compute",
-    "supportsMultiInstance": false
-  },
-  {
-    "name": "serviceBus",
-    "description": "Azure Service Bus for messaging",
-    "version": "1.0.0",
-    "category": "messaging",
-    "supportsMultiInstance": false
-  },
-  {
-    "name": "eventHub",
-    "description": "Azure Event Hub",
-    "version": "1.0.0",
-    "category": "messaging",
-    "supportsMultiInstance": false
-  },
-  {
-    "name": "sqldb",
-    "description": "Azure SQL Database",
-    "version": "1.0.0",
-    "category": "database",
-    "supportsMultiInstance": true
-  },
-  {
-    "name": "pgsqldb",
-    "description": "Postgres SQL Database",
-    "version": "1.0.0",
-    "category": "database",
-    "supportsMultiInstance": true
-  },
-  {
-    "name": "appConfiguration",
-    "description": "Azure App Configuration for feature flags and settings",
-    "version": "1.0.0",
-    "category": "configuration",
-    "supportsMultiInstance": false
-  },
-  {
-    "name": "linuxVirtualMachines",
-    "description": "Azure Linux Virtual Machines",
-    "version": "1.0.0",
-    "category": "compute",
-    "supportsMultiInstance": false
-  },
-  {
-    "name": "windowsVirtualMachines",
-    "description": "Azure Windows Virtual Machines",
-    "version": "1.0.0",
-    "category": "compute",
-    "supportsMultiInstance": false
-  },
-  {
-    "name": "eventGridTopics",
-    "description": "Azure Event Grid Topics for event-based messaging",
-    "version": "1.0.0",
-    "category": "messaging",
-    "supportsMultiInstance": true
-  },
-  {
-    "name": "aiFoundry",
-    "description": "Azure AI Foundry for AI Foundry workflows",
-    "version": "1.0.0",
-    "category": "AI",
-    "supportsMultiInstance": false
-  },
-  {
-    "name": "redis",
-    "description": "Azure Cache for Redis",
-    "version": "1.0.0",
-    "category": "database",
     "supportsMultiInstance": false
   }
 ]
