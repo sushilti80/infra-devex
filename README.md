@@ -15,7 +15,7 @@ The initial catalog supports resource groups and storage accounts. Selecting sto
 
 ## Option 1: Try generation locally
 
-You need Git, Node.js 24, and Python 3. This option needs no GitHub token, GitHub App, Azure account, or cloud credentials.
+You need Git and Node.js 24. This option needs no GitHub token, GitHub App, Azure account, or cloud credentials.
 
 ```bash
 git clone https://github.com/sushilti80/infra-devex.git
@@ -61,7 +61,9 @@ The portal can dispatch the same workflow in the same repository. It currently r
    ```
 
 3. Set `GITHUB_PERSONAL_ACCESS_TOKEN` and `GITHUB_SERVICE_REPO=OWNER/infra-devex` in `.env`, substituting your repository. `GITHUB_SELF_SERVICE_REPO` defaults to the same repository. Configure the Entra client, tenant, API scope and redirect URIs using [the authentication guide](docs/AUTHENTICATION-GUIDE.md). Do not commit `.env` or your token.
-4. Run `npm run dev` and, in another terminal, `npm run dev:client`. Open `http://localhost:5173`, sign in, and choose **Custom Infrastructure**. Select `dev` and `storageV2`, enter the project details, and submit. Follow the run and review its PR in the same repository.
+4. Run `npm run build:client` followed by `npm start`. Open `http://localhost:3000`, sign in, and choose **Custom Infrastructure**. Select `dev` and `storageV2`, enter the project details, and submit. Follow the run and review its PR in the same repository. Register `http://localhost:3000` as an Entra SPA redirect URI first.
+
+For frontend development with hot reload, run `PORT=3001 npm run dev` in one terminal and `npm run dev:client` in another, then open `http://localhost:5173`. The Vite proxy expects the backend on port `3001`; register the `5173` URL as an additional SPA redirect URI.
 
 The GitHub App integration remains an alternative for the portal. Other portal features, including legacy application templates, AKS deployment, secrets sync, promotion, and code deployment, are not part of this initial single-repository generation path. Their workflow definitions remain inactive under `legacy/catalog-workflows/` until separately configured and reviewed.
 
@@ -70,6 +72,8 @@ The GitHub App integration remains an alternative for the portal. Other portal f
 When ready to plan or deploy, the customer must supply a subscription and configure the remote state backend, GitHub protected environments, Azure identities and OIDC federation. Review [deployment setup](docs/CATALOG-SETUP.md) before setting `ENABLE_AZURE_DEPLOYMENT=true`. The workflow checks that the job's subscription matches the selected environment and runs Checkov on Terraform plans. A fresh plan is created after merge; review the behavior and approval requirements before enabling writes.
 
 ## Verify
+
+The full verification commands require Python 3 as well as Git and Node.js. `jq` is needed for the removal tests; otherwise those tests are skipped.
 
 ```bash
 node --test tests/catalog.test.mjs tests/deployment-config.test.mjs tests/generate-request.test.mjs tests/clean-install.test.mjs tests/github-token.test.cjs
