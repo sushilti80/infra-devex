@@ -131,6 +131,7 @@ const config = {
     logLevel: process.env.LOG_LEVEL || 'info'
   },
   github: {
+    personalAccessToken: process.env.GITHUB_PERSONAL_ACCESS_TOKEN || '',
     appId: process.env.GITHUB_APP_ID || '',
     privateKey: githubPrivateKey,
     privateKeyPath: process.env.GITHUB_PRIVATE_KEY_PATH || '',
@@ -141,8 +142,8 @@ const config = {
       privateKeyPath: process.env.GITHUB_CODE_PRIVATE_KEY_PATH || '',
       installationId: process.env.GITHUB_CODE_INSTALLATION_ID || ''
     },
-    serviceRepo: process.env.GITHUB_SERVICE_REPO || '',
-    selfServiceRepo: process.env.GITHUB_SELF_SERVICE_REPO || '',
+    serviceRepo: process.env.GITHUB_SERVICE_REPO || process.env.GITHUB_SELF_SERVICE_REPO || '',
+    selfServiceRepo: process.env.GITHUB_SELF_SERVICE_REPO || process.env.GITHUB_SERVICE_REPO || '',
     modulesRepo: process.env.GITHUB_MODULES_REPO || '',
     infrastructureLiveRepo: process.env.GITHUB_INFRA_LIVE_REPO || '',
     codeServiceRepo: process.env.GITHUB_CODE_SERVICE_REPO || ''

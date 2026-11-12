@@ -69,3 +69,7 @@ jest-html-reporters-*.html
 # Note: Root index.html is the source entry point (must be tracked)
 # Only ignore built index.html in dist/
 dist/index.html
+
+# Infrastructure state and local credentials
+*.tfstate.*
+*.pyc

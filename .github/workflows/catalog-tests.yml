@@ -1,10 +1,10 @@
 name: Catalog tests
 on:
   pull_request:
-    paths: ['service-catalog/catalog/**', 'service-catalog/tests/catalog.test.mjs', 'service-catalog/tests/deployment-config.test.mjs', 'service-catalog/tests/generate-request.test.mjs', 'service-catalog/.github/workflows/scripts/generate_request.mjs', 'service-catalog/.github/workflows/self-service-custom-infra.yml', 'service-catalog/.github/workflows/scripts/validate_azure_target.mjs', 'service-catalog/.github/workflows/terraform-iac.yml', '.github/workflows/catalog-tests.yml']
+    paths: ['catalog/**', 'tests/catalog.test.mjs', 'tests/deployment-config.test.mjs', 'tests/generate-request.test.mjs', 'tests/clean-install.test.mjs', 'tests/github-token.test.cjs', 'services/githubService.js', 'config.js', '.github/workflows/scripts/generate_request.mjs', '.github/workflows/self-service-custom-infra.yml', '.github/workflows/scripts/validate_azure_target.mjs', '.github/workflows/terraform-iac.yml', '.github/workflows/catalog-tests.yml']
   push:
     branches: [main]
-    paths: ['service-catalog/catalog/**', 'service-catalog/tests/catalog.test.mjs', '.github/workflows/catalog-tests.yml']
+    paths: ['catalog/**', 'tests/catalog.test.mjs', 'tests/deployment-config.test.mjs', 'tests/generate-request.test.mjs', 'tests/clean-install.test.mjs', 'tests/github-token.test.cjs', 'services/githubService.js', 'config.js', '.github/workflows/scripts/**', '.github/workflows/self-service-custom-infra.yml', '.github/workflows/terraform-iac.yml', '.github/workflows/catalog-tests.yml']
 permissions:
   contents: read
 jobs:
@@ -15,4 +15,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node --test service-catalog/tests/catalog.test.mjs service-catalog/tests/deployment-config.test.mjs service-catalog/tests/generate-request.test.mjs
+      - run: node --test tests/catalog.test.mjs tests/deployment-config.test.mjs tests/generate-request.test.mjs tests/clean-install.test.mjs tests/github-token.test.cjs
