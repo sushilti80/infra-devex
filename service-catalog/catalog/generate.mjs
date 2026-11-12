@@ -48,12 +48,14 @@ export function generate({ repository, project, environment, modules }) {
   const pending = [];
   for (const item of ordered) {
     const id = item.id.toLowerCase();
-    let extra;
-    if (id === 'resourcegroups') {
-      extra = `inputs = {\n  name = "${project}-${environment}-rg"\n  location = local.env.locals.location\n  enable_telemetry = false\n}\n`;
-    } else if (id === 'storagev2') {
-      extra = `dependency "resource_group" {\n  config_path = "../resourcegroups"\n  mock_outputs = { resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/mock-rg" }\n  mock_outputs_allowed_terraform_commands = ["validate", "plan"]\n}\n\ninputs = {\n  name = "${account}"\n  location = local.env.locals.location\n  parent_id = dependency.resource_group.outputs.resource_id\n  enable_telemetry = false\n}\n`;
-    } else throw new Error(`No generator for ${item.id}`);
+    if (!/^[a-z0-9-]+\.hcl$/.test(item.template)) throw new Error('Invalid template name');
+    const variables = { project, environment, storage_name: account };
+    const template = fs.readFileSync(path.join(directory, 'templates', item.template), 'utf8');
+    const extra = template.replace(/\{\{([a-z_]+)\}\}/g, (_, key) => {
+      if (!(key in variables)) throw new Error(`Unknown template variable: ${key}`);
+      return variables[key];
+    });
+    if (/\{\{|\}\}/.test(extra)) throw new Error('Invalid template placeholder');
     const target = path.join(envDir, id, 'terragrunt.hcl');
     const content = `${marker}\nterraform {\n  source = "${item.source}"\n}\n\n${root}\n${extra}`;
     if (fs.existsSync(target) && fs.readFileSync(target, 'utf8') !== content) throw new Error(`Refusing to overwrite existing module ${id}; review its configuration`);

@@ -17,8 +17,8 @@ test('storage generation includes the pinned resource group dependency', () => f
   const storage = fs.readFileSync(path.join(root, 'storagev2/terragrunt.hcl'), 'utf8');
   assert.match(rg, /ref=4c7e926d9aa11000d7c31a6b4c26100371b2ac62/);
   assert.match(storage, /ref=226f9bbefcc9299ad46f6263fc9005edb39a38e5/);
-  assert.match(storage, /parent_id = dependency\.resource_group\.outputs\.resource_id/);
-  assert.match(storage, /name = "[a-z0-9]{3,24}"/);
+  assert.match(storage, /parent_id\s*= dependency\.resource_group\.outputs\.resource_id/);
+  assert.match(storage, /name\s*= "[a-z0-9]{3,24}"/);
   assert.deepEqual(generate(request), ['resourceGroups', 'storageV2']);
 }));
 test('rejects invalid paths, unknown modules, and existing unmanaged infrastructure', () => fixture(repository => {

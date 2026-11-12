@@ -7,6 +7,7 @@
       "source": "git::https://github.com/Azure/terraform-azurerm-avm-res-resources-resourcegroup.git?ref=4c7e926d9aa11000d7c31a6b4c26100371b2ac62",
       "upstreamVersion": "v0.5.0",
       "license": "MIT",
+      "template": "resource-group.hcl",
       "inputs": {"name": "generated", "location": "environment", "enable_telemetry": false},
       "outputs": ["resource_id"],
       "dependencies": []
@@ -17,6 +18,7 @@
       "source": "git::https://github.com/Azure/terraform-azurerm-avm-res-storage-storageaccount.git?ref=226f9bbefcc9299ad46f6263fc9005edb39a38e5",
       "upstreamVersion": "v0.11.0",
       "license": "MIT",
+      "template": "storage-account.hcl",
       "inputs": {"name": "generated", "location": "environment", "parent_id": "resourceGroups.resource_id", "enable_telemetry": false},
       "outputs": ["resource_id"],
       "dependencies": ["resourceGroups"]
