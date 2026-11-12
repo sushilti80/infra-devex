@@ -97,7 +97,6 @@
 - `.github/workflows/deploy-dashboards.yml`
 - `.github/workflows/public-source-check.yml`
 - `.github/workflows/qa-pipeline.yml`
-- `.github/workflows/wiz-scan.yml`
 
 ## Backend modules
 
