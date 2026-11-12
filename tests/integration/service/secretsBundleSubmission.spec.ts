@@ -178,6 +178,7 @@ describe('secretsService.resolveBundleEnvironments (spec.md §2.5)', () => {
 describe('secretsService.submitSecretBundleViaGitOps (spec.md §2.4/§2.5)', () => {
   let calls: { createMultiFileCommit: any[]; createPullRequest: any[] }
   let originalEncrypt: any
+  let originalBundleRead: any
   let capturedLogs: string[]
   let originalInfo: any
   let originalWarn: any
@@ -188,6 +189,12 @@ describe('secretsService.submitSecretBundleViaGitOps (spec.md §2.4/§2.5)', () 
     calls = { createMultiFileCommit: [], createPullRequest: [] }
     capturedLogs = []
     originalEncrypt = svc._internal?.encryptValueWithSops
+    originalBundleRead = svc._internal.readBundleConfigFile
+    svc._internal.resetLastKnownGoodBundleConfig()
+    svc._internal.readBundleConfigFile = () => JSON.stringify({ version: '1.0', bundles: [
+      { id: 'release', displayName: 'Release', order: 1, releaseControlled: true, environments: ['prod', 'cint', 'demo'] },
+      { id: 'sand', displayName: 'Sandbox', order: 2, releaseControlled: false, environments: ['sand'] }
+    ] })
 
     const logger = cjsRequire('../../../utils/logger')
     originalInfo = logger.info
@@ -220,6 +227,8 @@ describe('secretsService.submitSecretBundleViaGitOps (spec.md §2.4/§2.5)', () 
 
   afterEach(() => {
     if (svc._internal) svc._internal.encryptValueWithSops = originalEncrypt
+    svc._internal.readBundleConfigFile = originalBundleRead
+    svc._internal.resetLastKnownGoodBundleConfig()
     const logger = cjsRequire('../../../utils/logger')
     logger.info = originalInfo
     logger.warn = originalWarn

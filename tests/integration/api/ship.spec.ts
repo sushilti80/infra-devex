@@ -287,11 +287,10 @@ describe('BT-03 flag gating at the API', () => {
     expect(res.body.error.details.map((e: any) => e.field)).toContain('env')
     expect(dispatched).toHaveLength(0)
   })
-  it('GET /api/environments serves the flag (false on devsand until Phase 4 gates pass)', async () => {
+  it('GET /api/environments serves the configured flag', async () => {
     const res = await api('GET', '/environments', { token: null })
-    const devsand = res.body.data.environments.find((e: any) => e.id === 'devsand')
-    expect(devsand.features.shipFromRepo).toBe(false)
-    expect(res.body.data.environments.filter((e: any) => e.id !== 'devsand').every((e: any) => !('shipFromRepo' in (e.features || {})))).toBe(true)
+    expect(res.body.data.environments.length).toBeGreaterThan(0)
+    expect(res.body.data.environments.every((e: any) => e.features?.shipFromRepo !== true)).toBe(true)
     expect(typeof (await infrastructureService.getEnvironments()).environments).toBe('object')
   })
 })

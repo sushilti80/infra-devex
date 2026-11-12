@@ -11,6 +11,7 @@ config.github.appId = appId
 const aksService = require('../../../services/aksService')
 const router = require('../../../routes/api')
 const originalOctokit = githubService.octokit
+const originalEnvironments = config.aks.supportedEnvironments
 const dispatchWorkflow = vi.fn()
 const sensitive = 'SYNTHETIC-CONTENT-MUST-NOT-BE-LOGGED'
 
@@ -59,6 +60,7 @@ function metric(event: string, fields: Record<string, unknown>) {
 
 describe('AKS request logging', () => {
   beforeEach(() => {
+    config.aks.supportedEnvironments = ['devsand', 'sand']
     vi.spyOn(logger, 'log').mockReturnValue(logger)
     vi.spyOn(logger, 'info').mockReturnValue(logger)
     vi.spyOn(logger, 'warn').mockReturnValue(logger)
@@ -75,6 +77,7 @@ describe('AKS request logging', () => {
       vi.mocked(logger.error).mock.calls
     ])
     githubService.octokit = originalOctokit
+    config.aks.supportedEnvironments = originalEnvironments
     vi.restoreAllMocks()
     expect(output).not.toContain(sensitive)
   })
