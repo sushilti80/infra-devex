@@ -94,6 +94,7 @@
 ## GitHub workflows
 
 - `.github/workflows/ai-repo-check.yml`
+- `.github/workflows/catalog-tests.yml`
 - `.github/workflows/deploy-dashboards.yml`
 - `.github/workflows/public-source-check.yml`
 - `.github/workflows/qa-pipeline.yml`
