@@ -2,7 +2,7 @@ name: Terraform plan and apply
 
 on:
   pull_request:
-    paths: ['infrastructure/**', 'recycle-bin/**', '.github/workflows/terraform-iac.yml', '.github/workflows/scripts/*terraform*', '.github/workflows/scripts/select_iac_stacks.mjs']
+    paths: ['infrastructure/**', 'recycle-bin/**', '.github/workflows/terraform-iac.yml', '.github/workflows/scripts/*terraform*', '.github/workflows/scripts/select_iac_stacks.mjs', '.github/workflows/scripts/validate_azure_target.mjs']
   push:
     branches: [main]
     paths: ['infrastructure/**', 'recycle-bin/**']
@@ -43,9 +43,21 @@ jobs:
           MANUAL_DIRECTORY: ${{ inputs.directory }}
         run: node .github/workflows/scripts/select_iac_stacks.mjs
 
+  generation-only:
+    if: vars.ENABLE_AZURE_DEPLOYMENT != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report generation-only mode
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          echo "Azure plan and apply are disabled. The generated configuration is available for review."
+          echo "Set repository variable ENABLE_AZURE_DEPLOYMENT=true only after configuring the target subscription, backend, identities, and protected environments."
+          if [ "$EVENT_NAME" = workflow_dispatch ]; then exit 1; fi
+
   terraform:
     needs: select
-    if: needs.select.outputs.count != '0' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
+    if: vars.ENABLE_AZURE_DEPLOYMENT == 'true' && needs.select.outputs.count != '0' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -76,6 +88,8 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Validate target subscription
+        run: node .github/workflows/scripts/validate_azure_target.mjs
       - uses: ./.github/actions/setup-environment
         with:
           install-miller: 'false'

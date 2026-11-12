@@ -24,7 +24,7 @@ This working-tree cleanup does not sanitize Git history or approve licensing.
 | --- | --- |
 | This repository | Vue portal, Express API, authentication, and GitHub orchestration |
 | Your `service-catalog` repository | Generated IaC, metadata, templates, and GitHub plan/apply workflows |
-| Your Terraform modules repository | Compatible modules and Terragrunt scaffolding templates |
+| Public module sources | Pinned Azure Verified Modules, described in the included catalog |
 
 The included [service-catalog starter](service-catalog/README.md) contains shared
 Terragrunt configuration, sanitized application templates, workflow helpers, and
@@ -38,18 +38,20 @@ repository. Deployed metadata, credentials, and Terraform state are not included
 2. Generation creates an Infrastructure-App-authenticated PR containing IaC and metadata.
 3. [Terraform plan and apply](service-catalog/.github/workflows/terraform-iac.yml)
    selects affected application/environment stacks and plans the PR changes.
-4. After review and merge, the workflow re-plans, scans with Checkov,
+4. Once an operator enables Azure execution, after review and merge the workflow re-plans, scans with Checkov,
    and applies only after protected-environment approval.
 5. Retired applications and recorded module removals require separate destroy approval.
 
-Configure your Azure subscription map, module repository/ref, remote-state backend,
+Generation is available without an Azure subscription; Azure plan and apply are disabled until
+an operator configures them and sets `ENABLE_AZURE_DEPLOYMENT=true` in the catalog repository.
+Configure your Azure subscription map, remote-state backend,
 Entra OIDC identities, and protected GitHub environments before enabling writes.
 State locking remains enabled. GitHub Actions is the supported deployment path.
 
 ### Integration boundaries
 
 - Core provisioning requires Azure, Entra ID, an Infrastructure GitHub App, and
-  compatible Terraform modules. It does not require an AI assistant or model API.
+  the included module catalog. It does not require an AI assistant or model API.
 - The organization-specific assistant and AI-assisted deployment workflow are removed.
   No Infracost runtime integration is included.
 - Code bootstrap and AKS/Flux deployment are separate integrations; code deployment
@@ -107,7 +109,8 @@ cp .env.example .env
 # Optional code deployment:
 # - GITHUB_CODE_APP_ID, GITHUB_CODE_INSTALLATION_ID, GITHUB_CODE_PRIVATE_KEY_PATH
 # Repository names:
-# - GITHUB_SERVICE_REPO, GITHUB_MODULES_REPO, GITHUB_SELF_SERVICE_REPO
+# - GITHUB_SERVICE_REPO, GITHUB_SELF_SERVICE_REPO
+# - GITHUB_MODULES_REPO is only used by legacy templates
 # Configure subscription IDs and feature flags in data/environments.json.
 #
 # Entra ID Authentication:
@@ -393,7 +396,7 @@ GITHUB_CODE_APP_PRIVATE_KEY_PATH=/app/secrets/github-code-app.pem
 
 # GitHub Repositories
 GITHUB_SERVICE_REPO=organization/service-catalog
-GITHUB_MODULES_REPO=organization/terraform-modules
+GITHUB_MODULES_REPO=organization/terraform-modules  # legacy template integration only
 GITHUB_INFRA_LIVE_REPO=organization/infrastructure-live
 AKS_FLUX_REPO=organization/flux-config
 
