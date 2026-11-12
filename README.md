@@ -60,7 +60,7 @@ The portal can dispatch the same workflow in the same repository. It currently r
    cp .env.example .env
    ```
 
-3. Set `GITHUB_PERSONAL_ACCESS_TOKEN`, `GITHUB_SERVICE_REPO=OWNER/infra-devex`, and `GITHUB_SELF_SERVICE_REPO=OWNER/infra-devex` in `.env`, substituting your repository. Configure the Entra client, tenant, API scope and redirect URIs using [the authentication guide](docs/AUTHENTICATION-GUIDE.md). Do not commit `.env` or your token.
+3. Set `GITHUB_PERSONAL_ACCESS_TOKEN` and `GITHUB_SERVICE_REPO=OWNER/infra-devex` in `.env`, substituting your repository. `GITHUB_SELF_SERVICE_REPO` defaults to the same repository. Configure the Entra client, tenant, API scope and redirect URIs using [the authentication guide](docs/AUTHENTICATION-GUIDE.md). Do not commit `.env` or your token.
 4. Run `npm run dev` and, in another terminal, `npm run dev:client`. Open `http://localhost:5173`, sign in, and choose **Custom Infrastructure**. Select `dev` and `storageV2`, enter the project details, and submit. Follow the run and review its PR in the same repository.
 
 The GitHub App integration remains an alternative for the portal. Other portal features, including legacy application templates, AKS deployment, secrets sync, promotion, and code deployment, are not part of this initial single-repository generation path. Their workflow definitions remain inactive under `legacy/catalog-workflows/` until separately configured and reviewed.
