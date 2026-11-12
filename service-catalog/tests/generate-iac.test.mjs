@@ -156,3 +156,21 @@ test('recorded removals target only source-commit modules and plan without appro
   fs.writeFileSync(path.join(directory, requestPath), JSON.stringify(request));
   assert.throws(() => execFileSync('bash', [path.join(scripts, 'destroy_removed_modules.sh'), list, directory, 'destroy'], { env, stdio: 'pipe' }));
 }));
+test('plan scan checks every JSON plan and fails on missing plans or scanner failures', () => temporary(directory => {
+  const bin = path.join(directory, 'bin');
+  const plans = path.join(directory, 'plans');
+  const log = path.join(directory, 'scans.log');
+  fs.mkdirSync(bin);
+  fs.mkdirSync(plans);
+  fs.writeFileSync(path.join(bin, 'checkov'), '#!/usr/bin/env node\nconst fs = require("node:fs"); fs.appendFileSync(process.env.TEST_LOG, process.argv[3] + "\\n"); if (process.argv[3].includes("bad.json")) process.exit(1);\n', { mode: 0o755 });
+  const env = { ...process.env, PATH: `${bin}:${process.env.PATH}`, TEST_LOG: log };
+  const run = () => execFileSync('bash', [path.join(scripts, 'scan_plans.sh'), plans], { env, stdio: 'pipe' });
+  assert.throws(run);
+  fs.writeFileSync(path.join(plans, 'good.json'), '{}');
+  run();
+  fs.writeFileSync(path.join(plans, 'bad.json'), '{}');
+  assert.throws(run);
+  const scanned = fs.readFileSync(log, 'utf8');
+  assert.match(scanned, /good\.json/);
+  assert.match(scanned, /bad\.json/);
+}));

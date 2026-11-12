@@ -92,11 +92,10 @@ modules requiring provider aliases need installation-specific configuration.
 - Terraform state locking remains enabled. Workflow operations are serialized;
    no state files or binary plans are uploaded as GitHub artifacts.
 
-The Wiz scan is optional and disabled by default. To enable it, set the repository
-variable `WIZ_IAC_REQUIRED=true`, configure `WIZ_CLIENT_ID` and `WIZ_CLIENT_SECRET`,
-and configure blocking IaC policies in Wiz. The job uses a pinned, checksum-verified
-Wiz CLI. If Wiz is not enabled, the workflow has no built-in IaC security scan;
-configure a security gate appropriate to your installation before deployment.
+The workflow uses open-source Checkov to scan each generated Terraform JSON plan.
+It blocks on failed checks or when no plan files are found. Review scan findings
+and configure documented, justified exceptions for your own policy requirements.
+Plan data and scanner output may contain sensitive infrastructure details.
 Use a private deployment repository: plan logs and metadata can contain sensitive details.
 
 All environments use the same configured backend, with separate keys by stack path.

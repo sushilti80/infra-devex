@@ -38,7 +38,7 @@ repository. Deployed metadata, credentials, and Terraform state are not included
 2. Generation creates an Infrastructure-App-authenticated PR containing IaC and metadata.
 3. [Terraform plan and apply](service-catalog/.github/workflows/terraform-iac.yml)
    selects affected application/environment stacks and plans the PR changes.
-4. After review and merge, the workflow re-plans, runs Wiz if enabled,
+4. After review and merge, the workflow re-plans, scans with Checkov,
    and applies only after protected-environment approval.
 5. Retired applications and recorded module removals require separate destroy approval.
 
@@ -55,8 +55,7 @@ State locking remains enabled. GitHub Actions is the supported deployment path.
 - Code bootstrap and AKS/Flux deployment are separate integrations; code deployment
   uses its own GitHub App and repository configuration.
 - Jira references and Datadog observability remain available where configured.
-- Wiz scanning is optional and disabled by default. Configure it or another security
-  gate for your installation; the starter does not scan IaC plans by default.
+- Checkov scans generated Terraform plans and blocks the workflow when checks fail.
 
 See [catalog configuration](service-catalog/README.md#github-planapply-configuration)
 for identity, approval, backend, and security settings. Local tests do not certify
