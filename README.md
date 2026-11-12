@@ -38,10 +38,12 @@ repository. Deployed metadata, credentials, and Terraform state are not included
 2. Generation creates an Infrastructure-App-authenticated PR containing IaC and metadata.
 3. [Terraform plan and apply](service-catalog/.github/workflows/terraform-iac.yml)
    selects affected application/environment stacks and plans the PR changes.
-4. After review and merge, the workflow re-plans, scans with Checkov,
+4. Once an operator enables Azure execution, after review and merge the workflow re-plans, scans with Checkov,
    and applies only after protected-environment approval.
 5. Retired applications and recorded module removals require separate destroy approval.
 
+Generation is available without an Azure subscription; Azure plan and apply are disabled until
+an operator configures them and sets `ENABLE_AZURE_DEPLOYMENT=true` in the catalog repository.
 Configure your Azure subscription map, remote-state backend,
 Entra OIDC identities, and protected GitHub environments before enabling writes.
 State locking remains enabled. GitHub Actions is the supported deployment path.

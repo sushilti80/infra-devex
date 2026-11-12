@@ -1,7 +1,7 @@
 name: Catalog tests
 on:
   pull_request:
-    paths: ['service-catalog/catalog/**', 'service-catalog/tests/catalog.test.mjs', '.github/workflows/catalog-tests.yml']
+    paths: ['service-catalog/catalog/**', 'service-catalog/tests/catalog.test.mjs', 'service-catalog/tests/deployment-config.test.mjs', 'service-catalog/.github/workflows/scripts/validate_azure_target.mjs', 'service-catalog/.github/workflows/terraform-iac.yml', '.github/workflows/catalog-tests.yml']
   push:
     branches: [main]
     paths: ['service-catalog/catalog/**', 'service-catalog/tests/catalog.test.mjs', '.github/workflows/catalog-tests.yml']
@@ -15,4 +15,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node --test service-catalog/tests/catalog.test.mjs
+      - run: node --test service-catalog/tests/catalog.test.mjs service-catalog/tests/deployment-config.test.mjs

@@ -12,7 +12,7 @@ For local generation from the root of a copied catalog repository:
 PROJECT_NAME=demo ENVIRONMENT=dev MODULES=storageV2 node catalog/generate.mjs
 ```
 
-The generator creates infrastructure files only. The existing workflow supplies
+This command requires no Azure subscription or credentials. The generator creates infrastructure files only. The existing workflow supplies
 `env.hcl`, metadata, and the pull request. The storage account name is derived
 from project and environment plus a short hash. Azure storage names are globally
 unique; a collision requires choosing a different project name. Review the

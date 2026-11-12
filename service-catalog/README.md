@@ -15,7 +15,7 @@ including the hidden `.github/` directory, into your own
    and deletion PRs use its scoped token so they trigger the Terraform PR workflow;
    PRs created with the default `GITHUB_TOKEN` do not trigger other workflows.
 3. The included `catalog/modules.json` pins public Azure Verified Modules for resource groups and storage. No separate modules repository or SSH key is required for these offerings. See [the module catalog guide](catalog/README.md).
-4. Set repository variable `CATALOG_CONFIG_JSON` with your `subscriptions` map,
+4. Before enabling Azure plan/apply, set repository variable `CATALOG_CONFIG_JSON` with your `subscriptions` map,
    `location`, `alias`, optional `network` settings, and module `inputs`. The copied
    `infrastructure/common.hcl` reads this JSON. Customize `infrastructure/remote_state.yml`
    with your pre-existing state resource group, storage account, and blob container.
@@ -40,6 +40,21 @@ including the hidden `.github/` directory, into your own
 **A successful scaffolding workflow does not mean Azure resources were applied.**
 GitHub Actions is the supported plan/apply path. No Azure DevOps agent pool,
 service connection, or variable group is required.
+
+## Generation-only mode
+
+The starter defaults to generating Terragrunt configuration and a pull request.
+Generation does not require an Azure subscription, credentials, or a configured
+state backend. The PR's Azure plan and apply jobs remain disabled until the
+operator sets the **repository** variable `ENABLE_AZURE_DEPLOYMENT=true`.
+A manual plan/apply/destroy dispatch fails with an explanatory message while
+deployment is disabled. The generated PR is an IaC proposal, not an Azure
+deployment or a validated Terraform plan.
+
+To enable Azure execution, first configure the target environment's subscription
+in `CATALOG_CONFIG_JSON`, the matching `AZURE_SUBSCRIPTION_ID` in each GitHub
+plan/apply/destroy environment, OIDC identities, backend, and approvals. The
+workflow rejects missing or mismatched subscription IDs before Azure login.
 
 ## GitHub plan/apply configuration
 
