@@ -47,13 +47,20 @@ on:
         required: false
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 env:
   MODULES_REPO: ${{ vars.TERRAFORM_MODULES_REPO }}
   TERRAFORM_MODULES_REPO: ${{ vars.TERRAFORM_MODULES_REPO }}
   CATALOG_CONFIG_JSON: ${{ vars.CATALOG_CONFIG_JSON }}
+  PROJECT_NAME: ${{ inputs.project_name }}
+  ENVIRONMENT: ${{ inputs.environment }}
+  MODULES: ${{ inputs.modules }}
+  OWNER: ${{ inputs.owner }}
+  PROJECT_DESC: ${{ inputs.project_desc }}
+  MODULE_VERSION: ${{ inputs.terraform_branch }}
+  RBAC_PAIRS: ${{ inputs.rbac_pairs }}
+  CORRELATION_ID: ${{ inputs.correlation_id }}
 
 jobs:
   deploy:
@@ -62,7 +69,7 @@ jobs:
     steps:
       - name: Create catalog automation token
         id: catalog-app
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -71,7 +78,7 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           token: ${{ steps.catalog-app.outputs.token }}
 
@@ -88,7 +95,7 @@ jobs:
       - name: Print Correlation ID
         if: ${{ github.event.inputs.correlation_id != 'none' }}
         run: |
-          echo "🔗 Correlation ID: ${{ github.event.inputs.correlation_id }}"
+          printf "Correlation ID: %s\n" "$CORRELATION_ID"
 
       - name: Generate catalog modules
         env:
@@ -135,160 +142,17 @@ jobs:
             echo "RBAC module is not in the desired state; skipping generation."
           fi
 
-      - name: Generate env.hcl File
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          # Normalize inputs
-          PROJECT_NAME=$(echo "${{ github.event.inputs.project_name }}" | tr '[:upper:]' '[:lower:]')
-          ENVIRONMENT=$(echo "${{ github.event.inputs.environment }}"   | tr '[:upper:]' '[:lower:]')
-          # Strip any surrounding double-quotes that callers may include in the values
-          PROJECT_DESC=$(echo "${{ github.event.inputs.project_desc }}" | tr -d '"')
-          OWNER=$(echo "${{ github.event.inputs.owner }}" | tr -d '"')
-          ENV_HCL_PATH="infrastructure/${PROJECT_NAME}/${ENVIRONMENT}/env.hcl"
-          mkdir -p "$(dirname "$ENV_HCL_PATH")"
-
-          # 1) Write HCL with placeholder
-          cat << EOF > "$ENV_HCL_PATH"
-          locals {
-            common_vars    = read_terragrunt_config(find_in_parent_folders("common.hcl"))
-            envName        = "\${basename(dirname(get_original_terragrunt_dir()))}"
-            parentdir      = "\${get_terragrunt_dir()}/../"
-            prefix         = lower(basename(dirname(local.parentdir)))
-            currentsubID   = local.common_vars.locals.subscriptions[local.envName]
-            module_version = "${{ github.event.inputs.terraform_branch }}"
-            location       = local.common_vars.locals.location
-            alias          = local.common_vars.locals.alias
-
-            app_metadata = {
-              name        = "${{ github.event.inputs.project_name }}"
-              description = "${PROJECT_DESC}"
-              owner       = "${OWNER}"
-              commit_sha  = "${{ github.sha }}"
-              deployed_at = "DEPLOYMENT_TIME_TOKEN"
-              cost_center = "self-service"
-              lifecycle   = "experimental"
-              environment = "${ENVIRONMENT}"
-            }
-
-            extra_tags = local.app_metadata
-          }
-          EOF
-
-          # 2) Inject real timestamp
-          DEPLOY_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          sed -i "s/DEPLOYMENT_TIME_TOKEN/${DEPLOY_TIME}/" "$ENV_HCL_PATH"
-
-          # 3) Verify
-          if [ -f "$ENV_HCL_PATH" ]; then
-            echo "✅ Created $ENV_HCL_PATH at $DEPLOY_TIME"
-            cat "$ENV_HCL_PATH"
-          else
-            echo "❌ Failed to create $ENV_HCL_PATH"
-            exit 1
-          fi
-
-      - name: Generate Per-Project Metadata File (with meta and version)
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          # 1) Normalize inputs
-          project=$(echo "${{ github.event.inputs.project_name }}" | tr '[:upper:]' '[:lower:]')
-          environment=$(echo "${{ github.event.inputs.environment }}"   | tr '[:upper:]' '[:lower:]')
-          modules="${{ github.event.inputs.modules }}"
-          rbac_pairs="${{ github.event.inputs.rbac_pairs }}"
-          commit_sha="${{ github.sha }}"
-
-          # 2) Paths
-          env_hcl="infrastructure/${project}/${environment}/env.hcl"
-          out="docs/metadata/${project}-${environment}.json"
-          mkdir -p "$(dirname "$out")"
-          echo "📦 Generating metadata at $out"
-
-          # 3) Install HCL parser
-          pip install --quiet python-hcl2==8.1.2
-
-          # 4) Export for Python
-          export project environment modules rbac_pairs commit_sha env_hcl out
-
-          # 5) Inline Python: load existing JSON, merge new info, compute version, write
-          python3 << 'EOF'
-          import os, sys, json, hcl2
-
-          json_path = os.environ['out']
-          hcl_path  = os.environ['env_hcl']
-
-          # Load or initialize JSON
-          if os.path.isfile(json_path):
-              with open(json_path, 'r') as f:
-                  data = json.load(f)
-          else:
-              data = {
-                  "project":     os.environ['project'],
-                  "environment": os.environ['environment'],
-                  "modules":     [],
-                  "rbac_pairs":  [],
-                  "commitshas":  [],
-                  "version":     "0.0",
-                  "meta":        {}
-              }
-
-          # Ensure required keys exist
-          data.setdefault('commitshas', [])
-          data.setdefault('version', '0.0')
-
-          # Parse env.hcl and extract app_metadata
-          if not os.path.isfile(hcl_path):
-              print(f"❌ env.hcl not found at {hcl_path}", file=sys.stderr)
-              sys.exit(1)
-          with open(hcl_path, 'r') as f:
-              hcl_data = hcl2.load(f)
-
-          locals_block = hcl_data.get('locals')
-          first_locals = locals_block[0] if isinstance(locals_block, list) and locals_block else locals_block
-          app_meta = (first_locals.get('app_metadata') if first_locals else {})
-
-          app_meta = {
-              key: value[1:-1]
-              if isinstance(value, str) and len(value) >= 2 and value.startswith('"') and value.endswith('"')
-              else value
-              for key, value in app_meta.items()
-          }
-
-          def desired_values(raw):
-              return list(dict.fromkeys(value.strip() for value in raw.split(',') if value.strip()))
-
-          # Submitted values are the complete desired state, not additions.
-          data['modules'] = desired_values(os.environ['modules'])
-          data['rbac_pairs'] = desired_values(os.environ['rbac_pairs'])
-
-          # Append commit SHA
-          sha = os.environ['commit_sha']
-          if sha and sha not in data['commitshas']:
-              data['commitshas'].append(sha)
-
-          # Compute version = "<count>.0"
-          data['version'] = f"{len(data['commitshas'])}.0"
-
-          # Update meta
-          data['meta'] = app_meta
-
-          # Write back JSON
-          with open(json_path, 'w') as f:
-              json.dump(data, f, indent=2)
-          print(f"✅ Metadata file updated at {json_path}")
-          EOF
+      - name: Generate environment configuration and metadata
+        run: node .github/workflows/scripts/generate_request.mjs
 
       - name: Commit & Push Changes
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git checkout -b "$BRANCH_NAME"
-          git add -A
+          git add -A -- infrastructure docs/metadata
           git diff --cached --quiet && exit 0
-          git commit -m "Deploy custom infra for ${{ github.event.inputs.project_name }} and update catalog.json"
+          git commit -m "Generate infrastructure for $PROJECT_NAME"
           git push --set-upstream origin "$BRANCH_NAME"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -314,7 +178,7 @@ jobs:
           - **Removed modules:** ${REMOVED_MODULES:-none}
           - **Desired RBAC relationships:** ${RBAC_PAIRS:-none}
           - **Owner:** ${OWNER}
-          - **Triggered by:** ${{ github.actor }}
+          - **Triggered by:** ${GITHUB_ACTOR}
           - **Requested by:** ${TRIGGERED_BY:-unknown}
           EOF
           gh pr create \

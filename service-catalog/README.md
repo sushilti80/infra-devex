@@ -51,7 +51,8 @@ A manual plan/apply/destroy dispatch fails with an explanatory message while
 deployment is disabled. The generated PR is an IaC proposal, not an Azure
 deployment or a validated Terraform plan.
 
-To enable Azure execution, first configure the target environment's subscription
+Azure OIDC and subscription settings are placeholders for each customer's future setup;
+they are not needed for generation-only use. To enable Azure execution later, configure the target environment's subscription
 in `CATALOG_CONFIG_JSON`, the matching `AZURE_SUBSCRIPTION_ID` in each GitHub
 plan/apply/destroy environment, OIDC identities, backend, and approvals. The
 workflow rejects missing or mismatched subscription IDs before Azure login.
