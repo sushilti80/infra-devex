@@ -163,7 +163,6 @@ jobs:
         env:
           API_URL: http://localhost:3001
           CI: true
-        continue-on-error: true
 
       - name: Stop backend server
         if: always()
