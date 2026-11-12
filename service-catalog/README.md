@@ -77,8 +77,9 @@ Example configuration, with all deployment values supplied by the operator:
 ```
 
 Windows application templates need compatible existing networking and module inputs.
-Shared Key Vault, logging, diagnostics, and provider-alias subscriptions can be set
-through the named settings in `infrastructure/common.hcl`.
+Shared Key Vault, logging, and diagnostics settings can be configured in
+`infrastructure/common.hcl`. The starter generates one default Azure provider;
+modules requiring provider aliases need installation-specific configuration.
 
 - Same-repository PRs select changed application/environment stacks and run plans.
    Fork PRs do not receive cloud credentials; run the credential-free tests instead.
@@ -98,8 +99,10 @@ Wiz CLI. If Wiz is not enabled, the workflow has no built-in IaC security scan;
 configure a security gate appropriate to your installation before deployment.
 Use a private deployment repository: plan logs and metadata can contain sensitive details.
 
-This starter uses a new relative state-key layout. Do not point it at existing
-infrastructure and apply without an approved state migration and reviewed plan.
+All environments use the same configured backend, with separate keys by stack path.
+For an existing installation that previously used a separate `dr` backend, this
+changes the backend location. Migrate state explicitly and review a plan before apply;
+otherwise Terraform may see existing resources as new. Never apply against an empty state.
 
 ## Optional integrations
 

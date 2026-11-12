@@ -14,9 +14,6 @@ locals {
   law_rg             = lookup(local.settings, "log_analytics_resource_group", "")
   env_key_vault_name = lookup(local.settings, "key_vault_name", "")
   env_key_vault_rg   = lookup(local.settings, "key_vault_resource_group", "")
-  sharedsvcsub       = lookup(local.settings, "shared_subscription_id", lookup(local.subscriptions, local.envName, ""))
-  ms_ent_sub         = lookup(local.settings, "dns_subscription_id", lookup(local.subscriptions, local.envName, ""))
-  security_sub       = lookup(local.settings, "security_subscription_id", lookup(local.subscriptions, local.envName, ""))
   dummyrg            = "mock-resource-group"
   dummyObjectId      = "00000000-0000-0000-0000-000000000000"
   dummy_msi_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/mock-resource-group/providers/Microsoft.ManagedIdentity/userAssignedIdentities/mock-identity"

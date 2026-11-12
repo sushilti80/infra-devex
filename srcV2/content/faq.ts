@@ -184,7 +184,7 @@ export const faqItems: FaqItem[] = [
     category: 'environments',
     question: 'Which environments are available?',
     answer: [
-      'devsand (default development sandbox), sand (IT sandbox) and dataopssand (DataOps sandbox). AKS Playground is available in devsand and sand only.',
+      'Available environments and optional features are configured by your platform administrator.',
       'Environments and their enabled features are loaded from configuration at runtime, so the dropdowns only show what is available to you.'
     ]
   },

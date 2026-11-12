@@ -1,23 +1,10 @@
 {
-  "_comment": "FR-001 (secrets-environment-scope): curated environment-folder tier groups for the Secrets page. Hand-maintained by Platform Engineering as new apps/environments are onboarded, same convention as data/environments.json/data/modules.json/data/roles.json. Matching is case-insensitive. Any environment folder name not listed in 'production' or 'nonProduction' resolves to tier 'unclassified' (rendered under the 'Other' UI group) — 'other' below is documentation of known-but-neither-tier names, not a distinct functional bucket.",
+  "_comment": "Configure classifications for your installation.",
   "production": [
-    "prod",
-    "stage"
+    "prod"
   ],
   "nonProduction": [
-    "nonprod",
-    "dev",
-    "int",
-    "sint",
-    "cint",
-    "hot",
-    "demo"
+    "dev"
   ],
-  "other": [
-    "shared-services",
-    "hub",
-    "devsand",
-    "sand",
-    "dataops-sand"
-  ]
+  "other": []
 }

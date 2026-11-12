@@ -12,28 +12,16 @@ describe('environment catalog', () => {
   it('uses unique environment IDs and leaves subscription defaults unconfigured', () => {
     const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'))
     const ids = catalog.environments.map((environment: { id: string }) => environment.id)
-    const dataOps = catalog.environments.find(
-      (environment: { id: string }) => environment.id === 'dataopssand'
-    )
 
     expect(new Set(ids).size).toBe(ids.length)
-    expect(dataOps).toMatchObject({
-      displayName: 'DataOps Sandbox (dataopssand)',
-      subscriptionId: '',
-      enabled: true,
-      features: { customInfra: true, templates: true, aks: false }
-    })
     expect(catalog.defaultSubscriptionId).toBe('')
     expect(catalog.environments.every((environment: { subscriptionId: string }) => environment.subscriptionId === '')).toBe(true)
   })
 
-  it('includes DataOps Sand in the sand secret bundle', () => {
+  it('groups the example production environment in a release-controlled bundle', () => {
     const bundles = JSON.parse(fs.readFileSync(secretBundlesPath, 'utf8'))
-    const independent = bundles.bundles.find(
-      (bundle: { id: string }) => bundle.id === 'sand'
-    )
-
-    expect(independent.environments).toContain('dataops-sand')
+    expect(bundles.bundles.find((bundle: { id: string }) => bundle.id === 'release'))
+      .toMatchObject({ releaseControlled: true, environments: ['prod'] })
   })
 
   it('derives runtime subscription and AKS configuration from the catalog', () => {
