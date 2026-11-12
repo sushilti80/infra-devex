@@ -46,7 +46,6 @@ Example configuration, with all deployment values supplied by the operator:
 }
 ```
 
-Windows application templates need compatible existing networking and module inputs.
 Shared Key Vault, logging, and diagnostics settings can be configured in
 `infrastructure/common.hcl`. The starter generates one default Azure provider;
 modules requiring provider aliases need installation-specific configuration.
@@ -69,9 +68,9 @@ Plan data and scanner output may contain sensitive infrastructure details.
 Use a private deployment repository: plan logs and metadata can contain sensitive details.
 
 All environments use the same configured backend, with separate keys by stack path.
-For an existing installation that previously used a separate `dr` backend, this
-changes the backend location. Migrate state explicitly and review a plan before apply;
-otherwise Terraform may see existing resources as new. Never apply against an empty state.
+When moving an existing installation to a different backend or state layout,
+migrate state explicitly and review a plan before apply. Otherwise Terraform may
+see existing resources as new. Never apply against an empty state.
 
 ## Scope and validation
 
